@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # H2 데이터베이스 (개발용)
+  h2:
+    image: oscarfonts/h2
+    container_name: buzzerbidder-h2
+    ports:
+      - "8082:8082"  # H2 Console
+      - "9092:9092"  # TCP Server
+    environment:
+      H2_OPTIONS: -web -webAllowOthers -webPort 8082 -tcp -tcpAllowOthers -tcpPort 9092
+    volumes:
+      - h2-data:/opt/h2-data
+    networks:
+      - buzzerbidder-network
+    profiles:
+      - dev
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: buzzerbidder-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis-data:/data
+    networks:
+      - buzzerbidder-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # MySQL (프로덕션용)
+  mysql:
+    image: mysql:8.0
+    container_name: buzzerbidder-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: buzzerbidder
+      MYSQL_USER: buzzerbidder
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-buzzerbidder}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      TZ: Asia/Seoul
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - buzzerbidder-network
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - prod
+
+volumes:
+  h2-data:
+  redis-data:
+  mysql-data:
+
+networks:
+  buzzerbidder-network:
+    driver: bridge
+

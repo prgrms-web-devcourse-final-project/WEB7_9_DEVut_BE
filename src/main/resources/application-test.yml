@@ -1,0 +1,26 @@
+spring:
+  # Testcontainers가 동적으로 데이터소스 URL을 설정합니다
+  # TestcontainersConfiguration에서 @ServiceConnection으로 자동 연결됩니다
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  # JPA 설정
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        use_sql_comments: false
+  
+  # Redis 설정 (Testcontainers가 동적으로 설정합니다)
+  data:
+    redis:
+      timeout: 1000ms
+
+# 서버 설정
+server:
+  port: 0  # 랜덤 포트 사용
+
