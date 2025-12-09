@@ -19,7 +19,8 @@ public class LiveDealService {
                 .orElseThrow(() -> new IllegalArgumentException("LiveDeal not found with id: " + dealId));
     }
 
-    public void patchDeliveryInfo(Long dealId, AuctionType auctionType, String s, String s1) {
-
+    public void patchDeliveryInfo(Long dealId, String carrierCode, String trackingNumber) {
+        LiveDeal liveDeal = findByIdOrThrow(dealId);
+        liveDeal.updateDeliveryInfo(carrierCode, trackingNumber);
     }
 }

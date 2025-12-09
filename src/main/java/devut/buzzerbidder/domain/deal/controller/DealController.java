@@ -26,8 +26,8 @@ public class DealController {
     ) {
         AuctionType auctionType = AuctionType.fromString(type);
         if(auctionType.equals(AuctionType.LIVE))
-            liveDealService.patchDeliveryInfo(dealId, auctionType, request.carrierCode(), request.trackingNumber());
-//        TODO: 지연경매 추가
+            liveDealService.patchDeliveryInfo(dealId, request.carrierCode(), request.trackingNumber());
+//        TODO: else if(지연경매 코드)
 
         return ApiResponse.ok("운송장 번호가 입력되었습니다.", null);
     }
