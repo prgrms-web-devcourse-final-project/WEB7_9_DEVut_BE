@@ -89,6 +89,16 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, ErrorCode.FORBIDDEN_ACCESS.getStatus());
     }
 
+    // 리소스를 찾을 수 없을 때 (404)
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+        log.debug("Resource not found: {}", ex.getResourcePath());
+
+        ApiResponse<Void> response = ApiResponse.error(ErrorCode.NOT_FOUND_DATA);
+        return new ResponseEntity<>(response, ErrorCode.NOT_FOUND_DATA.getStatus());
+    }
+
     // 그 외 모든 예외 처리
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception ex) {
