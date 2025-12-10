@@ -1,5 +1,7 @@
 package devut.buzzerbidder.global.notification.service;
 
+import devut.buzzerbidder.global.exeption.BusinessException;
+import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.notification.dto.NotificationDto;
 import devut.buzzerbidder.global.notification.entity.Notification;
 import devut.buzzerbidder.global.notification.enums.NotificationType;
@@ -7,9 +9,11 @@ import devut.buzzerbidder.global.notification.repository.NotificationRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class NotificationService {
 
     private final NotificationRepository repository;
@@ -24,6 +28,7 @@ public class NotificationService {
      * @param channels 발송할 채널 목록 (예: ["user:123", "auction:456"])
      * @return 저장된 알림 엔티티
      */
+    @Transactional
     public Notification createAndSend(long userId, NotificationType type, String message, List<String> channels) {
         // 1. DB에 알림 저장
         Notification notification = repository.save(
@@ -80,12 +85,13 @@ public class NotificationService {
     /**
      * 알림 읽음 처리
      */
+    @Transactional
     public void markAsRead(Long notificationId, Long userId) {
         Notification notification = repository.findById(notificationId)
-            .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND));
 
         if (!notification.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Not authorized to mark this notification");
+            throw new BusinessException(ErrorCode.NOTIFICATION_FORBIDDEN);
         }
 
         notification.markAsCheck();
@@ -95,12 +101,13 @@ public class NotificationService {
     /**
      * 알림 삭제
      */
+    @Transactional
     public void deleteNotification(Long notificationId, Long userId) {
         Notification notification = repository.findById(notificationId)
-            .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND));
 
         if (!notification.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Not authorized to delete this notification");
+            throw new BusinessException(ErrorCode.NOTIFICATION_FORBIDDEN);
         }
 
         repository.delete(notification);

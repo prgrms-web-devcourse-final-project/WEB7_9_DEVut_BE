@@ -1,6 +1,8 @@
 package devut.buzzerbidder.global.notification.entity;
 
+import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import devut.buzzerbidder.global.notification.enums.NotificationType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -18,22 +20,20 @@ import lombok.NoArgsConstructor;
 @Table(name = "notifications")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Notification {
+public class Notification extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    @Column(nullable = false)
     private Long userId;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
     private NotificationType type;
 
+    @Column(nullable = false, length = 500)
     private String message;
 
+    @Column(nullable = false)
     private boolean check;
-
-    private LocalDateTime createDate;
 
     @Builder
     public Notification(Long userId, NotificationType type, String message) {
@@ -41,7 +41,6 @@ public class Notification {
         this.type = type;
         this.message = message;
         this.check = false;
-        this.createDate = LocalDateTime.now();
     }
 
     public void markAsCheck() {
