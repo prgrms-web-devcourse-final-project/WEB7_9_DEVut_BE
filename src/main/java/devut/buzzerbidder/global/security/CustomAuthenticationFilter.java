@@ -1,7 +1,7 @@
 package devut.buzzerbidder.global.security;
 
-import devut.buzzerbidder.domain.member.entity.Member;
-import devut.buzzerbidder.domain.member.repository.MemberRepository;
+import devut.buzzerbidder.domain.member.entity.User;
+import devut.buzzerbidder.domain.member.repository.UserRepository;
 import devut.buzzerbidder.domain.member.service.AuthTokenService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
@@ -28,7 +28,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
     private final AuthTokenService authTokenService;
-    private final MemberRepository memberRepository;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
@@ -62,8 +62,8 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // 허용된 API 경로들 (회원가입, 로그인)
-        if(requestURI.equals("/api/v1/members/signup") || 
-           requestURI.equals("/api/v1/members/login")) {
+        if(requestURI.equals("/api/v1/users/signup") || 
+           requestURI.equals("/api/v1/users/signin")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -90,16 +90,16 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         long id = ((Number) payload.get("id")).longValue();
 
-        // 데이터베이스에서 실제 Member 조회
-        Member member = memberRepository.findById(id)
+        // 데이터베이스에서 실제 User 조회
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-        UserDetails user = new CustomUserDetails(member);
+        UserDetails userDetails = new CustomUserDetails(user);
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-            user,
-            user.getPassword(),
-            user.getAuthorities()
+            userDetails,
+            userDetails.getPassword(),
+            userDetails.getAuthorities()
         );
 
         SecurityContextHolder
