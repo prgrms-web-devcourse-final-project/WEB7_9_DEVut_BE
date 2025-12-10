@@ -39,13 +39,22 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1ms
+  web:
+    error:
+      include-message: always
+      include-stacktrace: on_param
+      include-binding-errors: always
+      include-exception: false
 
 # 서버 설정
 server:
   port: 8080
-  error:
-    include-message: always
-    include-binding-errors: always
-    include-stacktrace: on_param
-    include-exception: false
+
+# JWT 설정
+custom:
+  jwt:
+    secretPattern: ${JWT_SECRET:dev123456789}
+    expireSeconds: 1800  # 30분 (초)
+    shortExpireSeconds: 600  # 10분 (초)
+    refreshExpireSeconds: 604800  # 7일 (초)
 
