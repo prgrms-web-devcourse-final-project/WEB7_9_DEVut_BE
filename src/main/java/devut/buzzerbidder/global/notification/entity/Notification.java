@@ -22,8 +22,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification extends BaseEntity {
 
-    @Column(nullable = false)
-    private Long userId;
+    @Column(name = "member_id", nullable = false)
+    private Long memberId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
@@ -36,8 +36,8 @@ public class Notification extends BaseEntity {
     private boolean check;
 
     @Builder
-    public Notification(Long userId, NotificationType type, String message) {
-        this.userId = userId;
+    public Notification(Long memberId, NotificationType type, String message) {
+        this.memberId = memberId;
         this.type = type;
         this.message = message;
         this.check = false;

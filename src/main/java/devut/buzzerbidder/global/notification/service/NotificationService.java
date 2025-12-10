@@ -20,46 +20,30 @@ public class NotificationService {
     private final NotificationMessageBroker messageBroker;
 
     /**
-     * 알림을 생성 및 발송 (채널 지정 가능)
-     *
-     * @param userId 알림을 받을 사용자 ID
-     * @param type 알림 타입
-     * @param message 알림 메시지
-     * @param channels 발송할 채널 목록 (예: ["user:123", "auction:456"])
-     * @return 저장된 알림 엔티티
+     * 개인 알림 발송
      */
     @Transactional
-    public Notification createAndSend(long userId, NotificationType type, String message, List<String> channels) {
+    public Notification createAndSend(long memberId, NotificationType type, String message) {
         // 1. DB에 알림 저장
         Notification notification = repository.save(
-                Notification.builder()
-                    .userId(userId)
-                    .type(type)
-                    .message(message)
-                    .build()
+            Notification.builder()
+                .memberId(memberId)
+                .type(type)
+                .message(message)
+                .build()
         );
 
-        // 2. DTO 변환
-        NotificationDto notificationDto = NotificationDto.from(notification);
-
-        // 3. Redis Pub/Sub으로 브로드캐스트 (모든 서버가 수신)
-        messageBroker.publishToChannels(channels, notificationDto);
+        // 2. 개인 채널에만 발송
+        messageBroker.publishToUser(memberId, NotificationDto.from(notification));
 
         return notification;
     }
 
     /**
-     * 개인 알림만
-     */
-    public Notification createAndSend(long userId, NotificationType type, String message) {
-        return createAndSend(userId, type, message, List.of("user:" + userId));
-    }
-
-    /**
      * 사용자의 모든 알림 조회
      */
-    public List<NotificationDto> getNotifications(Long userId) {
-        return repository.findByUserIdOrderByCreateDateDesc(userId)
+    public List<NotificationDto> getNotifications(Long memberId) {
+        return repository.findByMemberIdOrderByCreateDateDesc(memberId)
             .stream()
             .map(NotificationDto::from)
             .toList();
@@ -68,8 +52,8 @@ public class NotificationService {
     /**
      * 사용자의 읽지 않은 알림 조회
      */
-    public List<NotificationDto> getUnreadNotifications(Long userId) {
-        return repository.findByUserIdAndCheckFalseOrderByCreateDateDesc(userId)
+    public List<NotificationDto> getUnreadNotifications(Long memberId) {
+        return repository.findByMemberIdAndCheckFalseOrderByCreateDateDesc(memberId)
             .stream()
             .map(NotificationDto::from)
             .toList();
@@ -78,19 +62,19 @@ public class NotificationService {
     /**
      * 읽지 않은 알림 개수 조회
      */
-    public Long getUnreadCount(Long userId) {
-        return repository.countByUserIdAndCheckFalse(userId);
+    public Long getUnreadCount(Long memberId) {
+        return repository.countByMemberIdAndCheckFalse(memberId);
     }
 
     /**
      * 알림 읽음 처리
      */
     @Transactional
-    public void markAsRead(Long notificationId, Long userId) {
+    public void markAsRead(Long notificationId, Long memberId) {
         Notification notification = repository.findById(notificationId)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND));
 
-        if (!notification.getUserId().equals(userId)) {
+        if (!notification.getMemberId().equals(memberId)) {
             throw new BusinessException(ErrorCode.NOTIFICATION_FORBIDDEN);
         }
 
@@ -102,11 +86,11 @@ public class NotificationService {
      * 알림 삭제
      */
     @Transactional
-    public void deleteNotification(Long notificationId, Long userId) {
+    public void deleteNotification(Long notificationId, Long memberId) {
         Notification notification = repository.findById(notificationId)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND));
 
-        if (!notification.getUserId().equals(userId)) {
+        if (!notification.getMemberId().equals(memberId)) {
             throw new BusinessException(ErrorCode.NOTIFICATION_FORBIDDEN);
         }
 

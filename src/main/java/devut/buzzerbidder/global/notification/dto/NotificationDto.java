@@ -27,7 +27,7 @@ public record NotificationDto(
     public static NotificationDto from(Notification notification) {
         return new NotificationDto(
             notification.getId(),
-            notification.getUserId(),
+            notification.getMemberId(),
             notification.getType(),
             notification.getMessage(),
             notification.isCheck(),

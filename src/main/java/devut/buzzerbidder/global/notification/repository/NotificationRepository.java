@@ -6,10 +6,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-    List<Notification> findByUserIdOrderByCreateDateDesc(Long userId);
+    List<Notification> findByMemberIdOrderByCreateDateDesc(Long memberId);
 
-    List<Notification> findByUserIdAndCheckFalseOrderByCreateDateDesc(Long userId);
+    List<Notification> findByMemberIdAndCheckFalseOrderByCreateDateDesc(Long memberId);
 
-    Long countByUserIdAndCheckFalse(Long userId);
+    Long countByMemberIdAndCheckFalse(Long memberId);
 
 }
