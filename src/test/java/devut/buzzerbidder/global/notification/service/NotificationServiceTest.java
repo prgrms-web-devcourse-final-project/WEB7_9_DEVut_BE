@@ -83,7 +83,7 @@ public class NotificationServiceTest {
                 .build()
         );
 
-        given(repository.findByUserIdAndCheckFalseOrderByCreateDateDesc(memberId))
+        given(repository.findByMemberIdAndCheckFalseOrderByCreateDateDesc(memberId))
             .willReturn(notifications);
 
         // when
@@ -101,7 +101,7 @@ public class NotificationServiceTest {
         Long memberId = 1L;
         Long expectedCount = 5L;
 
-        given(repository.countByUserIdAndCheckFalse(memberId)).willReturn(expectedCount);
+        given(repository.countByMemberIdAndCheckFalse(memberId)).willReturn(expectedCount);
 
         //when
         Long result = notificationService.getUnreadCount(memberId);
