@@ -1,4 +1,4 @@
-package devut.buzzerbidder.domain.member.entity;
+package devut.buzzerbidder.domain.user.entity;
 
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "members")
+@Table(name = "users")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Member extends BaseEntity {
+public class User extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 100)
     private String email;
@@ -35,7 +35,7 @@ public class Member extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private MemberRole role;
+    private UserRole role;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -44,9 +44,12 @@ public class Member extends BaseEntity {
     @Column(length = 100)
     private String providerId;
 
+    @Column(nullable = false)
+    private Boolean deleted = false;
+
     @Builder
-    public Member(String email, String password, String name, String nickname,
-                  LocalDate birthDate, String profileImageUrl, MemberRole role,
+    public User(String email, String password, String name, String nickname,
+                  LocalDate birthDate, String profileImageUrl, UserRole role,
                   ProviderType providerType, String providerId) {
         this.email = email;
         this.password = password;
@@ -54,9 +57,10 @@ public class Member extends BaseEntity {
         this.nickname = nickname;
         this.birthDate = birthDate;
         this.profileImageUrl = profileImageUrl;
-        this.role = role != null ? role : MemberRole.USER;
+        this.role = role != null ? role : UserRole.USER;
         this.providerType = providerType != null ? providerType : ProviderType.EMAIL;
         this.providerId = providerId;
+        this.deleted = false;
     }
 
     public void updateProfile(String nickname, String profileImageUrl) {
@@ -68,8 +72,15 @@ public class Member extends BaseEntity {
         }
     }
 
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 
-    public enum MemberRole {
+    public void softDelete() {
+        this.deleted = true;
+    }
+
+    public enum UserRole {
         USER, ADMIN
     }
 
