@@ -35,12 +35,21 @@ public class Notification extends BaseEntity {
     @Column(nullable = false)
     private boolean check;
 
+    @Column(name = "resource_type", length = 50)
+    private String resourceType;
+
+    @Column(name = "resource_id")
+    private Long resourceId;
+
     @Builder
-    public Notification(Long userId, NotificationType type, String message) {
+    public Notification(Long userId, NotificationType type,
+        String message, String resourceType, Long resourceId) {
         this.userId = userId;
         this.type = type;
         this.message = message;
         this.check = false;
+        this.resourceType = resourceType;
+        this.resourceId = resourceId;
     }
 
     public void markAsCheck() {

@@ -21,6 +21,12 @@ public record NotificationDto(
     @Schema(description = "읽음 여부", example = "false")
     boolean check,
 
+    @Schema(description = "관련 리소스 타입 (LIVEITEM: 상품, AUCTION: 경매, CHATROOMS: 채팅)", nullable = true)
+    String resourceType,
+
+    @Schema(description = "관련 리소스 ID (알림 클릭 시 이동할 대상의 ID)", nullable = true)
+    Long resourceId,
+
     @Schema(description = "생성 일자")
     LocalDateTime createDate
 ) {
@@ -31,6 +37,8 @@ public record NotificationDto(
             notification.getType(),
             notification.getMessage(),
             notification.isCheck(),
+            notification.getResourceType(),
+            notification.getResourceId(),
             notification.getCreateDate()
         );
     }

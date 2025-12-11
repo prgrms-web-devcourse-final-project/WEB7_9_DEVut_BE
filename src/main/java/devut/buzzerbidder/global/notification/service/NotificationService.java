@@ -20,16 +20,27 @@ public class NotificationService {
     private final NotificationMessageBroker messageBroker;
 
     /**
-     * 개인 알림 발송
+     *  개인 알림 발송
      */
     @Transactional
     public Notification createAndSend(long userId, NotificationType type, String message) {
+        return createAndSend(userId, type, message, null, null);
+    }
+
+    /**
+     * 개인 알림 발송 (리소스 정보 포함)
+     */
+    @Transactional
+    public Notification createAndSend(long userId, NotificationType type,
+        String message, String resourceType, Long resourceId) {
         // 1. DB에 알림 저장
         Notification notification = repository.save(
             Notification.builder()
                 .userId(userId)
                 .type(type)
                 .message(message)
+                .resourceType(resourceType)
+                .resourceId(resourceId)
                 .build()
         );
 
@@ -37,6 +48,40 @@ public class NotificationService {
         messageBroker.publishToUser(userId, NotificationDto.from(notification));
 
         return notification;
+    }
+
+    /**
+     * 여러 사용자에게 동시 알림 발송
+     */
+    @Transactional
+    public List<Notification> createAndSendToMultiple(
+        List<Long> userIds,
+        NotificationType type,
+        String message,
+        String resourceType,
+        Long resourceId
+    ) {
+        // 1. Bulk insert로 DB 저장
+        List<Notification> notifications = userIds.stream()
+            .map(userId -> Notification.builder()
+                .userId(userId)
+                .type(type)
+                .message(message)
+                .resourceType(resourceType)
+                .resourceId(resourceId)
+                .build())
+            .toList();
+
+        List<Notification> saved = repository.saveAll(notifications);
+
+        // 2. 채널 리스트 만들어서 한번에 발송
+        List<String> channels = userIds.stream()
+            .map(id -> "user:" + id)
+            .toList();
+
+        messageBroker.publishToChannels(channels, NotificationDto.from(saved.get(0)));
+
+        return saved;
     }
 
     /**
