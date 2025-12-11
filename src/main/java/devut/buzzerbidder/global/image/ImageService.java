@@ -46,8 +46,8 @@ public class ImageService {
         log.info("Presigned URL 생성 요청: fileName={}, directory={}", fileName, directory);
 
         String key = generateKey(fileName, directory);
-        String extension = getFileExtension(fileName);
-        String contentType = getContentType(extension);
+        String extension = ImageFileUtils.getFileExtension(fileName);
+        String contentType = ImageFileUtils.getContentType(extension);
         String presignedUrl = generatePresignedUrl(key, contentType);
         String finalUrl = getFileUrl(key);
 
@@ -72,20 +72,9 @@ public class ImageService {
         return presignedRequest.url().toString();
     }
 
-    /** 파일 확장자에 맞는 Content-Type 반환 */
-    private String getContentType(String extension) {
-        return switch (extension.toLowerCase()) {
-            case "jpg", "jpeg" -> "image/jpeg";
-            case "png" -> "image/png";
-            case "gif" -> "image/gif";
-            case "webp" -> "image/webp";
-            default -> "application/octet-stream";
-        };
-    }
-
     /** S3 객체 키 생성 (디렉토리/UUID.확장자) */
     private String generateKey(String fileName, String directory) {
-        String extension = getFileExtension(fileName);
+        String extension = ImageFileUtils.getFileExtension(fileName);
         String uuid = UUID.randomUUID().toString();
         return directory + "/" + uuid + "." + extension;
     }
@@ -135,15 +124,6 @@ public class ImageService {
             .build();
 
         s3Client.deleteObjects(deleteObjectsRequest);
-    }
-
-    /** 파일 확장자 추출 */
-    private String getFileExtension(String filename) {
-        int lastIndexOf = filename.lastIndexOf('.');
-        if (lastIndexOf == -1) {
-            return "";
-        }
-        return filename.substring(lastIndexOf + 1);
     }
 
     /** S3 URL에서 키(경로) 추출 및 검증 */

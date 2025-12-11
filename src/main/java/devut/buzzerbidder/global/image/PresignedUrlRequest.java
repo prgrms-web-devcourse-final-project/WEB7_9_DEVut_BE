@@ -15,7 +15,7 @@ public record PresignedUrlRequest(
     @NotBlank(message = "파일명은 필수입니다.")
     String fileName,
 
-    @Schema(description = "업로드 디렉토리", example = "auctions", allowableValues = {"auctions", "profiles", "chats"})
+    @Schema(description = "업로드 디렉토리", example = "auctions")
     @NotBlank(message = "디렉토리는 필수입니다.")
     String directory,
 
@@ -34,36 +34,11 @@ public record PresignedUrlRequest(
             throw new BusinessException(ErrorCode.IMAGE_FILE_TOO_LARGE);
         }
 
-        // 디렉토리 검증
-        try {
-            ImageDirectory.fromPath(directory);
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.IMAGE_INVALID_DIRECTORY);
-        }
-
         // 파일 확장자 검증
-        String extension = getFileExtension(fileName);
-        if (!isSupportedExtension(extension)) {
+        String extension = ImageFileUtils.getFileExtension(fileName);
+        if (!ImageFileUtils.isSupportedExtension(extension)) {
             throw new BusinessException(ErrorCode.IMAGE_INVALID_FILE_TYPE);
         }
-    }
-
-    /**
-     * 지원하는 이미지 확장자인지 확인
-     */
-    private boolean isSupportedExtension(String extension) {
-        return extension.matches("(?i)(jpg|jpeg|png|gif|webp)");
-    }
-
-    /**
-     * 파일 확장자 추출
-     */
-    private String getFileExtension(String filename) {
-        int lastIndexOf = filename.lastIndexOf('.');
-        if (lastIndexOf == -1) {
-            return "";
-        }
-        return filename.substring(lastIndexOf + 1).toLowerCase();
     }
 }
 
