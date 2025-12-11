@@ -1,11 +1,11 @@
-package devut.buzzerbidder.domain.member.controller;
+package devut.buzzerbidder.domain.user.controller;
 
-import devut.buzzerbidder.domain.member.dto.request.EmailLoginRequest;
-import devut.buzzerbidder.domain.member.dto.request.EmailSignUpRequest;
-import devut.buzzerbidder.domain.member.dto.response.LoginResponse;
-import devut.buzzerbidder.domain.member.entity.User;
-import devut.buzzerbidder.domain.member.service.AuthTokenService;
-import devut.buzzerbidder.domain.member.service.UserService;
+import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
+import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
+import devut.buzzerbidder.domain.user.dto.response.LoginResponse;
+import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.service.AuthTokenService;
+import devut.buzzerbidder.domain.user.service.UserService;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
 import devut.buzzerbidder.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;

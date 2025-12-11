@@ -1,6 +1,6 @@
 package devut.buzzerbidder.global.security;
 
-import devut.buzzerbidder.domain.member.entity.User;
+import devut.buzzerbidder.domain.user.entity.User;
 import java.util.Collection;
 import java.util.List;
 import lombok.Getter;

@@ -1,6 +1,6 @@
 package devut.buzzerbidder.global.requestcontext;
 
-import devut.buzzerbidder.domain.member.entity.User;
+import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.security.CustomUserDetails;

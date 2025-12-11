@@ -3,11 +3,13 @@ package devut.buzzerbidder.domain.member.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import devut.buzzerbidder.domain.user.service.AuthTokenService;
+import devut.buzzerbidder.domain.user.service.RefreshTokenService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 
 import devut.buzzerbidder.TestcontainersConfig;
-import devut.buzzerbidder.domain.member.entity.User;
-import devut.buzzerbidder.domain.member.repository.UserRepository;
+import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,4 +1,4 @@
-package devut.buzzerbidder.domain.member.entity;
+package devut.buzzerbidder.domain.user.entity;
 
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;

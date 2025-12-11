@@ -1,10 +1,10 @@
-package devut.buzzerbidder.domain.member.service;
+package devut.buzzerbidder.domain.user.service;
 
-import devut.buzzerbidder.domain.member.dto.request.EmailLoginRequest;
-import devut.buzzerbidder.domain.member.dto.request.EmailSignUpRequest;
-import devut.buzzerbidder.domain.member.dto.response.LoginResponse;
-import devut.buzzerbidder.domain.member.entity.User;
-import devut.buzzerbidder.domain.member.repository.UserRepository;
+import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
+import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
+import devut.buzzerbidder.domain.user.dto.response.LoginResponse;
+import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;

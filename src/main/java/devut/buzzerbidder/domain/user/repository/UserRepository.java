@@ -1,6 +1,6 @@
-package devut.buzzerbidder.domain.member.repository;
+package devut.buzzerbidder.domain.user.repository;
 
-import devut.buzzerbidder.domain.member.entity.User;
+import devut.buzzerbidder.domain.user.entity.User;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 

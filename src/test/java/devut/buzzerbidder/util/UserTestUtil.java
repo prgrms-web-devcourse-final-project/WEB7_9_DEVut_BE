@@ -1,8 +1,8 @@
 package devut.buzzerbidder.util;
 
-import devut.buzzerbidder.domain.member.entity.User;
-import devut.buzzerbidder.domain.member.repository.UserRepository;
-import devut.buzzerbidder.domain.member.service.AuthTokenService;
+import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.UserRepository;
+import devut.buzzerbidder.domain.user.service.AuthTokenService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDate;

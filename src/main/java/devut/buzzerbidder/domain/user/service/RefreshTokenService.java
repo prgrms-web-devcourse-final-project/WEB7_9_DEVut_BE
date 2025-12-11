@@ -1,4 +1,4 @@
-package devut.buzzerbidder.domain.member.service;
+package devut.buzzerbidder.domain.user.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

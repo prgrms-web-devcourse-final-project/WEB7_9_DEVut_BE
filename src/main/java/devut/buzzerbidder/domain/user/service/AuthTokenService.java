@@ -1,7 +1,7 @@
-package devut.buzzerbidder.domain.member.service;
+package devut.buzzerbidder.domain.user.service;
 
-import devut.buzzerbidder.domain.member.entity.User;
-import devut.buzzerbidder.domain.member.repository.UserRepository;
+import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.security.JwtUtil;
