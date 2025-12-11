@@ -41,15 +41,25 @@ public class Notification extends BaseEntity {
     @Column(name = "resource_id")
     private Long resourceId;
 
+    @Column(name = "metadata", columnDefinition = "TEXT")
+    private String metadata;
+
     @Builder
-    public Notification(Long userId, NotificationType type,
-        String message, String resourceType, Long resourceId) {
+    public Notification(
+        Long userId,
+        NotificationType type,
+        String message,
+        String resourceType,
+        Long resourceId,
+        String metadata
+    ) {
         this.userId = userId;
         this.type = type;
         this.message = message;
         this.check = false;
         this.resourceType = resourceType;
         this.resourceId = resourceId;
+        this.metadata = metadata;
     }
 
     public void markAsCheck() {

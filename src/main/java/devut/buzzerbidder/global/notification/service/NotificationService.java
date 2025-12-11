@@ -1,5 +1,6 @@
 package devut.buzzerbidder.global.notification.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.notification.dto.NotificationDto;
@@ -7,6 +8,7 @@ import devut.buzzerbidder.global.notification.entity.Notification;
 import devut.buzzerbidder.global.notification.enums.NotificationType;
 import devut.buzzerbidder.global.notification.repository.NotificationRepository;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,21 +20,46 @@ public class NotificationService {
 
     private final NotificationRepository repository;
     private final NotificationMessageBroker messageBroker;
+    private final ObjectMapper objectMapper;
 
     /**
      *  개인 알림 발송
      */
     @Transactional
     public Notification createAndSend(long userId, NotificationType type, String message) {
-        return createAndSend(userId, type, message, null, null);
+        return createAndSend(userId, type, message, null, null, null);
     }
 
     /**
-     * 개인 알림 발송 (리소스 정보 포함)
+     *  개인 알림 발송 (리소스 정보 포함)
      */
     @Transactional
-    public Notification createAndSend(long userId, NotificationType type,
-        String message, String resourceType, Long resourceId) {
+    public Notification createAndSend(long userId, NotificationType type, String message, String resourceType, Long resourceId) {
+        return createAndSend(userId, type, message, resourceType, resourceId, null);
+    }
+
+    /**
+     * 개인 알림 발송 (메타데이터 포함)
+     */
+    @Transactional
+    public Notification createAndSend(
+        long userId,
+        NotificationType type,
+        String message,
+        String resourceType,
+        Long resourceId,
+        Map<String, Object> metadata
+    ) {
+        // metadata를 JSON 문자열로 변환
+        String metadataJson = null;
+        if (metadata != null && !metadata.isEmpty()) {
+            try {
+                metadataJson = objectMapper.writeValueAsString(metadata);
+            } catch (Exception e) {
+                // JSON 반환 실패 시 무시
+            }
+        }
+
         // 1. DB에 알림 저장
         Notification notification = repository.save(
             Notification.builder()
@@ -41,6 +68,7 @@ public class NotificationService {
                 .message(message)
                 .resourceType(resourceType)
                 .resourceId(resourceId)
+                .metadata(metadataJson)
                 .build()
         );
 
@@ -59,9 +87,20 @@ public class NotificationService {
         NotificationType type,
         String message,
         String resourceType,
-        Long resourceId
+        Long resourceId,
+        Map<String, Object> metadata
     ) {
+        String metadataJson = null;
+        if (metadata != null && !metadata.isEmpty()) {
+            try {
+                metadataJson = objectMapper.writeValueAsString(metadata);
+            } catch (Exception e) {
+                // JSON 변환 실패 시 무시
+            }
+        }
+
         // 1. Bulk insert로 DB 저장
+        String finalMetadataJson = metadataJson;
         List<Notification> notifications = userIds.stream()
             .map(userId -> Notification.builder()
                 .userId(userId)
@@ -69,6 +108,7 @@ public class NotificationService {
                 .message(message)
                 .resourceType(resourceType)
                 .resourceId(resourceId)
+                .metadata(finalMetadataJson)
                 .build())
             .toList();
 
