@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface LikeLiveRepository extends JpaRepository<LikeLive, Long> {
 
-    Optional<LikeLive> findByMemberIdAndLiveItemId(Long memberId, Long liveItemId);
+    Optional<LikeLive> findByUserIdAndLiveItemId(Long userId, Long liveItemId);
 
     long countByLiveItemId(Long liveItemId);
 }

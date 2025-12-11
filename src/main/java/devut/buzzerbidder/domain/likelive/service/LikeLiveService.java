@@ -14,15 +14,15 @@ public class LikeLiveService {
     private final LikeLiveRepository likeLiveRepository;
 
     @Transactional
-    public boolean toggleLike(Long memberId,Long liveItemId) {
+    public boolean toggleLike(Long userId,Long liveItemId) {
 
-        Optional<LikeLive> existingLike = likeLiveRepository.findByMemberIdAndLiveItemId(memberId, liveItemId);
+        Optional<LikeLive> existingLike = likeLiveRepository.findByUserIdAndLiveItemId(userId, liveItemId);
 
         if (existingLike.isPresent()) {
             likeLiveRepository.delete(existingLike.get());
             return false;
         } else {
-            likeLiveRepository.save(new LikeLive(memberId, liveItemId));
+            likeLiveRepository.save(new LikeLive(userId, liveItemId));
             return true;
         }
 

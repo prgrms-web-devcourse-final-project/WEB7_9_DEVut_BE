@@ -2,7 +2,7 @@ package devut.buzzerbidder.domain.liveitem.entity;
 
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
-import devut.buzzerbidder.domain.member.entity.Member;
+import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -122,8 +122,8 @@ public class LiveItem extends BaseEntity {
     }
 
 
-    public LiveItem(LiveItemCreateRequest request, Member member){
-        this.sellerUserId = member.getId();
+    public LiveItem(LiveItemCreateRequest request, User user){
+        this.sellerUserId = user.getId();
         this.auctionId = request.auctionId();
         this.name = request.name();
         this.category = request.category();

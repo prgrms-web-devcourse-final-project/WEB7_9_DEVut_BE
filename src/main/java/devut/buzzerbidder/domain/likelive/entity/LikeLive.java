@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
     name = "like_live",
     uniqueConstraints = {
         @UniqueConstraint(
-            columnNames = {"member_id", "live_item_id"}
+            columnNames = {"user_id", "live_item_id"}
         )
     },
     indexes = {
@@ -23,14 +23,14 @@ import lombok.NoArgsConstructor;
 )
 public class LikeLive extends BaseEntity {
 
-    @Column(name = "member_id", nullable = false)
-    private Long memberId;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     @Column(name = "live_item_id", nullable = false)
     private Long liveItemId;
 
-    public LikeLive(Long memberId, Long liveItemId) {
-        this.memberId = memberId;
+    public LikeLive(Long userId, Long liveItemId) {
+        this.userId = userId;
         this.liveItemId = liveItemId;
     }
 

@@ -37,7 +37,7 @@ public class LiveItemController {
         @AuthenticationPrincipal CustomUserDetails userDetails
     ){
 
-        LiveItemResponse response = liveItemService.writeLiveItem(reqBody, userDetails.getMember());
+        LiveItemResponse response = liveItemService.writeLiveItem(reqBody, userDetails.getUser());
 
         return ApiResponse.ok("경매품 생성",response);
 
@@ -50,7 +50,7 @@ public class LiveItemController {
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
-        LiveItemResponse response =liveItemService.modifyLiveItem(id, reqBody, userDetails.getMember());
+        LiveItemResponse response =liveItemService.modifyLiveItem(id, reqBody, userDetails.getUser());
 
         return ApiResponse.ok("%d번 경매품 수정".formatted(id), response);
     }
@@ -61,7 +61,7 @@ public class LiveItemController {
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
-        liveItemService.deleteLiveItem(id, userDetails.getMember());
+        liveItemService.deleteLiveItem(id, userDetails.getUser());
 
         return ApiResponse.ok("%d번 경매품 삭제".formatted(id));
 
@@ -109,7 +109,7 @@ public class LiveItemController {
 
     ) {
 
-        liveItemService.changeAuctionStatus(id, userDetails.getMember(), auctionStatus);
+        liveItemService.changeAuctionStatus(id, userDetails.getUser(), auctionStatus);
 
         return ApiResponse.ok("%d번 경매품 경매 상태 수정".formatted(id));
     }

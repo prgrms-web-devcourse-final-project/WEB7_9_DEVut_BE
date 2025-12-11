@@ -22,7 +22,7 @@ public class LikeLiveController {
         @PathVariable Long id,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        boolean liked = likeLiveService.toggleLike(userDetails.getMember().getId(),id);
+        boolean liked = likeLiveService.toggleLike(userDetails.getUser().getId(),id);
         return ApiResponse.ok(liked ? "찜 완료" : "찜 취소", liked);
     }
 

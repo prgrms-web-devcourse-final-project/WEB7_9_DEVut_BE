@@ -11,7 +11,7 @@ import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
-import devut.buzzerbidder.domain.member.entity.Member;
+import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.util.List;
@@ -31,9 +31,9 @@ public class LiveItemService {
     private final LikeLiveService likeLiveService;
 
     @Transactional
-    public LiveItemResponse writeLiveItem(LiveItemCreateRequest reqBody, Member member) {
+    public LiveItemResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
 
-        LiveItem liveItem = new LiveItem(reqBody, member);
+        LiveItem liveItem = new LiveItem(reqBody, user);
 
 
         /* 이미지 처리코드 없어서 임시 주석처리
@@ -55,13 +55,13 @@ public class LiveItemService {
     }
 
     @Transactional
-    public LiveItemResponse modifyLiveItem(Long id, LiveItemModifyRequest reqBody, Member member) {
+    public LiveItemResponse modifyLiveItem(Long id, LiveItemModifyRequest reqBody, User user) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
         // 작성자 검증
-        if (!liveItem.getSellerUserId().equals(member.getId())) {
+        if (!liveItem.getSellerUserId().equals(user.getId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
         }
 
@@ -99,12 +99,12 @@ public class LiveItemService {
     }
 
     @Transactional
-    public void deleteLiveItem(Long id, Member member) {
+    public void deleteLiveItem(Long id, User user) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
-        if (!liveItem.getSellerUserId().equals(member.getId())) {
+        if (!liveItem.getSellerUserId().equals(user.getId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
         }
 
@@ -167,13 +167,13 @@ public class LiveItemService {
     }
 
 
-    public void changeAuctionStatus(Long id, Member member, AuctionStatus auctionStatus) {
+    public void changeAuctionStatus(Long id, User user, AuctionStatus auctionStatus) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
         // 작성자 검증
-        if (!liveItem.getSellerUserId().equals(member.getId())) {
+        if (!liveItem.getSellerUserId().equals(user.getId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
         }
 
