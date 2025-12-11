@@ -2,7 +2,6 @@ package devut.buzzerbidder.global.image;
 
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
-import devut.buzzerbidder.global.image.enums.ImageDirectory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
