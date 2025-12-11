@@ -1,6 +1,6 @@
 package devut.buzzerbidder.global.security;
 
-import devut.buzzerbidder.domain.member.entity.Member;
+import devut.buzzerbidder.domain.user.entity.User;
 import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
@@ -9,22 +9,22 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 @Getter
 public class CustomUserDetails implements UserDetails {
-    private final Member member;
+    private final User user;
 
-    public CustomUserDetails(Member member) {
-        this.member = member;
+    public CustomUserDetails(User user) {
+        this.user = user;
     }
 
     public Long getId() {
-        return member.getId();
+        return user.getId();
     }
 
     public String getEmail() {
-        return member.getEmail();
+        return user.getEmail();
     }
 
     public String getNickname() {
-        return member.getNickname();
+        return user.getNickname();
     }
 
     @Override
@@ -34,11 +34,31 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getPassword() {
-        return member.getPassword();
+        return user.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return member.getEmail();
+        return user.getEmail();
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return !user.getDeleted();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return !user.getDeleted();
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return !user.getDeleted();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return !user.getDeleted();
     }
 }

@@ -3,6 +3,12 @@ spring:
   # TestcontainersConfiguration에서 @ServiceConnection으로 자동 연결됩니다
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 3000
+      max-lifetime: 1800000 # 30분
+      keepalive-time: 600000 # 10분
+      validation-timeout: 1000
+      leak-detection-threshold: 5000
   
   # JPA 설정
   jpa:
@@ -23,4 +29,11 @@ spring:
 # 서버 설정
 server:
   port: 0  # 랜덤 포트 사용
+
+# JWT 설정
+custom:
+  jwt:
+    secretPattern: test-secret-key-for-jwt-token-generation-minimum-256-bits-long-for-security
+    expireSeconds: 1800  # 30분 (초)
+    refreshExpireSeconds: 604800  # 7일 (초)
 
