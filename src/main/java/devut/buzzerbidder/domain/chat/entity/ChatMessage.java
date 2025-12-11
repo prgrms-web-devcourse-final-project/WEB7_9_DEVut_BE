@@ -1,5 +1,6 @@
 package devut.buzzerbidder.domain.chat.entity;
 
+import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -12,11 +13,21 @@ import lombok.NoArgsConstructor;
 public class ChatMessage extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "senderID", nullable = false)
+    @JoinColumn(
+            name = "senderID",
+            referencedColumnName = "id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "FK_CHAT_MESSAGE_SENDER")
+    )
     User sender;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chatroomID", nullable = false)
+    @JoinColumn(
+            name = "chatroomID",
+            referencedColumnName = "id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "FK_CHAT_MESSAGE_CHATROOM")
+    )
     ChatRoom chatRoom;
 
     @Column(nullable = false, columnDefinition = "TEXT")

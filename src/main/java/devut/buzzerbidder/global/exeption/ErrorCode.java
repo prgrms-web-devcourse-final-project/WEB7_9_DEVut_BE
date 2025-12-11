@@ -23,7 +23,10 @@ public enum ErrorCode {
     USER_NICKNAME_DUPLICATE("M003", HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
     USER_PASSWORD_MISMATCH("M004", HttpStatus.UNAUTHORIZED, "현재 비밀번호가 일치하지 않습니다."),
     USER_LOGIN_FAILED("M005", HttpStatus.UNAUTHORIZED, "로그인에 실패했습니다."),
-    USER_TOKEN_INVALID("M006", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다.");
+    USER_TOKEN_INVALID("M006", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
+
+    // ========== chat 도메인 에러 ==========
+    CHATROOM_NOT_FOUND("C001", HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다.");
 
     private final String code;
     private final HttpStatus status;
