@@ -53,7 +53,7 @@ server:
 # JWT 설정
 custom:
   jwt:
-    secretPattern: ${JWT_SECRET:dev123456789012345678901234567890}
+    secretPattern: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
     expireSeconds: 1800  # 30분 (초)
     shortExpireSeconds: 600  # 10분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)

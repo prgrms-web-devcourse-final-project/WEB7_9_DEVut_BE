@@ -6,7 +6,7 @@ public class TestBuzzerBidderApplication {
 
     public static void main(String[] args) {
         SpringApplication.from(BuzzerBidderApplication::main)
-            .with(TestcontainersConfiguration.class).run(args);
+            .with(TestcontainersConfig.class).run(args);
     }
 
 }
