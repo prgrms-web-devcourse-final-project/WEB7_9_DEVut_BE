@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -24,6 +25,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
  * <p>Presigned URL을 통한 클라이언트 직접 업로드 방식 사용
  * <p>업로드된 파일은 UUID로 고유한 이름 생성
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ImageService {
@@ -41,18 +43,24 @@ public class ImageService {
 
     /** Presigned URL + 최종 URL 함께 생성 */
     public PresignedUrlResponse createPresignedUrl(String fileName, String directory) {
+        log.info("Presigned URL 생성 요청: fileName={}, directory={}", fileName, directory);
+
         String key = generateKey(fileName, directory);
-        String presignedUrl = generatePresignedUrl(key);
+        String extension = getFileExtension(fileName);
+        String contentType = getContentType(extension);
+        String presignedUrl = generatePresignedUrl(key, contentType);
         String finalUrl = getFileUrl(key);
 
+        log.info("Presigned URL 생성 완료: key={}, contentType={}", key, contentType);
         return new PresignedUrlResponse(presignedUrl, finalUrl);
     }
 
     /** S3에 PUT 요청할 수 있는 임시 URL 생성 */
-    private String generatePresignedUrl(String key) {
+    private String generatePresignedUrl(String key, String contentType) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
             .bucket(bucket)
             .key(key)
+            .contentType(contentType)
             .build();
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
@@ -62,6 +70,17 @@ public class ImageService {
 
         PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
         return presignedRequest.url().toString();
+    }
+
+    /** 파일 확장자에 맞는 Content-Type 반환 */
+    private String getContentType(String extension) {
+        return switch (extension.toLowerCase()) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "gif" -> "image/gif";
+            case "webp" -> "image/webp";
+            default -> "application/octet-stream";
+        };
     }
 
     /** S3 객체 키 생성 (디렉토리/UUID.확장자) */
@@ -81,6 +100,7 @@ public class ImageService {
      * @param fileUrl 삭제할 파일의 S3 URL
      */
     public void deleteFile(String fileUrl) {
+        log.warn("파일 삭제 요청: url={}", fileUrl);
         String key = extractNameFromUrl(fileUrl);
 
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
@@ -89,6 +109,7 @@ public class ImageService {
             .build();
 
         s3Client.deleteObject(deleteObjectRequest);
+        log.info("파일 삭제 완료: key={}", key);
     }
 
     /** S3에서 여러 파일 삭제 */
