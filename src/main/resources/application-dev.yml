@@ -53,8 +53,15 @@ server:
 # JWT 설정
 custom:
   jwt:
-    secretPattern: ${JWT_SECRET:dev123456789}
+    secretPattern: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
     expireSeconds: 1800  # 30분 (초)
     shortExpireSeconds: 600  # 10분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)
+
+# Swagger 개발 환경 추가 설정
+springdoc:
+  swagger-ui:
+    enabled: true
+    display-request-duration: true
+    doc-expansion: list
 
