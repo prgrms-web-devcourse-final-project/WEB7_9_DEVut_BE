@@ -40,12 +40,12 @@ public class NotificationServiceTest {
     @DisplayName("t1: 개인 알림 생성 및 발송 성공")
     void t1() {
         //given
-        Long memberId = 1L;
+        Long userId = 1L;
         NotificationType type = NotificationType.AUCTION_WIN;
         String message = "낙찰되었습니다!";
 
         Notification notification = Notification.builder()
-                .memberId(memberId)
+                .userId(userId)
                 .type(type)
                 .message(message)
                 .build();
@@ -53,10 +53,10 @@ public class NotificationServiceTest {
         given(repository.save(any(Notification.class))).willReturn(notification);
 
         //when
-        Notification result = notificationService.createAndSend(memberId, type, message);
+        Notification result = notificationService.createAndSend(userId, type, message);
 
         //then
-        assertThat(result.getMemberId()).isEqualTo(memberId);
+        assertThat(result.getUserId()).isEqualTo(userId);
         assertThat(result.getType()).isEqualTo(type);
         assertThat(result.getMessage()).isEqualTo(message);
 
@@ -69,42 +69,42 @@ public class NotificationServiceTest {
     @DisplayName("t2: 읽지 않은 알림 조회 성공")
     void t2() {
         // given
-        Long memberId = 1L;
+        Long userId = 1L;
         List<Notification> notifications = List.of(
             Notification.builder()
-                .memberId(memberId)
+                .userId(userId)
                 .type(NotificationType.AUCTION_OUTBID)
                 .message("입찰이 밀렸습니다.")
                 .build(),
             Notification.builder()
-                .memberId(memberId)
+                .userId(userId)
                 .type(NotificationType.AUCTION_START)
                 .message("경매가 시작되었습니다.")
                 .build()
         );
 
-        given(repository.findByMemberIdAndCheckFalseOrderByCreateDateDesc(memberId))
+        given(repository.findByUserIdAndCheckFalseOrderByCreateDateDesc(userId))
             .willReturn(notifications);
 
         // when
-        List<NotificationDto> result = notificationService.getUnreadNotifications(memberId);
+        List<NotificationDto> result = notificationService.getUnreadNotifications(userId);
 
         // then
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).userId()).isEqualTo(memberId);
-        assertThat(result.get(1).userId()).isEqualTo(memberId);
+        assertThat(result.get(0).userId()).isEqualTo(userId);
+        assertThat(result.get(1).userId()).isEqualTo(userId);
     }
 
     @Test
     @DisplayName("t3: 읽지 않은 알림 개수 조회 성공")
     void t3() {
-        Long memberId = 1L;
+        Long userId = 1L;
         Long expectedCount = 5L;
 
-        given(repository.countByMemberIdAndCheckFalse(memberId)).willReturn(expectedCount);
+        given(repository.countByUserIdAndCheckFalse(userId)).willReturn(expectedCount);
 
         //when
-        Long result = notificationService.getUnreadCount(memberId);
+        Long result = notificationService.getUnreadCount(userId);
 
         //then
         assertThat(result).isEqualTo(expectedCount);
@@ -117,10 +117,10 @@ public class NotificationServiceTest {
     void t4() {
         // given
         Long notificationId = 1L;
-        Long memberId = 1L;
+        Long userId = 1L;
 
         Notification notification = Notification.builder()
-            .memberId(memberId)
+            .userId(userId)
             .type(NotificationType.AUCTION_WIN)
             .message("낙찰되었습니다!")
             .build();
@@ -128,7 +128,7 @@ public class NotificationServiceTest {
         given(repository.findById(notificationId)).willReturn(Optional.of(notification));
 
         // when
-        notificationService.markAsRead(notificationId, memberId);
+        notificationService.markAsRead(notificationId, userId);
 
         // then
         assertThat(notification.isCheck()).isTrue();
@@ -139,12 +139,12 @@ public class NotificationServiceTest {
     void t5() {
         // given
         Long notificationId = 999L;
-        Long memberId = 1L;
+        Long userId = 1L;
 
         given(repository.findById(notificationId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> notificationService.markAsRead(notificationId, memberId))
+        assertThatThrownBy(() -> notificationService.markAsRead(notificationId, userId))
             .isInstanceOf(BusinessException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOTIFICATION_NOT_FOUND);
     }
@@ -158,7 +158,7 @@ public class NotificationServiceTest {
         Long otherUserId = 2L;
 
         Notification notification = Notification.builder()
-            .memberId(ownerId)
+            .userId(ownerId)
             .type(NotificationType.AUCTION_WIN)
             .message("낙찰되었습니다!")
             .build();
@@ -178,10 +178,10 @@ public class NotificationServiceTest {
     void t7() {
         // given
         Long notificationId = 1L;
-        Long memberId = 1L;
+        Long userId = 1L;
 
         Notification notification = Notification.builder()
-            .memberId(memberId)
+            .userId(userId)
             .type(NotificationType.AUCTION_END)
             .message("경매가 종료되었습니다.")
             .build();
@@ -189,7 +189,7 @@ public class NotificationServiceTest {
         given(repository.findById(notificationId)).willReturn(Optional.of(notification));
 
         // when
-        notificationService.deleteNotification(notificationId, memberId);
+        notificationService.deleteNotification(notificationId, userId);
 
         // then
         verify(repository).delete(notification);
@@ -200,12 +200,12 @@ public class NotificationServiceTest {
     void t8() {
         // given
         Long notificationId = 999L;
-        Long memberId = 1L;
+        Long userId = 1L;
 
         given(repository.findById(notificationId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> notificationService.deleteNotification(notificationId, memberId))
+        assertThatThrownBy(() -> notificationService.deleteNotification(notificationId, userId))
             .isInstanceOf(BusinessException.class)
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.NOTIFICATION_NOT_FOUND);
     }
@@ -219,7 +219,7 @@ public class NotificationServiceTest {
         Long otherUserId = 2L;
 
         Notification notification = Notification.builder()
-            .memberId(ownerId)
+            .userId(ownerId)
             .type(NotificationType.AUCTION_WIN)
             .message("낙찰되었습니다!")
             .build();

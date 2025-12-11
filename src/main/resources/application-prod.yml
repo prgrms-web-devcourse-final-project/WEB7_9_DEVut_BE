@@ -63,3 +63,10 @@ custom:
     shortExpireSeconds: 600  # 10분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)
 
+# Swagger 프로덕션 환경 설정 (보안을 위해 비활성화 권장)
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+

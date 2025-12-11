@@ -1,6 +1,6 @@
 package devut.buzzerbidder.global.requestcontext;
 
-import devut.buzzerbidder.domain.member.entity.Member;
+import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.security.CustomUserDetails;
@@ -68,19 +68,19 @@ public class RequestContext {
     }
 
     // 현재 인증된 사용자 정보 가져오기
-    public Member getCurrentMember() {
+    public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails)) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        return userDetails.getMember();
+        return userDetails.getUser();
     }
 
     public boolean isAuthenticated() {
         try {
-            getCurrentMember();
+            getCurrentUser();
             return true;
         } catch (BusinessException e) {
             return false;
