@@ -1,13 +1,18 @@
 package devut.buzzerbidder.domain.liveitem.controller;
 
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
-import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemListResponse;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
+import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
+import devut.buzzerbidder.domain.liveitem.dto.request.PagingRequest;
+import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemDetailResponse;
+import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemListResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.service.LiveItemService;
 import devut.buzzerbidder.global.response.ApiResponse;
+import devut.buzzerbidder.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -62,40 +67,36 @@ public class LiveItemController {
 
     }
 
-    //TODO : QUERYDSL 적용하기 + 페이징
     @GetMapping
     public ApiResponse<LiveItemListResponse> getLiveItems(
+        LiveItemSearchRequest reqBody,
+        PagingRequest paging
+    ) {
 
-        ) {
-
-        LiveItemListResponse response = liveItemService.getLiveItems(
-
-        );
+        LiveItemListResponse response =
+            liveItemService.getLiveItems(reqBody, paging.toPageable());
 
         return ApiResponse.ok("경매품 다건 조회", response);
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<LiveItemResponse> getLiveItem(
+    public ApiResponse<LiveItemDetailResponse> getLiveItem(
         @PathVariable Long id,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
-        LiveItemResponse response = liveItemService.getLiveItem(id, userDetails.getMember());
+        LiveItemDetailResponse response = liveItemService.getLiveItem(id);
 
 
         return ApiResponse.ok("%d번 경매품 단건 조회".formatted(id), response);
     }
 
-    //TODO : 쿼리 만들고 다시 오기
     @GetMapping("/hot")
     public ApiResponse<LiveItemListResponse> getHotLiveItems(
-
+        @RequestParam(defaultValue = "3") int limit
     ) {
 
-        LiveItemListResponse response = liveItemService.getHotLiveItems(
-
-        );
+        LiveItemListResponse response = liveItemService.getHotLiveItems(limit);
 
         return ApiResponse.ok("인기 경매품 다건 조회", response);
     }

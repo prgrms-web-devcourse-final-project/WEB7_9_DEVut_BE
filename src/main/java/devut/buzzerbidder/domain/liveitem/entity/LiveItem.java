@@ -1,5 +1,8 @@
 package devut.buzzerbidder.domain.liveitem.entity;
 
+import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
+import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
+import devut.buzzerbidder.domain.member.entity.Member;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -20,6 +23,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 @Getter
 @Entity
@@ -48,7 +52,7 @@ public class LiveItem extends BaseEntity {
 
     //TODO 얘기해서 채워넣기
     public enum Category {
-
+        ELECTRONICS
     }
 
     @Column(name = "description", columnDefinition = "TEXT")
@@ -62,10 +66,14 @@ public class LiveItem extends BaseEntity {
     @Column(name = "init_price", nullable = false)
     private Integer initPrice;
 
+    @Column(name = "delivery_include")
+    @NotNull(message = "배송비 포함 여부는 필수입니다.")
+    private Boolean deliveryInclude;
+
     @Column(name = "status", nullable = false, length = 20)
     @NotNull(message = "상품 상태는 필수입니다.")
     @Enumerated(EnumType.STRING)
-    private ItemStatus status;
+    private ItemStatus Itemstatus;
 
     public enum ItemStatus {
         NEW, USED_LIKE_NEW, USED_HEAVILY
@@ -100,7 +108,56 @@ public class LiveItem extends BaseEntity {
     @Column(name = "preferred_place", length = 100)
     private String preferredPlace;
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "liveItem", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<LiveImage> images = new ArrayList<>();
+    private List<LiveItemImage> images = new ArrayList<>();
+
+
+    public void addImage(LiveItemImage image) {
+        images.add(image);
+    }
+
+    public void deleteImageUrls() {
+        this.images.clear();
+    }
+
+
+    public LiveItem(LiveItemCreateRequest request, Member member){
+        this.sellerUserId = member.getId();
+        this.auctionId = request.auctionId();
+        this.name = request.name();
+        this.category = request.category();
+        this.description = request.description();
+        this.initPrice = request.initPrice();
+        this.deliveryInclude = request.deliveryInclude();
+        this.Itemstatus = request.Itemstatus();
+        this.auctionStatus = request.auctionStatus();
+        this.liveDate = request.liveDate();
+        this.directDealAvailable = request.directDealAvailable();
+        this.region = request.region();
+        this.preferredPlace = request.preferredPlace();
+        this.images = new ArrayList<>();
+    }
+
+
+    public void modifyLiveItem(LiveItemModifyRequest request){
+        this.auctionId = request.auctionId();
+        this.name = request.name();
+        this.category = request.category();
+        this.description = request.description();
+        this.initPrice = request.initPrice();
+        this.Itemstatus = request.Itemstatus();
+        this.auctionStatus = request.auctionStatus();
+        this.liveDate = request.liveDate();
+        this.directDealAvailable = request.directDealAvailable();
+        this.region = request.region();
+        this.preferredPlace = request.preferredPlace();
+    }
+
+    public void changeAuctionStatus(AuctionStatus auctionStatus) {
+        this.auctionStatus = auctionStatus;
+    }
+
+
 
 }

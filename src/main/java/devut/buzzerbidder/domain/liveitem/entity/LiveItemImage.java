@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor
-public class LiveImage extends BaseEntity {
+public class LiveItemImage extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "live_item_id")
@@ -20,5 +20,11 @@ public class LiveImage extends BaseEntity {
 
     @Column(name = "image_url", nullable = false)
     private String imageUrl;
+
+    public LiveItemImage(String imageUrl, LiveItem liveItem) {
+        this.imageUrl = imageUrl;
+        this.liveItem = liveItem;
+        liveItem.getImages().add(this);
+    }
 
 }
