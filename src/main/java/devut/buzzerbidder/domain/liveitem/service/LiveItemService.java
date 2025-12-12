@@ -1,5 +1,7 @@
 package devut.buzzerbidder.domain.liveitem.service;
 
+import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
+import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomService;
 import devut.buzzerbidder.domain.likelive.service.LikeLiveService;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
@@ -14,6 +16,8 @@ import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,13 +32,40 @@ public class LiveItemService {
 
     private final LiveItemRepository liveItemRepository;
     private final LikeLiveService likeLiveService;
+    private final AuctionRoomService auctionRoomService;
 
     //TODO: 이미지 처리 코드 활성화
     @Transactional
     public LiveItemResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
 
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. 현재 시간과 liveTime 차이 확인
+        if (reqBody.liveTime().isBefore(now.plusHours(1))) {
+            throw new BusinessException(ErrorCode.CLOSE_LIVETIME);
+        }
+
+        LocalTime liveTimeOnly = reqBody.liveTime().toLocalTime();
+        // 2. 허용 시간 범위 체크 (09:00 ~ 23:00)
+        if (liveTimeOnly.isBefore(LocalTime.of(9, 0)) || liveTimeOnly.isAfter(LocalTime.of(23, 0))) {
+            throw new BusinessException(ErrorCode.INVALID_LIVETIME);
+        }
+
+        // 3. 30분 단위 체크 + 초 체크
+        int minute = liveTimeOnly.getMinute();
+        int second = liveTimeOnly.getSecond();
+        if ((minute != 0 && minute != 30)|| second !=0) {
+            throw new BusinessException(ErrorCode.INVALID_LIVETIME);
+        }
+
+        // 경매 시간 기반 방 할당
+        AuctionRoom auctionRoom = auctionRoomService.assignRoom(reqBody.liveTime());
+
         LiveItem liveItem = new LiveItem(reqBody, user);
 
+        liveItemRepository.save(liveItem);
+
+        auctionRoom.addItem(liveItem);
 
         /*
         if (reqBody.images() == null || reqBody.images().isEmpty()) {
@@ -47,8 +78,6 @@ public class LiveItemService {
 
         // 임시 코드
         liveItem.addImage(new LiveItemImage("example.jpg", liveItem));
-
-        liveItemRepository.save(liveItem);
 
         return new LiveItemResponse(liveItem);
 
@@ -66,7 +95,46 @@ public class LiveItemService {
             throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
         }
 
+        LocalDateTime now = LocalDateTime.now();
+        // 1. 현재 시간과 liveTime 차이 확인
+        if (liveItem.getLiveTime().isBefore(now.plusHours(1))) {
+            throw new BusinessException(ErrorCode.EDIT_UNAVAILABLE);
+        }
+
+        // 일반정보 수정
+        LocalDateTime oldLiveTime = liveItem.getLiveTime();
         liveItem.modifyLiveItem(reqBody);
+
+        // 경매시각이 바뀐 경우 유효성 검사 및 방 재할당
+        boolean liveTimeChanged = !oldLiveTime.equals(reqBody.liveTime());
+        if (liveTimeChanged) {
+
+            // 1. 현재 시간과 liveTime 차이 확인
+            if (reqBody.liveTime().isBefore(now.plusHours(1))) {
+                throw new BusinessException(ErrorCode.INVALID_LIVETIME);
+            }
+
+            LocalTime liveTimeOnly = reqBody.liveTime().toLocalTime();
+            // 2. 허용 시간 범위 체크 (09:00 ~ 23:00)
+            if (liveTimeOnly.isBefore(LocalTime.of(9, 0)) || liveTimeOnly.isAfter(LocalTime.of(23, 0))) {
+                throw new BusinessException(ErrorCode.INVALID_LIVETIME);
+            }
+
+            // 3. 30분 단위 체크 + 초 체크
+            int minute = liveTimeOnly.getMinute();
+            int second = liveTimeOnly.getSecond();
+            if ((minute != 0 && minute != 30)|| second !=0) {
+                throw new BusinessException(ErrorCode.INVALID_LIVETIME);
+            }
+
+            AuctionRoom oldRoom = liveItem.getAuctionRoom();
+            oldRoom.removeItem(liveItem);
+
+            AuctionRoom newRoom = auctionRoomService.assignRoom(reqBody.liveTime());
+            liveItem.changeAuctionRoom(newRoom);
+
+            newRoom.addItem(liveItem);
+        }
 
         /*
         // 새 이미지 URL이 있고, 기존과 다를 때만 교체
@@ -106,9 +174,19 @@ public class LiveItemService {
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
+        // 작성자 검증
         if (!liveItem.getSellerUserId().equals(user.getId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
         }
+
+        LocalDateTime now = LocalDateTime.now();
+        // 1. 현재 시간과 liveTime 차이 확인
+        if (liveItem.getLiveTime().isBefore(now.plusHours(1))) {
+            throw new BusinessException(ErrorCode.EDIT_UNAVAILABLE);
+        }
+
+        AuctionRoom auctionRoom = liveItem.getAuctionRoom();
+        auctionRoom.removeItem(liveItem);
 
         /*
         if (!liveItem.getImages().isEmpty()) {
@@ -139,7 +217,7 @@ public class LiveItemService {
             liveItem.getCategory(),
             liveItem.getDescription(),
             liveItem.getDeliveryInclude(),
-            liveItem.getItemstatus(),
+            liveItem.getItemStatus(),
             liveItem.getDirectDealAvailable(),
             liveItem.getRegion(),
             liveItem.getPreferredPlace(),

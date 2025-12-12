@@ -8,14 +8,13 @@ import java.util.List;
 
 public record LiveItemCreateRequest(
 
-    Long auctionId,
     String name,
     Category category,
-    ItemStatus Itemstatus,
+    ItemStatus itemStatus,
     String description,
-    Integer initPrice,
+    Long initPrice,
     Boolean deliveryInclude,
-    LocalDateTime liveDate,
+    LocalDateTime liveTime,
     Boolean directDealAvailable,
     String region,
     String preferredPlace,
