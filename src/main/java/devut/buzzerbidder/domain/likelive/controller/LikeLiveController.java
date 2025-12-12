@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auction/live")
-@Tag(name = "LikeKive", description = "경매품 찜 API")
+@Tag(name = "LikeLive", description = "경매품 찜 API")
 public class LikeLiveController {
 
     private final LikeLiveService likeLiveService;
