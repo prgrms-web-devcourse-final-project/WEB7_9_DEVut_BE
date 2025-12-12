@@ -19,7 +19,7 @@ public class ChatMessage extends BaseEntity {
             nullable = false,
             foreignKey = @ForeignKey(name = "FK_CHAT_MESSAGE_SENDER")
     )
-    User sender;
+    private User sender;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -28,7 +28,7 @@ public class ChatMessage extends BaseEntity {
             nullable = false,
             foreignKey = @ForeignKey(name = "FK_CHAT_MESSAGE_CHATROOM")
     )
-    ChatRoom chatRoom;
+    private ChatRoom chatRoom;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
