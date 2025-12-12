@@ -1,5 +1,6 @@
-package devut.buzzerbidder.domain.deliveryTracking.infrastructure;
+package devut.buzzerbidder.domain.deliveryTracking.service;
 
+import devut.buzzerbidder.domain.deliveryTracking.infrastructure.DeliveryTrackingTokenStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;

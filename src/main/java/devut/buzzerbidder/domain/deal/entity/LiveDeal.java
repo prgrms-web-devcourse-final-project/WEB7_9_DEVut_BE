@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.deal.entity;
 
 import devut.buzzerbidder.domain.deal.enums.Carrier;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
+import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -13,23 +14,24 @@ import lombok.*;
 @Builder
 public class LiveDeal extends BaseEntity {
 
-    @JoinColumn(nullable = false)
-    long itemId; // TODO: Item Entity와 연관관계 설정 필요
+    @JoinColumn(nullable = false, unique = true)
+    private Long item; // TODO: Item Entity와 연관관계 설정 필요
 
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
-    long buyerId; // TODO: User Entity와 연관관계 설정 필요
+    private User buyer;
 
     @Column(nullable = false)
-    long winningPrice;
+    private Long winningPrice;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    DealStatus status;
+    private DealStatus status;
 
-    String trackingNumber;
+    private String trackingNumber;
 
     @Enumerated(EnumType.STRING)
-    Carrier carrier;
+    private Carrier carrier;
 
     public void updateDeliveryInfo(String carrierCode, String trackingNumber) {
         this.carrier = Carrier.fromCode(carrierCode);

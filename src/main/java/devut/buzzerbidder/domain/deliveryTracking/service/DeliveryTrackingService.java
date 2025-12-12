@@ -2,7 +2,6 @@ package devut.buzzerbidder.domain.deliveryTracking.service;
 
 import devut.buzzerbidder.domain.deliveryTracking.dto.request.GraphQLRequest;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
-import devut.buzzerbidder.domain.deliveryTracking.infrastructure.DeliveryTrackingAuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;

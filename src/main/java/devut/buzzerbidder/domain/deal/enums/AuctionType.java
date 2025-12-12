@@ -1,5 +1,8 @@
 package devut.buzzerbidder.domain.deal.enums;
 
+import devut.buzzerbidder.global.exeption.BusinessException;
+import devut.buzzerbidder.global.exeption.ErrorCode;
+
 public enum AuctionType {
     LIVE,
     DELAYED;
@@ -10,6 +13,6 @@ public enum AuctionType {
                 return t;
             }
         }
-        throw new IllegalArgumentException("Unknown AuctionType: " + value);
+        throw new BusinessException(ErrorCode.DEAL_INVALID_TYPE);
     }
 }
