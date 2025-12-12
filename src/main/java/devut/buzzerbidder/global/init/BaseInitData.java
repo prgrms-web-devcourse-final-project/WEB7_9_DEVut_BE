@@ -6,11 +6,14 @@ import devut.buzzerbidder.domain.deal.entity.LiveDeal;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -54,7 +57,6 @@ public class BaseInitData {
 
         // 회원 생성
         User user = devut.buzzerbidder.domain.user.entity.User.builder()
-            .name("asd")
                 .email(email)
                 .password(encodedPassword)
                 .nickname(nickname)
@@ -73,6 +75,7 @@ public class BaseInitData {
             return;
         }
 
+        List<LiveItemImage> images = new ArrayList<>();
         LiveItem liveItem = LiveItem.builder()
                 .sellerUserId(1L)
                 .name("Sample Live Item")
@@ -86,8 +89,10 @@ public class BaseInitData {
                 .directDealAvailable(true)
                 .region("서울시 강남구 역삼동")
                 .preferredPlace("역삼역 근처 카페")
-                .images(null)
+                .images(images)
                 .build();
+
+        liveItem.addImage(new LiveItemImage("example.com",liveItem));
 
         AuctionRoom newRoom = new AuctionRoom(liveItem.getLiveTime());
         auctionRoomRepository.save(newRoom);
