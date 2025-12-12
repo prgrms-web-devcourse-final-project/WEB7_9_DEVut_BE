@@ -43,15 +43,12 @@ public class ImageService {
 
     /** Presigned URL + 최종 URL 함께 생성 */
     public PresignedUrlResponse createPresignedUrl(String fileName, String directory) {
-        log.info("Presigned URL 생성 요청: fileName={}, directory={}", fileName, directory);
-
         String key = generateKey(fileName, directory);
         String extension = ImageFileUtils.getFileExtension(fileName);
         String contentType = ImageFileUtils.getContentType(extension);
         String presignedUrl = generatePresignedUrl(key, contentType);
         String finalUrl = getFileUrl(key);
 
-        log.info("Presigned URL 생성 완료: key={}, contentType={}", key, contentType);
         return new PresignedUrlResponse(presignedUrl, finalUrl);
     }
 
@@ -89,7 +86,6 @@ public class ImageService {
      * @param fileUrl 삭제할 파일의 S3 URL
      */
     public void deleteFile(String fileUrl) {
-        log.warn("파일 삭제 요청: url={}", fileUrl);
         String key = extractNameFromUrl(fileUrl);
 
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
@@ -98,7 +94,6 @@ public class ImageService {
             .build();
 
         s3Client.deleteObject(deleteObjectRequest);
-        log.info("파일 삭제 완료: key={}", key);
     }
 
     /** S3에서 여러 파일 삭제 */

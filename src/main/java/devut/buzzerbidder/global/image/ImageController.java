@@ -35,8 +35,6 @@ public class ImageController {
 
         // 인증 확인
         User user = requestContext.getCurrentUser();
-        log.info("이미지 업로드 요청: userId={}, fileName={}, directory={}",
-            user.getId(), request.fileName(), request.directory());
 
         // 요청 검증
         request.validate();
