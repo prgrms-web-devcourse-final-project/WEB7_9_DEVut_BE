@@ -48,7 +48,11 @@ public enum ErrorCode {
     IMAGE_INVALID_DIRECTORY("IMG003", HttpStatus.BAD_REQUEST, "허용되지 않은 디렉토리입니다."),
     IMAGE_URL_INVALID("IMG004", HttpStatus.BAD_REQUEST, "유효하지 않은 이미지 URL입니다."),
     IMAGE_URL_NOT_ALLOWED("IMG005", HttpStatus.FORBIDDEN, "허용되지 않은 S3 버킷입니다."),
-    IMAGE_UPLOAD_FAILED("IMG006", HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드에 실패했습니다.");
+    IMAGE_UPLOAD_FAILED("IMG006", HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드에 실패했습니다."),
+
+    // ========== chat 도메인 에러 ==========
+    CHATROOM_NOT_FOUND("C001", HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."),
+    CHAT_NOT_PARTICIPANT("C002", HttpStatus.NOT_FOUND, "참여중이지 않은 채팅방입니다.");
 
     private final String code;
     private final HttpStatus status;

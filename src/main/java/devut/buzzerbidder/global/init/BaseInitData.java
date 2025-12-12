@@ -122,4 +122,5 @@ public class BaseInitData {
         liveDealRepository.save(liveDeal);
     }
 
+
 }
