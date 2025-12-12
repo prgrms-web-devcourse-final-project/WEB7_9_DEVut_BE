@@ -33,7 +33,7 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
 
     @Query("""
         SELECT li.id FROM LiveItem li
-        LEFT JOIN LikeLive ll ON ll.liveItemId = li.id
+        LEFT JOIN LikeLive ll ON ll.liveItem = li
         GROUP BY li.id
         ORDER BY COUNT(ll.id) DESC
         """)

@@ -30,6 +30,14 @@ public enum ErrorCode {
     DEAL_INVALID_TYPE("D002", HttpStatus.BAD_REQUEST, "잘못된 경매 유형입니다."),
     DEAL_DELIVERY_INFO_NOT_FOUND("D003", HttpStatus.NOT_FOUND, "배송 정보가 존재하지 않습니다."),
 
+    // ========== AuctionRoom 도메인 에러 ==========
+    FULL_AUCTION_ROOM("AR001", HttpStatus.CONFLICT, "경매방이 가득 찼습니다."),
+
+    // ========== LIVEITEM 도메인 에러 ==========
+    CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
+    INVALID_LIVETIME("LI002", HttpStatus.BAD_REQUEST,"유효한 경매 시작 시간이 아닙니다."),
+    EDIT_UNAVAILABLE("LI003", HttpStatus.BAD_REQUEST,"1시간안에 시작하는 경매는 수정 및 삭제가 불가능합니다."),
+
     // ========== Notification 도메인 에러 ==========
     NOTIFICATION_NOT_FOUND("NO001", HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
     NOTIFICATION_FORBIDDEN("NO002", HttpStatus.FORBIDDEN, "알림에 접근할 권한이 없습니다."),

@@ -1,12 +1,19 @@
 package devut.buzzerbidder.global.init;
 
+import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
+import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
 import devut.buzzerbidder.domain.deal.entity.LiveDeal;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -15,9 +22,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Configuration
 @RequiredArgsConstructor
@@ -31,6 +35,7 @@ public class BaseInitData {
     private final LiveDealRepository liveDealRepository;
     private final LiveItemRepository liveItemRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuctionRoomRepository auctionRoomRepository;
 
     @Bean
     ApplicationRunner initDataRunner() {
@@ -70,24 +75,31 @@ public class BaseInitData {
             return;
         }
 
+        List<LiveItemImage> images = new ArrayList<>();
         LiveItem liveItem = LiveItem.builder()
                 .sellerUserId(1L)
-                .auctionId(1L)
                 .name("Sample Live Item")
                 .category(LiveItem.Category.ELECTRONICS)
                 .description("샘플 설명입니다.")
-                .initPrice(1000000) // TODO: Long으로 변경 필요
+                .initPrice(1000000L)
                 .deliveryInclude(false)
-                .Itemstatus(LiveItem.ItemStatus.NEW) // TODO: PascalCase로 변경 필요
+                .itemStatus(LiveItem.ItemStatus.NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
-                .liveDate(LocalDateTime.now().plusDays(3))
-                .directDealAvailable(false)
+                .liveTime(LocalDateTime.of(2025, 12, 31, 19, 0, 0))
+                .directDealAvailable(true)
                 .region("서울시 강남구 역삼동")
                 .preferredPlace("역삼역 근처 카페")
-                .images(null)
+                .images(images)
                 .build();
 
+        liveItem.addImage(new LiveItemImage("example.com",liveItem));
+
+        AuctionRoom newRoom = new AuctionRoom(liveItem.getLiveTime());
+        auctionRoomRepository.save(newRoom);
+
         liveItemRepository.save(liveItem);
+
+        newRoom.addItem(liveItem);
     }
 
     @Transactional
