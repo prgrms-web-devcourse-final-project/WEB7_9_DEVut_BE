@@ -8,6 +8,8 @@ import devut.buzzerbidder.domain.deal.enums.Carrier;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.request.DeliveryRequest;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.util.UserTestUtil;
@@ -22,6 +24,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -50,6 +54,8 @@ public class MyPageControllerTest {
     private LiveDealRepository liveDealRepository;
     @Autowired
     private UserTestUtil userTestUtil;
+    @Autowired
+    private LiveItemRepository liveItemRepository;
 
     private DeliveryRequest deliveryRequest;
     private String user1Token;
@@ -67,6 +73,8 @@ public class MyPageControllerTest {
         // 각 테스트 전에 데이터 정리
         liveDealRepository.deleteAll();
         liveDealRepository.flush();
+        liveItemRepository.deleteAll();
+        liveItemRepository.flush();
         userRepository.deleteAll();
         userRepository.flush();
 
@@ -81,8 +89,46 @@ public class MyPageControllerTest {
         user2Token = userTestUtil.createUserAndGetToken("new2@user.com", "asdf1234!", "gilddong", null);
         User user2 = userRepository.findByEmail("new2@user.com").orElseThrow();
 
+        LiveItem liveItem1 = LiveItem.builder()
+                .sellerUserId(1L)
+                .auctionId(1L)
+                .name("Sample Live Item")
+                .category(LiveItem.Category.ELECTRONICS)
+                .description("샘플 설명입니다.")
+                .initPrice(1000000) // TODO: Long으로 변경 필요
+                .deliveryInclude(false)
+                .Itemstatus(LiveItem.ItemStatus.NEW) // TODO: PascalCase로 변경 필요
+                .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
+                .liveDate(LocalDateTime.now().plusDays(3))
+                .directDealAvailable(false)
+                .region("서울시 강남구 역삼동")
+                .preferredPlace("역삼역 근처 카페")
+                .images(null)
+                .build();
+
+        liveItemRepository.save(liveItem1);
+
+        LiveItem liveItem2 = LiveItem.builder()
+                .sellerUserId(1L)
+                .auctionId(1L)
+                .name("Sample Live Item")
+                .category(LiveItem.Category.ELECTRONICS)
+                .description("샘플 설명입니다.")
+                .initPrice(1000000) // TODO: Long으로 변경 필요
+                .deliveryInclude(false)
+                .Itemstatus(LiveItem.ItemStatus.NEW) // TODO: PascalCase로 변경 필요
+                .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
+                .liveDate(LocalDateTime.now().plusDays(3))
+                .directDealAvailable(false)
+                .region("서울시 강남구 역삼동")
+                .preferredPlace("역삼역 근처 카페")
+                .images(null)
+                .build();
+
+        liveItemRepository.save(liveItem2);
+
         LiveDeal deal1 = LiveDeal.builder()
-                .item(1L) // TODO: 아이템 추가 후 변경 필요
+                .item(liveItem1)
                 .buyer(user1)
                 .winningPrice(100000L)
                 .status(DealStatus.PENDING)
@@ -91,7 +137,7 @@ public class MyPageControllerTest {
         liveDeal1Id = deal1.getId();
 
         LiveDeal deal2 = LiveDeal.builder()
-                .item(2L) // TODO: 아이템 추가 후 변경 필요
+                .item(liveItem2)
                 .buyer(user1)
                 .winningPrice(100000L)
                 .status(DealStatus.PENDING)
