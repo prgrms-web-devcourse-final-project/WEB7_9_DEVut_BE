@@ -8,15 +8,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record LiveItemModifyRequest(
-
-    Long auctionId,
     String name,
     Category category,
-    ItemStatus Itemstatus,
+    ItemStatus itemStatus,
     String description,
-    Integer initPrice,
+    Long initPrice,
     Boolean deliveryInclude,
-    LocalDateTime liveDate,
+    LocalDateTime liveTime,
     Boolean directDealAvailable,
     String region,
     String preferredPlace,
