@@ -3,29 +3,52 @@ package devut.buzzerbidder.domain.chat.controller;
 import devut.buzzerbidder.domain.chat.dto.request.AuctionChatMessageRequest;
 import devut.buzzerbidder.domain.chat.service.ChatMessageService;
 import devut.buzzerbidder.domain.user.entity.User;
-import devut.buzzerbidder.global.requestcontext.RequestContext;
+import devut.buzzerbidder.global.exeption.BusinessException;
+import devut.buzzerbidder.global.exeption.ErrorCode;
+import devut.buzzerbidder.global.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
+import java.security.Principal;
+
+@Tag(name = "ChatMessage", description = "채팅 메세지 api")
 @Controller
 @RequiredArgsConstructor
-@MessageMapping("/api/v1/chat")
+@MessageMapping("/chat")
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
-    private final RequestContext requestContext;
 
-    @MessageMapping("/auction/{chatRoomId}")
+    // send/chat/auction/{auctionId}
+    @MessageMapping("/auction/{auctionId}")
     public void sendAuctionMessage(
-            @DestinationVariable Long chatRoomId,
-            @Payload AuctionChatMessageRequest request
+            @DestinationVariable Long auctionId,
+            @Payload AuctionChatMessageRequest request,
+            Principal principal
     ) {
+        // TODO: Pricipal 객체 처리 대신 AuthenticationPrincipal 사용하도록 변경
+        // Principal 타입이 아닐 경우 예외처리
+        if (!(principal instanceof Authentication authentication)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
 
-        User user = requestContext.getCurrentUser();
+        Object principalObj = authentication.getPrincipal();
+        if (!(principalObj instanceof CustomUserDetails userDetails)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
 
-        chatMessageService.sendAuctionMessage(chatRoomId, user, request);
+        User sender = userDetails.getUser();
+
+        if (sender == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+
+        chatMessageService.sendAuctionMessage(auctionId, sender, request);
     }
 }

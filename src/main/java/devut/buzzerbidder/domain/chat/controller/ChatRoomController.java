@@ -6,12 +6,11 @@ import devut.buzzerbidder.domain.chat.service.ChatRoomService;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
 import devut.buzzerbidder.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "ChatMessage", description = "채팅 메세지 api")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/chatrooms")
@@ -37,4 +36,18 @@ public class ChatRoomController {
 
         return ApiResponse.ok("경매방 채팅 입장 처리 완료", response);
     }
+
+    @DeleteMapping("/auction/{auctionId}/exit")
+    public ApiResponse<Void> exitAuctionChat(
+            @PathVariable Long auctionId
+    ) {
+
+        User user = requestContext.getCurrentUser();
+
+        chatRoomService.exitAuctionChatRoom(auctionId, user);
+
+        return ApiResponse.ok("경매방 채팅 퇴장 처리 완료");
+    }
+
+    // TODO: 1:1 채팅 퇴장 처리 구현
 }

@@ -5,6 +5,8 @@ import devut.buzzerbidder.domain.chat.entity.ChatRoomEntered;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.global.exeption.BusinessException;
+import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,14 +41,27 @@ public class ChatRoomService {
     }
 
     // 채팅방 참여 상태 관리
-    public ChatRoomEntered enterChatRoom(User user, ChatRoom chatRoom) {
+    public void enterChatRoom(User user, ChatRoom chatRoom) {
 
-        return chatRoomEnteredRepository.findByUserAndChatRoom(user, chatRoom)
+        chatRoomEnteredRepository.findByUserAndChatRoom(user, chatRoom)
                 .orElseGet(() -> {
-                    ChatRoomEntered newEntry = new ChatRoomEntered(user,  chatRoom);
+                    ChatRoomEntered newEntry = new ChatRoomEntered(user, chatRoom);
 
                     return chatRoomEnteredRepository.save(newEntry);
                 });
     }
+
+    public void exitAuctionChatRoom(Long auctionId, User user) {
+
+        ChatRoom chatRoom = chatRoomRepository.findByAuctionId(auctionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHATROOM_NOT_FOUND));
+
+        ChatRoomEntered entered = chatRoomEnteredRepository.findByUserAndChatRoom(user, chatRoom)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_NOT_PARTICIPANT));
+
+        chatRoomEnteredRepository.delete(entered);
+    }
+
+    // TODO: 1대1 채팅 inActive 활용
 }
 

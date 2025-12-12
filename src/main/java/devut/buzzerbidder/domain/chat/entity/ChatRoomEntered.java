@@ -20,7 +20,7 @@ public class ChatRoomEntered extends BaseEntity {
             name = "userID",
             referencedColumnName = "id",
             nullable = false,
-            foreignKey = @ForeignKey(name = "FK_CHAT_ROOM_ENTERED_USER") // <--- 이 부분 추가
+            foreignKey = @ForeignKey(name = "FK_CHAT_ROOM_ENTERED_USER")
     )
     private User user;
 
@@ -29,7 +29,7 @@ public class ChatRoomEntered extends BaseEntity {
             name = "chatroomID",
             referencedColumnName = "id",
             nullable = false,
-            foreignKey = @ForeignKey(name = "FK_CHAT_ROOM_ENTERED_CHATROOM") // <--- 이 부분 추가
+            foreignKey = @ForeignKey(name = "FK_CHAT_ROOM_ENTERED_CHATROOM")
     )
     private ChatRoom chatRoom;
 
