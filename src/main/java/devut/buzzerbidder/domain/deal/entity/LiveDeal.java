@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.deal.entity;
 
 import devut.buzzerbidder.domain.deal.enums.Carrier;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -14,8 +15,9 @@ import lombok.*;
 @Builder
 public class LiveDeal extends BaseEntity {
 
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
-    private Long item; // TODO: Item Entity와 연관관계 설정 필요
+    private LiveItem item;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
