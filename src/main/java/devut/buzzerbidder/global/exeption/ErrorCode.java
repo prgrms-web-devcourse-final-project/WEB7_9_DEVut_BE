@@ -36,8 +36,19 @@ public enum ErrorCode {
     // ========== LIVEITEM 도메인 에러 ==========
     CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
     INVALID_LIVETIME("LI002", HttpStatus.BAD_REQUEST,"유효한 경매 시작 시간이 아닙니다."),
-    EDIT_UNAVAILABLE("LI003", HttpStatus.BAD_REQUEST,"1시간안에 시작하는 경매는 수정 및 삭제가 불가능합니다.");
+    EDIT_UNAVAILABLE("LI003", HttpStatus.BAD_REQUEST,"1시간안에 시작하는 경매는 수정 및 삭제가 불가능합니다."),
 
+    // ========== Notification 도메인 에러 ==========
+    NOTIFICATION_NOT_FOUND("NO001", HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
+    NOTIFICATION_FORBIDDEN("NO002", HttpStatus.FORBIDDEN, "알림에 접근할 권한이 없습니다."),
+
+    // ========== Image 도메인 에러 ==========
+    IMAGE_INVALID_FILE_TYPE("IMG001", HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다."),
+    IMAGE_FILE_TOO_LARGE("IMG002", HttpStatus.BAD_REQUEST, "파일 크기가 너무 큽니다. (최대 10MB)"),
+    IMAGE_INVALID_DIRECTORY("IMG003", HttpStatus.BAD_REQUEST, "허용되지 않은 디렉토리입니다."),
+    IMAGE_URL_INVALID("IMG004", HttpStatus.BAD_REQUEST, "유효하지 않은 이미지 URL입니다."),
+    IMAGE_URL_NOT_ALLOWED("IMG005", HttpStatus.FORBIDDEN, "허용되지 않은 S3 버킷입니다."),
+    IMAGE_UPLOAD_FAILED("IMG006", HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드에 실패했습니다.");
 
     private final String code;
     private final HttpStatus status;
