@@ -57,3 +57,6 @@ logging:
     root: INFO
     devut.buzzerbidder: INFO
 
+delivery:
+  client-id: ${DELIVERY_CLIENT_ID}
+  client-secret: ${DELIVERY_CLIENT_SECRET}
