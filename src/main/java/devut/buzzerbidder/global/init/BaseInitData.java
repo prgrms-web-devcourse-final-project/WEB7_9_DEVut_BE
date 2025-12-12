@@ -54,6 +54,7 @@ public class BaseInitData {
 
         // 회원 생성
         User user = devut.buzzerbidder.domain.user.entity.User.builder()
+            .name("asd")
                 .email(email)
                 .password(encodedPassword)
                 .nickname(nickname)

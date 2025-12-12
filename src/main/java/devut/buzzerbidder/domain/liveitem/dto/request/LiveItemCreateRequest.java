@@ -1,6 +1,5 @@
 package devut.buzzerbidder.domain.liveitem.dto.request;
 
-import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.Category;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.ItemStatus;
 import java.time.LocalDateTime;
@@ -18,7 +17,6 @@ public record LiveItemCreateRequest(
     Boolean directDealAvailable,
     String region,
     String preferredPlace,
-    AuctionStatus auctionStatus,
     List<String> images
     ) {
 
