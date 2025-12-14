@@ -11,6 +11,8 @@ import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.service.LiveItemService;
 import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,11 +29,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auction/live")
+@Tag(name = "LiveItem", description = "경매품 API")
 public class LiveItemController {
 
     private final LiveItemService liveItemService;
 
     @PostMapping
+    @Operation(summary = "경매품 생성")
     public ApiResponse<LiveItemResponse> createLiveItem(
         @RequestBody LiveItemCreateRequest reqBody,
         @AuthenticationPrincipal CustomUserDetails userDetails
@@ -44,6 +48,7 @@ public class LiveItemController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "경매품 정보 수정")
     public ApiResponse<LiveItemResponse> modifyLiveItem(
         @PathVariable Long id,
         @RequestBody LiveItemModifyRequest reqBody,
@@ -56,6 +61,7 @@ public class LiveItemController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "경매품 삭제")
     public ApiResponse<Void> deleteLiveItem(
         @PathVariable Long id,
         @AuthenticationPrincipal CustomUserDetails userDetails
@@ -68,6 +74,7 @@ public class LiveItemController {
     }
 
     @GetMapping
+    @Operation(summary = "경매품 다건 조회")
     public ApiResponse<LiveItemListResponse> getLiveItems(
         LiveItemSearchRequest reqBody,
         PagingRequest paging
@@ -80,6 +87,7 @@ public class LiveItemController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "경매품 단건 조회")
     public ApiResponse<LiveItemDetailResponse> getLiveItem(
         @PathVariable Long id,
         @AuthenticationPrincipal CustomUserDetails userDetails
@@ -92,6 +100,7 @@ public class LiveItemController {
     }
 
     @GetMapping("/hot")
+    @Operation(summary = "인기 경매품 조회")
     public ApiResponse<LiveItemListResponse> getHotLiveItems(
         @RequestParam(defaultValue = "3") int limit
     ) {
@@ -102,6 +111,7 @@ public class LiveItemController {
     }
 
     @PatchMapping("/{id}")
+    @Operation(summary = "경매 상태 변경")
     public ApiResponse<Void> changeAuctionStatus(
         @PathVariable Long id,
         @RequestBody AuctionStatusRequest reqBody,

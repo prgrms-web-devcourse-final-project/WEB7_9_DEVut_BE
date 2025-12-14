@@ -67,6 +67,17 @@ delivery:
   client-id: ${DELIVERY_CLIENT_ID}
   client-secret: ${DELIVERY_CLIENT_SECRET}
 
+# AWS S3 설정
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    s3:
+      bucket: ${AWS_S3_BUCKET}
+    region:
+      static: ${AWS_REGION:ap-northeast-2}
+
 # Swagger 프로덕션 환경 설정 (보안을 위해 비활성화 권장)
 springdoc:
   api-docs:

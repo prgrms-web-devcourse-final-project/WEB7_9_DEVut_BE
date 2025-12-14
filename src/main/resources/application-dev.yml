@@ -62,6 +62,17 @@ delivery:
   client-id: ${DELIVERY_CLIENT_ID}
   client-secret: ${DELIVERY_CLIENT_SECRET}
 
+# AWS S3 설정
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY:your-access-key}
+      secret-key: ${AWS_SECRET_KEY:your-secret-key}
+    s3:
+      bucket: ${AWS_S3_BUCKET:your-bucket-name}
+    region:
+      static: ${AWS_REGION:ap-northeast-2}
+
 # Swagger 개발 환경 추가 설정
 springdoc:
   swagger-ui:
