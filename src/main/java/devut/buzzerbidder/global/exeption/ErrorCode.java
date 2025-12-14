@@ -28,7 +28,17 @@ public enum ErrorCode {
     // ========== Deal 도메인 에러 ==========
     DEAL_NOT_FOUND("D001", HttpStatus.NOT_FOUND, "존재하지 않는 거래입니다."),
     DEAL_INVALID_TYPE("D002", HttpStatus.BAD_REQUEST, "잘못된 경매 유형입니다."),
-    DEAL_DELIVERY_INFO_NOT_FOUND("D003", HttpStatus.NOT_FOUND, "배송 정보가 존재하지 않습니다.");
+    DEAL_DELIVERY_INFO_NOT_FOUND("D003", HttpStatus.NOT_FOUND, "배송 정보가 존재하지 않습니다."),
+
+    // ========== Payment 도메인 에러 ==========
+    PAYMENT_NOT_FOUND("P001", HttpStatus.NOT_FOUND, "결제정보를 찾을 수 없습니다."),
+    NOT_PENDING_PAYMENT("P002", HttpStatus.CONFLICT, "결제대기 상태가 아닙니다."),
+    INVALID_AMOUNT("P003", HttpStatus.BAD_REQUEST, "결제금액이 올바르지 않습니다."),
+    PAYMENT_CONFIRM_FAILED("P004", HttpStatus.BAD_REQUEST, "결제승인 요청이 실패했습니다."),
+    INVALID_DATE_RANGE("P005", HttpStatus.BAD_REQUEST, "종료일은 시작일보다 빠를 수 없습니다."),
+    NOT_SUCCESS_PAYMENT("P006", HttpStatus.CONFLICT, "결제완료 상태가 아닙니다."),
+    AMOUNT_EXCEEDS_LIMIT("P007", HttpStatus.BAD_REQUEST, "취소 가능 금액을 초과했습니다."),
+    PAYMENT_CANCELED_FAILED("P008", HttpStatus.BAD_REQUEST, "결제취소 요청이 실패했습니다.");
 
     private final String code;
     private final HttpStatus status;
