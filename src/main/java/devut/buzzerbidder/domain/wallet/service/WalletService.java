@@ -20,14 +20,23 @@ public class WalletService {
     private final WalletRepository walletRepository;
     private final WalletHistoryRepository walletHistoryRepository;
 
+    // 지갑 조회
     @Transactional(readOnly = true)
     public Wallet findByUserIdOrThrow(Long userId) {
         return walletRepository.findByUserId(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.WALLET_NOT_FOUND));
     }
 
+    // 잔액 조회
+    @Transactional(readOnly = true)
+    public Long getBizzBalance(User user) {
+        Wallet wallet = findByUserIdOrThrow(user.getId());
+        return wallet.getBizz();
+    }
+
+    // 지갑 생성
     public void createWallet(User user) {
-        if(walletRepository.existsByUserId(user.getId())) {
+        if (walletRepository.existsByUserId(user.getId())) {
             throw new BusinessException(ErrorCode.WALLET_ALREADY_EXISTS);
         }
 
@@ -39,45 +48,103 @@ public class WalletService {
         walletRepository.save(wallet);
     }
 
-    @Transactional(readOnly = true)
-    public Long getBizzBalance(User user) {
-        Wallet wallet = findByUserIdOrThrow(user.getId());
-        return wallet.getBizz();
-    }
-
-    public void chargeBizz(User user, Long amount) {
-        Wallet wallet = findByUserIdOrThrow(user.getId());
-
-        updateBizzWithHistory(wallet, user, amount, WalletTransactionType.CHARGE);
-    }
-
+    // A유저 -> B유저 송금
     public void transferBizz(User fromUser, User toUser, Long amount) {
+        if (fromUser == null || toUser == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        validateAmount(amount);
+
         if (fromUser.getId().equals(toUser.getId())) {
             throw new BusinessException(ErrorCode.INVALID_TRANSFER);
         }
 
-        Wallet fromWallet = findByUserIdOrThrow(fromUser.getId());
-        Wallet toWallet = findByUserIdOrThrow(toUser.getId());
+        // ID 순서대로 락 획득하여 데드락 방지
+        Long smallerId = Math.min(fromUser.getId(), toUser.getId());
+        Long largerId = Math.max(fromUser.getId(), toUser.getId());
 
+        Wallet firstWallet = findByUserIdWithLockOrThrow(smallerId);
+        Wallet secondWallet = findByUserIdWithLockOrThrow(largerId);
+
+        // 송금자/수신자 구분
+        Wallet fromWallet = firstWallet.getUser().getId().equals(fromUser.getId())
+                ? firstWallet : secondWallet;
+        Wallet toWallet = firstWallet.getUser().getId().equals(toUser.getId())
+                ? firstWallet : secondWallet;
+
+        // 잔액 확인
+        if (fromWallet.getBizz() < amount) {
+            throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
+        }
+
+        // 송금 실행
         updateBizzWithHistory(fromWallet, fromUser, amount, WalletTransactionType.PAY_TO_USER);
         updateBizzWithHistory(toWallet, toUser, amount, WalletTransactionType.RECEIVE_FROM_USER);
     }
 
-    private void updateBizzWithHistory(Wallet wallet, User user, Long amount, WalletTransactionType type) {
-        if (amount == null || amount <= 0) throw new BusinessException(ErrorCode.INVALID_WALLET_AMOUNT);
+    public void chargeBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.CHARGE);
+    }
 
+    public void refundBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.REFUND);
+    }
+
+    public void grantBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.ADMIN_GRANT);
+    }
+
+    public void withdrawBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.WITHDRAW);
+    }
+
+    public void deductBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.ADMIN_DEDUCT);
+    }
+
+    /* ==================== 이 밑으로는 헬퍼 메서드 ==================== */
+
+    // 지갑 조회(비관적 락 적용)
+    private Wallet findByUserIdWithLockOrThrow(Long userId) {
+        return walletRepository.findByUserIdWithLock(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.WALLET_NOT_FOUND));
+    }
+
+    // 단일 지갑 잔액 변경 공통 처리 (비관적 락 적용)
+    private void changeBizz(User user, Long amount, WalletTransactionType type) {
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        validateAmount(amount);
+
+        Wallet wallet = findByUserIdWithLockOrThrow(user.getId());
+        updateBizzWithHistory(wallet, user, amount, type);
+    }
+
+    // 금액 검증
+    private void validateAmount(Long amount) {
+        if (amount == null || amount <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_WALLET_AMOUNT);
+        }
+    }
+
+    // 잔액 업데이트 + 히스토리 기록
+    private void updateBizzWithHistory(Wallet wallet, User user, Long amount, WalletTransactionType type) {
         Long balanceBefore = wallet.getBizz();
+
         if (type.isIncrease()) {
             wallet.increaseBizz(amount);
         } else {
             wallet.decreaseBizz(amount);
         }
-        Long balanceAfter = wallet.getBizz();
 
+        Long balanceAfter = wallet.getBizz();
         recordWalletHistory(user, amount, type, balanceBefore, balanceAfter);
     }
 
-    private void recordWalletHistory(User user, Long amount, WalletTransactionType type, Long balanceBefore, Long balanceAfter) {
+    // 지갑 히스토리 기록
+    private void recordWalletHistory(User user, Long amount, WalletTransactionType type,
+                                     Long balanceBefore, Long balanceAfter) {
         WalletHistory walletHistory = WalletHistory.builder()
                 .user(user)
                 .amount(amount)
@@ -88,5 +155,4 @@ public class WalletService {
 
         walletHistoryRepository.save(walletHistory);
     }
-
 }
