@@ -2,6 +2,7 @@ package devut.buzzerbidder.global.notification.controller;
 
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.notification.dto.NotificationDto;
+import devut.buzzerbidder.global.notification.dto.NotificationListResponse;
 import devut.buzzerbidder.global.notification.service.NotificationService;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
 import devut.buzzerbidder.global.response.ApiResponse;
@@ -23,23 +24,34 @@ public class NotificationController {
     private final RequestContext requestContext;
 
     @GetMapping
-    public ApiResponse<List<NotificationDto>> getNotifications() {
+    public ApiResponse<NotificationListResponse> getNotifications() {
         User user = requestContext.getCurrentUser();
         List<NotificationDto> notifications = notificationService.getNotifications(user.getId());
-        return ApiResponse.ok("알림 목록을 조회했습니다.", notifications);
+        Long unreadCount = notificationService.getUnreadCount(user.getId());
+
+        return ApiResponse.ok(
+            "알림 목록을 조회했습니다.",
+            NotificationListResponse.of(notifications, unreadCount)
+        );
     }
 
     @GetMapping("/unread")
-    public ApiResponse<List<NotificationDto>> getUnreadNotifications() {
+    public ApiResponse<NotificationListResponse> getUnreadNotifications() {
         User user = requestContext.getCurrentUser();
         List<NotificationDto> notifications = notificationService.getUnreadNotifications(user.getId());
-        return ApiResponse.ok("읽지 않은 알림을 조회했습니다.", notifications);
+        Long unreadCount = notificationService.getUnreadCount(user.getId());
+
+        return ApiResponse.ok(
+            "읽지 않은 알림을 조회했습니다.",
+            NotificationListResponse.of(notifications, unreadCount)
+        );
     }
 
     @GetMapping("/unread/count")
     public ApiResponse<Long> getUnreadCount() {
         User user = requestContext.getCurrentUser();
         Long count = notificationService.getUnreadCount(user.getId());
+
         return ApiResponse.ok("읽지 않은 알림 개수를 조회했습니다.", count);
     }
 
@@ -47,6 +59,7 @@ public class NotificationController {
     public ApiResponse<Void> markAsRead(@PathVariable Long id) {
         User user = requestContext.getCurrentUser();
         notificationService.markAsRead(id, user.getId());
+
         return ApiResponse.ok("알림을 읽음 처리했습니다.");
     }
 
@@ -54,6 +67,7 @@ public class NotificationController {
     public ApiResponse<Void> deleteNotification(@PathVariable Long id) {
         User user = requestContext.getCurrentUser();
         notificationService.deleteNotification(id, user.getId());
+
         return ApiResponse.ok("알림을 삭제했습니다.");
     }
 

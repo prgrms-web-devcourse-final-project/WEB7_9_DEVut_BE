@@ -1,7 +1,7 @@
 package devut.buzzerbidder.global.notification.service;
 
 import devut.buzzerbidder.global.notification.dto.AuctionNotificationResponse;
-import devut.buzzerbidder.global.notification.dto.AuctionNotificationResponse.AuctionNotificationType;
+import devut.buzzerbidder.global.notification.enums.AuctionNotificationType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
