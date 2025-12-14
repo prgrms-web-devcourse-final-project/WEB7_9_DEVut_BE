@@ -73,3 +73,7 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+# 토스 설정
+toss:
+  secret-key: "test_sk_kYG57Eba3G46gWZWbe1EVpWDOxmA"
