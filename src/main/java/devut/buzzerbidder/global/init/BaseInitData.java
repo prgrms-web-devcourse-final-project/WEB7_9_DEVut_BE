@@ -8,7 +8,9 @@ import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
+import devut.buzzerbidder.domain.user.entity.Provider;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -32,6 +34,7 @@ public class BaseInitData {
     private BaseInitData self;
 
     private final UserRepository userRepository;
+    private final ProviderRepository providerRepository;
     private final LiveDealRepository liveDealRepository;
     private final LiveItemRepository liveItemRepository;
     private final PasswordEncoder passwordEncoder;
@@ -63,10 +66,17 @@ public class BaseInitData {
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .profileImageUrl(null)
                 .role(devut.buzzerbidder.domain.user.entity.User.UserRole.USER)
-                .providerType(devut.buzzerbidder.domain.user.entity.User.ProviderType.EMAIL)
                 .build();
 
-        userRepository.save(user);
+        user = userRepository.save(user);
+
+        // EMAIL Provider 생성
+        Provider emailProvider = Provider.builder()
+                .providerType(Provider.ProviderType.EMAIL)
+                .providerId(email) // EMAIL의 경우 email을 providerId로 사용
+                .user(user)
+                .build();
+        providerRepository.save(emailProvider);
     }
 
     @Transactional
