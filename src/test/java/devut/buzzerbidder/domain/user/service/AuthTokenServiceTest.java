@@ -61,11 +61,9 @@ class AuthTokenServiceTest {
         testUser = User.builder()
                 .email("test@example.com")
                 .password(passwordEncoder.encode("password123!"))
-                .name("홍길동")
                 .nickname("hong123")
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .role(User.UserRole.USER)
-                .providerType(User.ProviderType.EMAIL)
                 .build();
         testUser = userRepository.save(testUser);
     }
@@ -199,11 +197,9 @@ class AuthTokenServiceTest {
         User user2 = User.builder()
                 .email("user2@example.com")
                 .password(passwordEncoder.encode("password123!"))
-                .name("김철수")
                 .nickname("kim123")
                 .birthDate(LocalDate.of(1995, 5, 5))
                 .role(User.UserRole.USER)
-                .providerType(User.ProviderType.EMAIL)
                 .build();
         user2 = userRepository.save(user2);
 
@@ -286,11 +282,9 @@ class AuthTokenServiceTest {
         User user2 = User.builder()
                 .email("user2@example.com")
                 .password(passwordEncoder.encode("password123!"))
-                .name("김철수")
                 .nickname("kim123")
                 .birthDate(LocalDate.of(1995, 5, 5))
                 .role(User.UserRole.USER)
-                .providerType(User.ProviderType.EMAIL)
                 .build();
         user2 = userRepository.save(user2);
         

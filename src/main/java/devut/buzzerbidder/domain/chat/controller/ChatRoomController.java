@@ -1,0 +1,53 @@
+package devut.buzzerbidder.domain.chat.controller;
+
+import devut.buzzerbidder.domain.chat.dto.response.AuctionChatEnterResponse;
+import devut.buzzerbidder.domain.chat.entity.ChatRoom;
+import devut.buzzerbidder.domain.chat.service.ChatRoomService;
+import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.global.requestcontext.RequestContext;
+import devut.buzzerbidder.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@Tag(name = "ChatMessage", description = "채팅 메세지 api")
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/v1/chatrooms")
+public class ChatRoomController {
+
+    private final ChatRoomService chatRoomService;
+    private final RequestContext requestContext;
+
+    @PutMapping("/{auctionId}/enter")
+    public ApiResponse<AuctionChatEnterResponse> enterAuctionChat(
+            @PathVariable Long auctionId) {
+
+        // 사용자 정보 조회
+        User user = requestContext.getCurrentUser();
+
+        // 채팅바 조회/생성
+        ChatRoom chatRoom = chatRoomService.getOrCreateAuctionChatRoom(auctionId);
+
+        // 사용자 참여 상태 갱신
+        chatRoomService.enterChatRoom(user, chatRoom);
+
+        AuctionChatEnterResponse response = new AuctionChatEnterResponse(chatRoom.getId());
+
+        return ApiResponse.ok("경매방 채팅 입장 처리 완료", response);
+    }
+
+    @DeleteMapping("/auction/{auctionId}/exit")
+    public ApiResponse<Void> exitAuctionChat(
+            @PathVariable Long auctionId
+    ) {
+
+        User user = requestContext.getCurrentUser();
+
+        chatRoomService.exitAuctionChatRoom(auctionId, user);
+
+        return ApiResponse.ok("경매방 채팅 퇴장 처리 완료");
+    }
+
+    // TODO: 1:1 채팅 퇴장 처리 구현
+}
