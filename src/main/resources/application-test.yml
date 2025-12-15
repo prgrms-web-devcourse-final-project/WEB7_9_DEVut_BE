@@ -40,3 +40,7 @@ custom:
     secretPattern: test-secret-key-for-jwt-token-generation-minimum-256-bits-long-for-security
     expireSeconds: 1800  # 30분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)
+
+# 토스 설정
+toss:
+  secret-key: "test_sk_kYG57Eba3G46gWZWbe1EVpWDOxmA"
