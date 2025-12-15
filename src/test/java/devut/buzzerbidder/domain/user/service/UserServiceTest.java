@@ -44,7 +44,6 @@ class UserServiceTest {
         signUpRequest = new EmailSignUpRequest(
                 "test@example.com",
                 "password123!",
-                "홍길동",
                 "hong123",
                 LocalDate.of(1990, 1, 1),
                 "https://example.com/image.jpg"
@@ -60,7 +59,6 @@ class UserServiceTest {
         // then
         assertThat(response).isNotNull();
         assertThat(response.userInfo().email()).isEqualTo("test@example.com");
-        assertThat(response.userInfo().name()).isEqualTo("홍길동");
         assertThat(response.userInfo().nickname()).isEqualTo("hong123");
         assertThat(userRepository.existsByEmail("test@example.com")).isTrue();
     }
@@ -86,7 +84,6 @@ class UserServiceTest {
         EmailSignUpRequest anotherRequest = new EmailSignUpRequest(
                 "another@example.com",
                 "password123!",
-                "김철수",
                 "hong123", // 동일한 닉네임
                 LocalDate.of(1995, 5, 5),
                 null
