@@ -40,7 +40,7 @@ public enum ErrorCode {
     INVALID_WALLET_TRANSACTION_TYPE("W004", HttpStatus.INTERNAL_SERVER_ERROR, "잘못된 거래 유형입니다."),
     INVALID_WALLET_AMOUNT("W005", HttpStatus.BAD_REQUEST, "충전/차감 금액은 null 또는 0 이하일 수 없습니다."),
     INVALID_TRANSFER("W006", HttpStatus.BAD_REQUEST, "자기 자신에게 지불할 수 없습니다."),
-    WALLET_ALREADY_EXISTS("W007", HttpStatus.CONFLICT, "사용자 지갑이 이미 존재합니다.");
+    WALLET_ALREADY_EXISTS("W007", HttpStatus.CONFLICT, "사용자 지갑이 이미 존재합니다."),
     // ========== Payment 도메인 에러 ==========
     PAYMENT_NOT_FOUND("P001", HttpStatus.NOT_FOUND, "결제정보를 찾을 수 없습니다."),
     NOT_PENDING_PAYMENT("P002", HttpStatus.CONFLICT, "결제대기 상태가 아닙니다."),
