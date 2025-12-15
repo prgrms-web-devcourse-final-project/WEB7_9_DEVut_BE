@@ -89,7 +89,7 @@ server:
 # JWT 설정
 custom:
   jwt:
-    secretPattern: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
+    secretPattern: ${JWT_SECRET}
     expireSeconds: 1800  # 30분 (초)
     shortExpireSeconds: 600  # 10분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)
@@ -102,10 +102,10 @@ delivery:
 cloud:
   aws:
     credentials:
-      access-key: ${AWS_ACCESS_KEY:your-access-key}
-      secret-key: ${AWS_SECRET_KEY:your-secret-key}
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
     s3:
-      bucket: ${AWS_S3_BUCKET:your-bucket-name}
+      bucket: ${AWS_S3_BUCKET}
     region:
       static: ${AWS_REGION:ap-northeast-2}
 
@@ -118,5 +118,5 @@ springdoc:
 
 # 토스 설정
 toss:
-  secret-key: "test_sk_kYG57Eba3G46gWZWbe1EVpWDOxmA"
+  secret-key: ${TOSS_SECRET_KEY}
 
