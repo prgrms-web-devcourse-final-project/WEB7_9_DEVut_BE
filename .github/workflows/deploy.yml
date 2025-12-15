@@ -1,0 +1,83 @@
+name: deploy.yml
+env:
+  IMAGE_NAME: devut-buzzerbidder
+
+on:
+  push:
+    paths:
+      - '.github/workflows/**'
+      - 'src/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'Dockerfile'
+    branches:
+      - main
+
+# 권한 최소화/명시화
+permissions:
+  contents: write # 태그/릴리즈
+  packages: write # GHCR 푸시
+
+jobs:
+  makeTagAndRelease:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.create_tag.outputs.new_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Tag
+        id: create_tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.create_tag.outputs.new_tag }}
+          release_name: Release ${{ steps.create_tag.outputs.new_tag }}
+          body: ${{ steps.create_tag.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+  buildImageAndPush:
+    name: 도커 이미지 빌드와 푸시
+    needs: makeTagAndRelease
+    runs-on: ubuntu-latest
+    # 자동배포 도입 시 여기 outputs 코드 삽입
+    steps:
+      - uses: actions/checkout@v4
+
+      # Doppler에서 앱 시크릿 가져오기
+      - name: Doppler Pull
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        run: doppler run --no-file -- echo "Doppler secrets loaded"
+
+      - name: Docker Buildx 설치
+        uses: docker/setup-buildx-action@v2
+
+      - name: 레지스트리 로그인
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 자동 배포 도입시 여기부터 코드 교체
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
+        env:
+          OWNER: "${{ github.repository_owner }}"
+
+      - name: 빌드 앤 푸시
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_NAME }}:${{ needs.makeTagAndRelease.outputs.tag_name }},
+            ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_NAME }}:latest
