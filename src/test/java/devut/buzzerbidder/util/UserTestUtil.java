@@ -45,12 +45,10 @@ public class UserTestUtil {
         User user = User.builder()
                 .email(email)
                 .password(encodedPassword)
-                .name("홍길동")
                 .nickname(nickname)
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .profileImageUrl(profileImageUrl)
                 .role(User.UserRole.USER)
-                .providerType(User.ProviderType.EMAIL)
                 .build();
 
         return userRepository.save(user);
