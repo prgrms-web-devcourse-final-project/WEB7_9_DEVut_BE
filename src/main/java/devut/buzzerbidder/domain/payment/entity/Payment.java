@@ -1,23 +1,16 @@
 package devut.buzzerbidder.domain.payment.entity;
 
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @Entity
 @Getter
-@EntityListeners(AuditingEntityListener.class)
-public class Payment {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Payment extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -52,12 +45,6 @@ public class Payment {
 
     @Enumerated(EnumType.STRING)
     private PaymentMethod method;
-
-    @CreatedDate
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
 
     private OffsetDateTime approvedAt;
 

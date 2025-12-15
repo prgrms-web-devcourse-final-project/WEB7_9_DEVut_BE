@@ -79,6 +79,8 @@ public class PaymentService {
                 response.approvedAt());
         paymentRepository.save(payment);
 
+        // TODO: 금액 재검증 후, 코인 충전 추가
+
         return PaymentConfirmResponseDto.from(payment);
     }
 
