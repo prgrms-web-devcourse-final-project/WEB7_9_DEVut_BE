@@ -2,9 +2,7 @@ package devut.buzzerbidder.domain.wallet.service;
 
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.wallet.entity.Wallet;
-import devut.buzzerbidder.domain.wallet.entity.WalletHistory;
 import devut.buzzerbidder.domain.wallet.enums.WalletTransactionType;
-import devut.buzzerbidder.domain.wallet.repository.WalletHistoryRepository;
 import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
@@ -18,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WalletService {
 
     private final WalletRepository walletRepository;
-    private final WalletHistoryRepository walletHistoryRepository;
+    private final WalletHistoryService walletHistoryService;
 
     // 지갑 조회
     @Transactional(readOnly = true)
@@ -34,6 +32,24 @@ public class WalletService {
         return wallet.getBizz();
     }
 
+    // 잔액이 충분한지 확인 (API 조회용)
+    @Transactional(readOnly = true)
+    public boolean hasEnoughBizz(User user, Long amount) {
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        validateAmount(amount);
+
+        Wallet wallet = findByUserIdOrThrow(user.getId());
+        return wallet.getBizz() >= amount;
+    }
+
+    // 지갑 존재 확인
+    @Transactional(readOnly = true)
+    public boolean hasWallet(Long userId) {
+        return walletRepository.existsByUserId(userId);
+    }
+
     // 지갑 생성
     public void createWallet(User user) {
         if (walletRepository.existsByUserId(user.getId())) {
@@ -44,8 +60,32 @@ public class WalletService {
                 .user(user)
                 .bizz(0L)
                 .build();
-
         walletRepository.save(wallet);
+    }
+
+    // 충전
+    public void chargeBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.CHARGE);
+    }
+
+    // 환불(거래 취소 시)
+    public void refundBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.REFUND);
+    }
+
+    // 관리자 지급
+    public void grantBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.ADMIN_GRANT);
+    }
+
+    // 출금
+    public void withdrawBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.WITHDRAW);
+    }
+
+    // 관리자 차감
+    public void deductBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.ADMIN_DEDUCT);
     }
 
     // A유저 -> B유저 송금
@@ -78,28 +118,8 @@ public class WalletService {
         }
 
         // 송금 실행
-        updateBizzWithHistory(fromWallet, fromUser, amount, WalletTransactionType.PAY_TO_USER);
-        updateBizzWithHistory(toWallet, toUser, amount, WalletTransactionType.RECEIVE_FROM_USER);
-    }
-
-    public void chargeBizz(User user, Long amount) {
-        changeBizz(user, amount, WalletTransactionType.CHARGE);
-    }
-
-    public void refundBizz(User user, Long amount) {
-        changeBizz(user, amount, WalletTransactionType.REFUND);
-    }
-
-    public void grantBizz(User user, Long amount) {
-        changeBizz(user, amount, WalletTransactionType.ADMIN_GRANT);
-    }
-
-    public void withdrawBizz(User user, Long amount) {
-        changeBizz(user, amount, WalletTransactionType.WITHDRAW);
-    }
-
-    public void deductBizz(User user, Long amount) {
-        changeBizz(user, amount, WalletTransactionType.ADMIN_DEDUCT);
+        updateBizzAndRecordHistory(fromWallet, fromUser, amount, WalletTransactionType.PAY_TO_USER);
+        updateBizzAndRecordHistory(toWallet, toUser, amount, WalletTransactionType.RECEIVE_FROM_USER);
     }
 
     /* ==================== 이 밑으로는 헬퍼 메서드 ==================== */
@@ -118,7 +138,7 @@ public class WalletService {
         validateAmount(amount);
 
         Wallet wallet = findByUserIdWithLockOrThrow(user.getId());
-        updateBizzWithHistory(wallet, user, amount, type);
+        updateBizzAndRecordHistory(wallet, user, amount, type);
     }
 
     // 금액 검증
@@ -129,7 +149,7 @@ public class WalletService {
     }
 
     // 잔액 업데이트 + 히스토리 기록
-    private void updateBizzWithHistory(Wallet wallet, User user, Long amount, WalletTransactionType type) {
+    private void updateBizzAndRecordHistory(Wallet wallet, User user, Long amount, WalletTransactionType type) {
         Long balanceBefore = wallet.getBizz();
 
         if (type.isIncrease()) {
@@ -139,20 +159,7 @@ public class WalletService {
         }
 
         Long balanceAfter = wallet.getBizz();
-        recordWalletHistory(user, amount, type, balanceBefore, balanceAfter);
+        walletHistoryService.recordWalletHistory(user, amount, type, balanceBefore, balanceAfter);
     }
 
-    // 지갑 히스토리 기록
-    private void recordWalletHistory(User user, Long amount, WalletTransactionType type,
-                                     Long balanceBefore, Long balanceAfter) {
-        WalletHistory walletHistory = WalletHistory.builder()
-                .user(user)
-                .amount(amount)
-                .type(type)
-                .bizzBalanceBefore(balanceBefore)
-                .bizzBalanceAfter(balanceAfter)
-                .build();
-
-        walletHistoryRepository.save(walletHistory);
-    }
 }
