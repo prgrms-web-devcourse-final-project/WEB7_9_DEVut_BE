@@ -51,6 +51,8 @@ jobs:
       - uses: actions/checkout@v4
 
       # Doppler에서 앱 시크릿 가져오기
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v2
       - name: Doppler Pull
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
