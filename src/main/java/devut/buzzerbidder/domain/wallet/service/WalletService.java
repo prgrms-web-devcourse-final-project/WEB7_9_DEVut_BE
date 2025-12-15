@@ -18,13 +18,6 @@ public class WalletService {
     private final WalletRepository walletRepository;
     private final WalletHistoryService walletHistoryService;
 
-    // 지갑 조회
-    @Transactional(readOnly = true)
-    public Wallet findByUserIdOrThrow(Long userId) {
-        return walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.WALLET_NOT_FOUND));
-    }
-
     // 잔액 조회
     @Transactional(readOnly = true)
     public Long getBizzBalance(User user) {
@@ -123,6 +116,12 @@ public class WalletService {
     }
 
     /* ==================== 이 밑으로는 헬퍼 메서드 ==================== */
+
+    // 지갑 조회
+    private Wallet findByUserIdOrThrow(Long userId) {
+        return walletRepository.findByUserId(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.WALLET_NOT_FOUND));
+    }
 
     // 지갑 조회(비관적 락 적용)
     private Wallet findByUserIdWithLockOrThrow(Long userId) {
