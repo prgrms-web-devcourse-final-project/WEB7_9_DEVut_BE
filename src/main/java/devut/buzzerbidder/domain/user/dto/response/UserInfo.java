@@ -13,9 +13,6 @@ public record UserInfo(
         @Schema(description = "이메일", example = "user@example.com")
         String email,
 
-        @Schema(description = "이름", example = "홍길동")
-        String name,
-
         @Schema(description = "닉네임", example = "hong123")
         String nickname,
 
@@ -29,7 +26,6 @@ public record UserInfo(
         return new UserInfo(
                 user.getId(),
                 user.getEmail(),
-                user.getName(),
                 user.getNickname(),
                 user.getBirthDate(),
                 user.getProfileImageUrl()
