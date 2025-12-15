@@ -115,3 +115,8 @@ springdoc:
     enabled: true
     display-request-duration: true
     doc-expansion: list
+
+# 토스 설정
+toss:
+  secret-key: "test_sk_kYG57Eba3G46gWZWbe1EVpWDOxmA"
+

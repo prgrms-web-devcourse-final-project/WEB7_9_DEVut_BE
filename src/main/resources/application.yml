@@ -60,3 +60,7 @@ logging:
 delivery:
   client-id: ${DELIVERY_CLIENT_ID}
   client-secret: ${DELIVERY_CLIENT_SECRET}
+
+# 토스 설정
+toss:
+  secret-key: "test_sk_kYG57Eba3G46gWZWbe1EVpWDOxmA"
