@@ -1,5 +1,12 @@
 package devut.buzzerbidder.domain.user.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import devut.buzzerbidder.TestcontainersConfig;
@@ -13,7 +20,12 @@ import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.util.UserTestUtil;
-import org.junit.jupiter.api.*;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -24,15 +36,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
-
-import java.time.LocalDateTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -90,39 +93,37 @@ public class MyPageControllerTest {
         User user2 = userRepository.findByEmail("new2@user.com").orElseThrow();
 
         LiveItem liveItem1 = LiveItem.builder()
-                .sellerUserId(1L)
-                .auctionId(1L)
+                .sellerUserId(user1.getId())
+                .auctionRoom(null)
                 .name("Sample Live Item")
                 .category(LiveItem.Category.ELECTRONICS)
                 .description("샘플 설명입니다.")
-                .initPrice(1000000) // TODO: Long으로 변경 필요
+                .initPrice(1000000L)
                 .deliveryInclude(false)
-                .Itemstatus(LiveItem.ItemStatus.NEW) // TODO: PascalCase로 변경 필요
+                .itemStatus(LiveItem.ItemStatus.NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
-                .liveDate(LocalDateTime.now().plusDays(3))
+                .liveTime(LocalDateTime.now().plusDays(3))
                 .directDealAvailable(false)
                 .region("서울시 강남구 역삼동")
                 .preferredPlace("역삼역 근처 카페")
-                .images(null)
                 .build();
 
         liveItemRepository.save(liveItem1);
 
         LiveItem liveItem2 = LiveItem.builder()
-                .sellerUserId(1L)
-                .auctionId(1L)
+                .sellerUserId(user1.getId())
+                .auctionRoom(null)
                 .name("Sample Live Item")
                 .category(LiveItem.Category.ELECTRONICS)
                 .description("샘플 설명입니다.")
-                .initPrice(1000000) // TODO: Long으로 변경 필요
+                .initPrice(1000000L)
                 .deliveryInclude(false)
-                .Itemstatus(LiveItem.ItemStatus.NEW) // TODO: PascalCase로 변경 필요
+                .itemStatus(LiveItem.ItemStatus.NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
-                .liveDate(LocalDateTime.now().plusDays(3))
+                .liveTime(LocalDateTime.now().plusDays(3))
                 .directDealAvailable(false)
                 .region("서울시 강남구 역삼동")
                 .preferredPlace("역삼역 근처 카페")
-                .images(null)
                 .build();
 
         liveItemRepository.save(liveItem2);

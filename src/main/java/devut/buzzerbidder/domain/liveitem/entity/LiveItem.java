@@ -113,6 +113,7 @@ public class LiveItem extends BaseEntity {
 
     @BatchSize(size = 50)
     @OneToMany(mappedBy = "liveItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<LiveItemImage> images = new ArrayList<>();
 
 

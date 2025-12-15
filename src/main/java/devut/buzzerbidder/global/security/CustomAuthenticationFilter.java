@@ -55,15 +55,22 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     private void authenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String requestURI = request.getRequestURI();
 
+        // OAuth2 관련 경로는 통과 (OAuth2 로그인 플로우)
+        if(requestURI.startsWith("/oauth2/") || requestURI.startsWith("/login/oauth2/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // API 경로가 아닌 경우 통과 (Swagger UI, H2 Console, WebSocket 등)
         if(!requestURI.startsWith("/api/")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 허용된 API 경로들 (회원가입, 로그인)
+        // 허용된 API 경로들 (회원가입, 로그인, 토큰 재발급)
         if(requestURI.equals("/api/v1/users/signup") || 
-           requestURI.equals("/api/v1/users/signin")) {
+           requestURI.equals("/api/v1/users/signin") ||
+           requestURI.equals("/api/v1/users/refresh")) {
             filterChain.doFilter(request, response);
             return;
         }
