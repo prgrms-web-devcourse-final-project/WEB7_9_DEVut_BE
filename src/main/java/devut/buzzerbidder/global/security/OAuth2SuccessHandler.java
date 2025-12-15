@@ -63,7 +63,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         log.info("OAuth2 로그인 성공, 프론트엔드로 리다이렉트: userId={}", user.getId());
 
-        // 프론트엔드로 리다이렉트 (실제 프론트엔드 URL로 변경 필요)
+        // TODO: 프론트엔드로 리다이렉트 (실제 프론트엔드 URL로 변경 필요)
         getRedirectStrategy().sendRedirect(request, response, "http://localhost:3000/oauth2/success");
     }
 }
