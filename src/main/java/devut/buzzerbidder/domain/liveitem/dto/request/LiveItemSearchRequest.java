@@ -5,7 +5,7 @@ import devut.buzzerbidder.domain.liveitem.entity.LiveItem.Category;
 public record LiveItemSearchRequest(
     String name,
     Category category,
-    Integer minBidPrice,
-    Integer maxBidPrice
+    Long minBidPrice,
+    Long maxBidPrice
 ){
 }

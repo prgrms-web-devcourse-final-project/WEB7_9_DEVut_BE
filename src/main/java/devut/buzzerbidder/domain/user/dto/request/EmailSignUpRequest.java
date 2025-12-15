@@ -23,11 +23,6 @@ public record EmailSignUpRequest(
                 message = "비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.")
         String password,
 
-        @Schema(description = "이름", example = "홍길동")
-        @NotBlank(message = "이름은 필수입니다.")
-        @Size(max = 50, message = "이름은 50자 이하여야 합니다.")
-        String name,
-
         @Schema(description = "닉네임", example = "hong123")
         @NotBlank(message = "닉네임은 필수입니다.")
         @Size(min = 2, max = 50, message = "닉네임은 2자 이상 50자 이하여야 합니다.")

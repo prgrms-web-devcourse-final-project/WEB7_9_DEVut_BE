@@ -12,27 +12,47 @@ spring:
   
   # JPA 설정
   jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
     show-sql: false
     properties:
       hibernate:
+        # Dialect 명시적 설정 (JDBC 메타데이터 접근 비활성화 시 필요)
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: false
         use_sql_comments: false
+        jdbc: 
+          batch_size: 20
+        # 스키마 관리 설정 - JDBC 메타데이터 접근 비활성화로 drop 시도 방지
+        boot:
+          allow_jdbc_metadata_access: false
+        # Hibernate가 메타데이터를 기반으로 drop을 시도하지 않도록 함
+        hbm2ddl:
+          auto: create
+
+# 로깅 설정 - Hibernate 스키마 관리 경고 메시지 숨기기
+logging:
+  level:
+    org.hibernate.tool.schema.spi.ExceptionHandlerLoggedImpl: ERROR
+    org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase: ERROR
   
   # Redis 설정 (Testcontainers가 동적으로 설정합니다)
   data:
     redis:
       timeout: 1000ms
+  
+  # OAuth2 자동 설정 비활성화 (테스트 환경에서는 OAuth2를 사용하지 않음)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientWebSecurityAutoConfiguration
 
 # 서버 설정
 server:
   port: 0  # 랜덤 포트 사용
 
 delivery:
-  client-id: ${DELIVERY_CLIENT_ID}
-  client-secret: ${DELIVERY_CLIENT_SECRET}
+  client-id: ${DELIVERY_CLIENT_ID:test-client-id}
+  client-secret: ${DELIVERY_CLIENT_SECRET:test-client-secret}
 
 # JWT 설정
 custom:
@@ -40,3 +60,18 @@ custom:
     secretPattern: test-secret-key-for-jwt-token-generation-minimum-256-bits-long-for-security
     expireSeconds: 1800  # 30분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)
+# AWS S3 설정 (테스트 환경용 더미 값)
+cloud:
+  aws:
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+    s3:
+      bucket: test-bucket
+    region:
+      static: ap-northeast-2
+
+# 토스 설정
+toss:
+  secret-key: "test_sk_kYG57Eba3G46gWZWbe1EVpWDOxmA"
+

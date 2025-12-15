@@ -43,10 +43,10 @@ public class AuthTokenService {
                 Map.of("id", user.getId(), "email", user.getEmail(), "nickname",
                         user.getNickname())
         );
-        
+
         // Redis에 refresh token 저장
         refreshTokenService.saveRefreshToken(user.getId(), refreshToken);
-        
+
         return refreshToken;
     }
 
@@ -67,7 +67,7 @@ public class AuthTokenService {
 
     /**
      * Refresh Token을 검증하고 해당하는 User를 반환합니다.
-     * 
+     *
      * @param refreshToken 검증할 refresh token
      * @return 검증된 User 엔티티
      * @throws BusinessException 토큰이 유효하지 않은 경우
