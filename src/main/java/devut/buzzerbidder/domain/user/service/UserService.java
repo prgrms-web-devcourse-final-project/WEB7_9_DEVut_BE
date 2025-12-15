@@ -1,5 +1,6 @@
 package devut.buzzerbidder.domain.user.service;
 
+import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
 import devut.buzzerbidder.domain.user.dto.request.UserUpdateRequest;
@@ -25,6 +26,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final ProviderRepository providerRepository;
     private final PasswordEncoder passwordEncoder;
+    private final WalletService walletService;
 
     @Transactional
     public LoginResponse signUp(EmailSignUpRequest request) {
@@ -83,6 +85,8 @@ public class UserService {
                 .user(user)
                 .build();
         providerRepository.save(provider);
+
+        walletService.createWallet(user); // Bizz 지갑 생성
 
         return LoginResponse.of(user);
     }

@@ -4,7 +4,9 @@ import devut.buzzerbidder.domain.deal.enums.AuctionType;
 import devut.buzzerbidder.domain.deal.service.LiveDealService;
 import devut.buzzerbidder.domain.deliveryTracking.dto.request.DeliveryRequest;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
+import devut.buzzerbidder.domain.user.dto.response.UserInfoResponse;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.service.MypageService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
@@ -21,8 +23,9 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "MyPage", description = "마이페이지 api")
 public class MyPageController {
 
-    private final LiveDealService liveDealService;
     private final RequestContext requestContext;
+    private final LiveDealService liveDealService;
+    private final MypageService mypageService;
 
     @PatchMapping("/deals/{type}/{dealId}/delivery")
     @Operation(summary = "배송 정보 입력")
@@ -61,6 +64,14 @@ public class MyPageController {
 //        TODO: else if ~ 지연경매 코드
 
         return trackInfo != null ? ApiResponse.ok("배송조회 성공", trackInfo) : ApiResponse.error(ErrorCode.DEAL_DELIVERY_INFO_NOT_FOUND, null);
+    }
+
+    @GetMapping
+    @Operation(summary = "내 정보 조회")
+    public ApiResponse<UserInfoResponse> getMyInfo() {
+        User currentUser = requestContext.getCurrentUser();
+
+        return ApiResponse.ok("회원정보 조회 성공", mypageService.getUserInfo(currentUser));
     }
 
 }
