@@ -16,6 +16,7 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
 
     @Query("""
     SELECT new devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse(
+        li.id,
         li.name,
         MIN(img.imageUrl),
         li.liveTime
