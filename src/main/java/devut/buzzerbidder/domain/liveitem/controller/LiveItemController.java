@@ -90,7 +90,6 @@ public class LiveItemController {
     @Operation(summary = "경매품 단건 조회")
     public ApiResponse<LiveItemDetailResponse> getLiveItem(
         @PathVariable Long id,
-        @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
         LiveItemDetailResponse response = liveItemService.getLiveItem(id);
