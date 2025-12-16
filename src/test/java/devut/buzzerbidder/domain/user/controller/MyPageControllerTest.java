@@ -19,6 +19,7 @@ import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
+import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.util.UserTestUtil;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,6 +60,8 @@ public class MyPageControllerTest {
     private UserTestUtil userTestUtil;
     @Autowired
     private LiveItemRepository liveItemRepository;
+    @Autowired
+    private WalletService walletService;
 
     private DeliveryRequest deliveryRequest;
     private String user1Token;
@@ -302,4 +305,27 @@ public class MyPageControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("내 정보 조회 테스트")
+    class t3 {
+
+        @Test
+        @DisplayName("내 정보 조회")
+        void getMyInfo() throws Exception {
+
+            mockMvc.perform(get("/api/v1/users/me")
+                            .header("Authorization", "Bearer " + user1Token))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.resultCode").value("200"))
+                    .andExpect(jsonPath("$.msg").value("회원정보 조회 성공"))
+                    .andExpect(jsonPath("$.data.userInfo.id").value(2))
+                    .andExpect(jsonPath("$.data.userInfo.email").value("new@user.com"))
+                    .andExpect(jsonPath("$.data.userInfo.nickname").value("gildong"))
+                    .andExpect(jsonPath("$.data.userInfo.birthDate").value("1990-01-01"))
+                    .andExpect(jsonPath("$.data.userInfo.profileImageUrl").value(org.hamcrest.Matchers.nullValue()))
+                    .andExpect(jsonPath("$.data.bizz").value(0L));
+        }
+
+    }
 }

@@ -1,32 +1,39 @@
-# Build stage
-FROM gradle:8-jdk21 AS build
+# 첫 번째 스테이지: 빌드 스테이지		여기서 builder라고 별명 붙임
+FROM gradle:jdk-21-and-23-graal-jammy AS builder
+
+# 작업 디렉토리 설정
 WORKDIR /app
 
-# Gradle 캐시 활용을 위해 의존성 파일 먼저 복사
-COPY build.gradle settings.gradle ./
-COPY gradle ./gradle
+# 소스 코드와 Gradle 래퍼 복사 (jar 만드려면 필요한 설정파일)
+COPY build.gradle .
+COPY settings.gradle .
 
-# 의존성 다운로드 (캐시 활용)
-RUN gradle dependencies --no-daemon || true
+# Gradle 래퍼에 실행 권한 부여
+RUN gradle wrapper
 
-# 소스 코드 복사 및 빌드
-COPY src ./src
-RUN gradle build --no-daemon -x test
+# 종속성 설치
+RUN ./gradlew dependencies --no-daemon
 
-# Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+# 소스 코드 복사
+COPY src src
+
+# 애플리케이션 빌드
+RUN ./gradlew build --no-daemon
+
+# 이후 명령어가 편하도록 불필요한 파일 삭제
+RUN rm -rf /app/build/libs/*-plain.jar
+
+# 두 번째 스테이지: 실행 스테이지
+FROM container-registry.oracle.com/graalvm/jdk:23
+
+# 작업 디렉토리 설정
 WORKDIR /app
 
-# 빌드된 JAR 파일 복사
-COPY --from=build /app/build/libs/*.jar app.jar
+# 첫 번째 스테이지에서 빌드된 JAR 파일 복사
+COPY --from=builder /app/build/libs/*.jar app.jar
 
 # 포트 노출
 EXPOSE 8080
 
-# 헬스체크
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
-
-# 애플리케이션 실행
-ENTRYPOINT ["java", "-jar", "app.jar"]
-
+# 실행할 JAR 파일 지정
+ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=prod", "app.jar"]

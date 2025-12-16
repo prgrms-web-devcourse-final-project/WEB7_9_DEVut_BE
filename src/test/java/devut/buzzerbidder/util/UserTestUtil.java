@@ -3,6 +3,9 @@ package devut.buzzerbidder.util;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
+import devut.buzzerbidder.domain.wallet.entity.Wallet;
+import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
+import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDate;
@@ -18,14 +21,18 @@ public class UserTestUtil {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenService authTokenService;
+    private final WalletService walletService;
 
     public UserTestUtil(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            AuthTokenService authTokenService) {
+            AuthTokenService authTokenService,
+            WalletService walletService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authTokenService = authTokenService;
+        this.walletService = walletService;
     }
 
     /**
@@ -51,7 +58,10 @@ public class UserTestUtil {
                 .role(User.UserRole.USER)
                 .build();
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        walletService.createWallet(savedUser);
+
+        return savedUser;
     }
 
     /**

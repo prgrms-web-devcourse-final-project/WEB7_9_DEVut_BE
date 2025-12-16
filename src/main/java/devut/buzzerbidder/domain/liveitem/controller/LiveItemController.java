@@ -89,8 +89,7 @@ public class LiveItemController {
     @GetMapping("/{id}")
     @Operation(summary = "경매품 단건 조회")
     public ApiResponse<LiveItemDetailResponse> getLiveItem(
-        @PathVariable Long id,
-        @AuthenticationPrincipal CustomUserDetails userDetails
+        @PathVariable Long id
     ) {
 
         LiveItemDetailResponse response = liveItemService.getLiveItem(id);

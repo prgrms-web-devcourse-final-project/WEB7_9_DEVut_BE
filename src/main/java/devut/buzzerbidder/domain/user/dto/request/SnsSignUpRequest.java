@@ -19,11 +19,6 @@ public record SnsSignUpRequest(
         @NotBlank(message = "Provider ID는 필수입니다.")
         String providerId,
 
-        @Schema(description = "이름", example = "홍길동")
-        @NotBlank(message = "이름은 필수입니다.")
-        @Size(max = 50, message = "이름은 50자 이하여야 합니다.")
-        String name,
-
         @Schema(description = "닉네임", example = "gildong")
         @NotBlank(message = "닉네임은 필수입니다.")
         @Size(min = 2, max = 50, message = "닉네임은 2자 이상 50자 이하여야 합니다.")
@@ -37,4 +32,5 @@ public record SnsSignUpRequest(
         String image
 ) {
 }
+
 
