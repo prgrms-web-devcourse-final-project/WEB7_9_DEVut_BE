@@ -18,7 +18,6 @@ public record LiveItemModifyRequest(
     Boolean directDealAvailable,
     String region,
     String preferredPlace,
-    AuctionStatus auctionStatus,
     List<String> images
 ) {
 
