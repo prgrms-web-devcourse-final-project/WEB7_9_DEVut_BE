@@ -89,6 +89,7 @@ public class PaymentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        // 지갑 없으면 생성, 있으면 조회(비관적 락)
         Wallet wallet = walletService.getOrCreateWalletWithLock(user);
         walletService.chargeBizz(user, amount);
         walletRepository.save(wallet);
@@ -126,6 +127,7 @@ public class PaymentService {
         int page = request.page() == null ? 0 : request.page();
         int size = request.size() == null ? 10 : request.size();
 
+        // 조회 성능 보호용(최대 크기 제한)
         if (page >= 15) {
             throw new BusinessException(ErrorCode.INVALID_PAGE_ERROR);
         }
