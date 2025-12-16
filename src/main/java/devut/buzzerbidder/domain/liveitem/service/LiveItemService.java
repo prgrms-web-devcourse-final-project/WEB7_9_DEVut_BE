@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -229,14 +230,11 @@ public class LiveItemService {
         Pageable pageable
     ) {
 
-        Page<LiveItem> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), pageable);
+        Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), pageable);
 
         // 이곳에 레디스 가격 필터링
 
-        List<LiveItemResponse> dtoList =
-            page.getContent().stream()
-                .map(LiveItemResponse::new)
-                .toList();
+        List<LiveItemResponse> dtoList = page.getContent();
 
         return new LiveItemListResponse(dtoList, page.getTotalElements());
     }
