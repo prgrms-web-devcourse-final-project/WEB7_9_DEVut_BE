@@ -81,7 +81,7 @@ public class LiveItemService {
 
         }
 
-        if (retry == 0) {
+        if (retry <= 0) {
             throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
         }
 
@@ -179,7 +179,7 @@ public class LiveItemService {
                 }
             }
 
-            if (retry == 0) {
+            if (retry <= 0) {
                 throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
             }
 
@@ -260,7 +260,7 @@ public class LiveItemService {
                 throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
             }
         }
-        if (retry == 0) {
+        if (retry <= 0) {
             throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
         }
 
