@@ -16,6 +16,7 @@ import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,7 @@ public class LiveItemService {
     private final LiveItemRepository liveItemRepository;
     private final LikeLiveService likeLiveService;
     private final AuctionRoomService auctionRoomService;
+    private final StringRedisTemplate redisTemplate;
 
     //TODO: 이미지 처리 코드 활성화
     @Transactional
@@ -58,14 +61,48 @@ public class LiveItemService {
             throw new BusinessException(ErrorCode.INVALID_LIVETIME);
         }
 
-        // 경매 시간 기반 방 할당
-        AuctionRoom auctionRoom = auctionRoomService.assignRoom(reqBody.liveTime());
+        String lockKey = "lock:auction-room:" + reqBody.liveTime();
 
-        LiveItem liveItem = new LiveItem(reqBody, user);
+        int retry = 3;
+        while (retry-- > 0) {
+            Boolean locked = redisTemplate.opsForValue()
+                .setIfAbsent(lockKey, "LOCK", Duration.ofSeconds(3));
 
-        liveItemRepository.save(liveItem);
+            if (Boolean.TRUE.equals(locked)) {
+                break;
+            }
 
-        auctionRoom.addItem(liveItem);
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+            }
+
+        }
+
+        if (retry < 0) {
+            throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+        }
+
+        LiveItem liveItem;
+
+        try {
+            // ===== 임계영역 시작 =====
+            // 경매 시간 기반 방 할당
+            AuctionRoom auctionRoom = auctionRoomService.assignRoom(reqBody.liveTime());
+
+            liveItem = new LiveItem(reqBody, user);
+
+            liveItemRepository.save(liveItem);
+
+            auctionRoom.addItem(liveItem);
+
+        } finally {
+
+            redisTemplate.delete(lockKey);
+
+        }
 
         /*
         if (reqBody.images() == null || reqBody.images().isEmpty()) {
@@ -127,14 +164,38 @@ public class LiveItemService {
                 throw new BusinessException(ErrorCode.INVALID_LIVETIME);
             }
 
-            AuctionRoom oldRoom = liveItem.getAuctionRoom();
-            oldRoom.removeItem(liveItem);
+            // === Redis Lock 적용 시작 ===
+            String lockKey = "lock:auction-room:" + reqBody.liveTime();
+            int retry = 3;
+            while (retry-- > 0) {
+                Boolean locked = redisTemplate.opsForValue()
+                    .setIfAbsent(lockKey, "LOCK", Duration.ofSeconds(3));
+                if (Boolean.TRUE.equals(locked)) break;
 
-            AuctionRoom newRoom = auctionRoomService.assignRoom(reqBody.liveTime());
-            liveItem.changeAuctionRoom(newRoom);
+                try { Thread.sleep(50); }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+                }
+            }
 
-            newRoom.addItem(liveItem);
+            if (retry < 0) {
+                throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+            }
+
+            try {
+                // AuctionRoom 재할당
+                AuctionRoom oldRoom = liveItem.getAuctionRoom();
+                oldRoom.removeItem(liveItem);
+                AuctionRoom newRoom = auctionRoomService.assignRoom(reqBody.liveTime());
+                liveItem.changeAuctionRoom(newRoom);
+                newRoom.addItem(liveItem);
+
+            } finally {
+                redisTemplate.delete(lockKey);
+            }
         }
+
 
         /*
         // 새 이미지 URL이 있고, 기존과 다를 때만 교체
@@ -185,8 +246,30 @@ public class LiveItemService {
             throw new BusinessException(ErrorCode.EDIT_UNAVAILABLE);
         }
 
-        AuctionRoom auctionRoom = liveItem.getAuctionRoom();
-        auctionRoom.removeItem(liveItem);
+        // === Redis Lock 적용 시작 ===
+        String lockKey = "lock:auction-room:" + liveItem.getLiveTime();
+        int retry = 3;
+        while (retry-- > 0) {
+            Boolean locked = redisTemplate.opsForValue()
+                .setIfAbsent(lockKey, "LOCK", Duration.ofSeconds(3));
+            if (Boolean.TRUE.equals(locked)) break;
+
+            try { Thread.sleep(50); }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+            }
+        }
+        if (retry < 0) {
+            throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+        }
+
+        try {
+            AuctionRoom auctionRoom = liveItem.getAuctionRoom();
+            auctionRoom.removeItem(liveItem);
+        } finally {
+            redisTemplate.delete(lockKey);
+        }
 
         /*
         if (!liveItem.getImages().isEmpty()) {
