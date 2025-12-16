@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 
 @Schema(description = "회원 프로필 정보")
-public record UserProfileResponse(
+public record UserUpdateResponse(
         @Schema(description = "회원 ID", example = "1")
         Long id,
 
@@ -22,25 +22,17 @@ public record UserProfileResponse(
         @Schema(description = "프로필 이미지 URL", example = "https://example.com/image.jpg")
         String image,
 
-        @Schema(description = "생성일", example = "2025-12-08")
-        LocalDate createDate,
-
         @Schema(description = "수정일", example = "2025-12-09")
-        LocalDate modifyDate,
-
-        @Schema(description = "보유 Bizz 잔액", example = "38200")
-        Long bizz
+        LocalDate modifyDate
 ) {
-    public static UserProfileResponse from(User user, Long bizz) {
-        return new UserProfileResponse(
+    public static UserUpdateResponse from(User user) {
+        return new UserUpdateResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
                 user.getBirthDate(),
                 user.getProfileImageUrl(),
-                user.getCreateDate() != null ? user.getCreateDate().toLocalDate() : null,
-                user.getModifyDate() != null ? user.getModifyDate().toLocalDate() : null,
-                bizz
+                user.getModifyDate() != null ? user.getModifyDate().toLocalDate() : null
         );
     }
 }

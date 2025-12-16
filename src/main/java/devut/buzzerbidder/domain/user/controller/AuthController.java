@@ -2,9 +2,7 @@ package devut.buzzerbidder.domain.user.controller;
 
 import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
-import devut.buzzerbidder.domain.user.dto.request.UserUpdateRequest;
 import devut.buzzerbidder.domain.user.dto.response.LoginResponse;
-import devut.buzzerbidder.domain.user.dto.response.UserProfileResponse;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
 import devut.buzzerbidder.domain.user.service.UserService;
@@ -14,8 +12,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
-public class UserController {
+public class AuthController {
 
     private final UserService userService;
     private final AuthTokenService authTokenService;
@@ -64,23 +60,6 @@ public class UserController {
         setTokensInResponse(user.getId());
 
         return ApiResponse.ok("AccessToken 재발급에 성공했습니다.");
-    }
-
-    @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 정보를 조회합니다.")
-    @GetMapping("/me")
-    public ApiResponse<UserProfileResponse> getMyProfile() {
-        User currentUser = requestContext.getCurrentUser();
-        UserProfileResponse response = userService.getMyProfile(currentUser);
-        return ApiResponse.ok("회원정보 조회 성공", response);
-    }
-
-    @Operation(summary = "내 정보 수정", description = "현재 로그인한 사용자의 정보를 수정합니다.")
-    @PatchMapping("/me")
-    public ApiResponse<UserProfileResponse> updateMyProfile(
-            @Valid @RequestBody UserUpdateRequest request) {
-        User currentUser = requestContext.getCurrentUser();
-        UserProfileResponse response = userService.updateMyProfile(currentUser, request);
-        return ApiResponse.ok("회원정보 수정 성공", response);
     }
     
     private void setTokensInResponse(Long userId) {

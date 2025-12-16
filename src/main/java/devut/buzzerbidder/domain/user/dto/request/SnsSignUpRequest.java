@@ -26,7 +26,7 @@ public record SnsSignUpRequest(
 
         @Schema(description = "생년월일", example = "2000-01-01")
         @NotNull(message = "생년월일은 필수입니다.")
-        LocalDate birth,
+        LocalDate birthDate,
 
         @Schema(description = "프로필 이미지 URL", example = "https://example.com/image.jpg")
         String image

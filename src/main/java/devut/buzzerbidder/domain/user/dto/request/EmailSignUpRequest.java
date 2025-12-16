@@ -33,7 +33,7 @@ public record EmailSignUpRequest(
         LocalDate birthDate,
 
         @Schema(description = "프로필 이미지 URL", example = "https://example.com/image.jpg")
-        String profileImageUrl
+        String image
 ) {
 }
 
