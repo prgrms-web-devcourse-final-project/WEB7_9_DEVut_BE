@@ -21,7 +21,7 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: false
         use_sql_comments: false
-        jdbc: 
+        jdbc:
           batch_size: 20
         # 스키마 관리 설정 - JDBC 메타데이터 접근 비활성화로 drop 시도 방지
         boot:
@@ -35,12 +35,12 @@ logging:
   level:
     org.hibernate.tool.schema.spi.ExceptionHandlerLoggedImpl: ERROR
     org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase: ERROR
-  
+
   # Redis 설정 (Testcontainers가 동적으로 설정합니다)
   data:
     redis:
       timeout: 1000ms
-  
+
   # OAuth2 자동 설정 비활성화 (테스트 환경에서는 OAuth2를 사용하지 않음)
   autoconfigure:
     exclude:
@@ -73,5 +73,4 @@ cloud:
 
 # 토스 설정
 toss:
-  secret-key: "test_sk_kYG57Eba3G46gWZWbe1EVpWDOxmA"
-
+  secret-key: ${TOSS_SECRET_KEY}
