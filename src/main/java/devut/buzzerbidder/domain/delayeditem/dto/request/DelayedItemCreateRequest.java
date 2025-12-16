@@ -1,6 +1,5 @@
 package devut.buzzerbidder.domain.delayeditem.dto.request;
 
-import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.Category;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.ItemStatus;
 import java.time.LocalDateTime;
