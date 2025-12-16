@@ -16,6 +16,7 @@ import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import devut.buzzerbidder.global.image.ImageService;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -33,8 +34,8 @@ public class LiveItemService {
     private final LiveItemRepository liveItemRepository;
     private final LikeLiveService likeLiveService;
     private final AuctionRoomService auctionRoomService;
+    private final ImageService imageService;
 
-    //TODO: 이미지 처리 코드 활성화
     @Transactional
     public LiveItemResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
 
@@ -67,23 +68,18 @@ public class LiveItemService {
 
         auctionRoom.addItem(liveItem);
 
-        /*
+
         if (reqBody.images() == null || reqBody.images().isEmpty()) {
             throw new BusinessException(ErrorCode.IMAGE_FILE_EMPTY);
         }
 
         reqBody.images().forEach(url ->
             liveItem.addImage(new LiveItemImage(url, liveItem)));
-        */
-
-        // 임시 코드
-        liveItem.addImage(new LiveItemImage("example.jpg", liveItem));
 
         return new LiveItemResponse(liveItem);
 
     }
 
-    //TODO: 이미지 처리 코드 활성화
     @Transactional
     public LiveItemResponse modifyLiveItem(Long id, LiveItemModifyRequest reqBody, User user) {
 
@@ -136,7 +132,7 @@ public class LiveItemService {
             newRoom.addItem(liveItem);
         }
 
-        /*
+
         // 새 이미지 URL이 있고, 기존과 다를 때만 교체
         if (reqBody.images() != null) {
             List<String> oldImageUrls = liveItem.getImages().stream()
@@ -159,7 +155,6 @@ public class LiveItemService {
             newImageUrls.forEach(url ->
                 liveItem.addImage(new LiveItemImage(url, liveItem)));
         }
-         */
 
         liveItemRepository.save(liveItem);
 
@@ -167,7 +162,6 @@ public class LiveItemService {
 
     }
 
-    //TODO: 이미지 처리 코드 활성화
     @Transactional
     public void deleteLiveItem(Long id, User user) {
 
@@ -188,7 +182,7 @@ public class LiveItemService {
         AuctionRoom auctionRoom = liveItem.getAuctionRoom();
         auctionRoom.removeItem(liveItem);
 
-        /*
+
         if (!liveItem.getImages().isEmpty()) {
             List<String> oldImageUrls = liveItem.getImages().stream()
                 .map(LiveItemImage::getImageUrl)
@@ -196,7 +190,7 @@ public class LiveItemService {
             imageService.deleteFiles(oldImageUrls);
             liveItem.deleteImageUrls(); // 이미지 리스트 초기화
         }
-        */
+
 
 
         liveItemRepository.delete(liveItem);
