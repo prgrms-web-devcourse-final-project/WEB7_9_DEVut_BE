@@ -40,7 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Import(TestcontainersConfig.class)
 @Transactional
-class UserControllerTest {
+class AuthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -68,7 +68,7 @@ class UserControllerTest {
     void setUp() {
         // @Transactional 어노테이션으로 인해 각 테스트 후 자동 롤백되므로
         // 별도로 데이터를 삭제할 필요가 없습니다.
-        
+
         signUpRequest = new EmailSignUpRequest(
                 "test@example.com",
                 "password123!",
@@ -93,7 +93,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("200"))
                 .andExpect(jsonPath("$.msg").value("회원가입에 성공했습니다."))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()));
-        
+
         // 회원가입이 실제로 성공했는지 DB에서 확인
         assert userRepository.existsByEmail("test@example.com");
     }
@@ -272,7 +272,7 @@ class UserControllerTest {
         // given
         User user = userRepository.save(createUser("test@example.com", "hong123"));
         String refreshToken = authTokenService.genRefreshToken(user);
-        
+
         // Redis에서 토큰 삭제
         refreshTokenService.deleteRefreshToken(user.getId());
 
@@ -285,250 +285,6 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("유효하지 않은 토큰입니다."));
     }
 
-    @Test
-    @DisplayName("내 정보 조회 API 성공")
-    void getMyProfile_Success() throws Exception {
-        // given
-        User user = userRepository.save(createUser("test@example.com", "hong123"));
-        String accessToken = authTokenService.genAccessToken(user);
-
-        // when & then
-        mockMvc.perform(get("/api/v1/users/me")
-                        .header("Authorization", "Bearer " + accessToken))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("회원정보 조회 성공"))
-                .andExpect(jsonPath("$.data.id").value(user.getId()))
-                .andExpect(jsonPath("$.data.email").value("test@example.com"))
-                .andExpect(jsonPath("$.data.nickname").value("hong123"))
-                .andExpect(jsonPath("$.data.birth").value("1990-01-01"));
-    }
-
-    @Test
-    @DisplayName("내 정보 조회 API 실패 - 인증 없음")
-    void getMyProfile_Fail_Unauthorized() throws Exception {
-        // when & then
-        mockMvc.perform(get("/api/v1/users/me"))
-                .andDo(print())
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("내 정보 수정 API 성공")
-    void updateMyProfile_Success() throws Exception {
-        // given
-        User user = userRepository.save(createUser("test@example.com", "hong123"));
-        String accessToken = authTokenService.genAccessToken(user);
-
-        UserUpdateRequest updateRequest = new UserUpdateRequest(
-                "updated@example.com",
-                "updatedNickname",
-                LocalDate.of(1995, 5, 5),
-                "https://example.com/updated.jpg"
-        );
-        String requestBody = objectMapper.writeValueAsString(updateRequest);
-
-        // when & then
-        mockMvc.perform(patch("/api/v1/users/me")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.msg").value("회원정보 수정 성공"))
-                .andExpect(jsonPath("$.data.email").value("updated@example.com"))
-                .andExpect(jsonPath("$.data.nickname").value("updatedNickname"))
-                .andExpect(jsonPath("$.data.birth").value("1995-05-05"))
-                .andExpect(jsonPath("$.data.image").value("https://example.com/updated.jpg"));
-
-        // DB에서 실제로 수정되었는지 확인
-        User updatedUser = userRepository.findById(user.getId()).orElseThrow();
-        assert updatedUser.getEmail().equals("updated@example.com");
-        assert updatedUser.getNickname().equals("updatedNickname");
-    }
-
-    @Test
-    @DisplayName("내 정보 수정 API 성공 - 부분 수정 (nickname만)")
-    void updateMyProfile_Success_PartialUpdate() throws Exception {
-        // given
-        User user = userRepository.save(createUser("test@example.com", "hong123"));
-        String accessToken = authTokenService.genAccessToken(user);
-
-        UserUpdateRequest updateRequest = new UserUpdateRequest(
-                null, // email은 변경하지 않음
-                "newNickname",
-                null, // birth는 변경하지 않음
-                null  // image는 변경하지 않음
-        );
-        String requestBody = objectMapper.writeValueAsString(updateRequest);
-
-        // when & then
-        mockMvc.perform(patch("/api/v1/users/me")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.data.email").value("test@example.com")) // 기존 값 유지
-                .andExpect(jsonPath("$.data.nickname").value("newNickname")) // 변경됨
-                .andExpect(jsonPath("$.data.birth").value("1990-01-01")); // 기존 값 유지
-    }
-
-    @Test
-    @DisplayName("내 정보 수정 API 실패 - 인증 없음")
-    void updateMyProfile_Fail_Unauthorized() throws Exception {
-        // given
-        UserUpdateRequest updateRequest = new UserUpdateRequest(
-                "updated@example.com",
-                "updatedNickname",
-                LocalDate.of(1995, 5, 5),
-                null
-        );
-        String requestBody = objectMapper.writeValueAsString(updateRequest);
-
-        // when & then
-        mockMvc.perform(patch("/api/v1/users/me")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andDo(print())
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @DisplayName("내 정보 수정 API 실패 - 이메일 중복")
-    void updateMyProfile_Fail_DuplicateEmail() throws Exception {
-        // given
-        User user1 = userRepository.save(createUser("test1@example.com", "user1"));
-        User user2 = userRepository.save(createUser("test2@example.com", "user2"));
-        String accessToken = authTokenService.genAccessToken(user1);
-
-        UserUpdateRequest updateRequest = new UserUpdateRequest(
-                "test2@example.com", // 이미 사용 중인 이메일
-                "user1",
-                LocalDate.of(1990, 1, 1),
-                null
-        );
-        String requestBody = objectMapper.writeValueAsString(updateRequest);
-
-        // when & then
-        mockMvc.perform(patch("/api/v1/users/me")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andDo(print())
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.resultCode").value("M002"))
-                .andExpect(jsonPath("$.msg").value("이미 사용 중인 이메일입니다."));
-    }
-
-    @Test
-    @DisplayName("내 정보 수정 API 실패 - 닉네임 중복")
-    void updateMyProfile_Fail_DuplicateNickname() throws Exception {
-        // given
-        User user1 = userRepository.save(createUser("test1@example.com", "user1"));
-        User user2 = userRepository.save(createUser("test2@example.com", "user2"));
-        String accessToken = authTokenService.genAccessToken(user1);
-
-        UserUpdateRequest updateRequest = new UserUpdateRequest(
-                "test1@example.com",
-                "user2", // 이미 사용 중인 닉네임
-                LocalDate.of(1990, 1, 1),
-                null
-        );
-        String requestBody = objectMapper.writeValueAsString(updateRequest);
-
-        // when & then
-        mockMvc.perform(patch("/api/v1/users/me")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andDo(print())
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.resultCode").value("M003"))
-                .andExpect(jsonPath("$.msg").value("이미 사용 중인 닉네임입니다."));
-    }
-
-    @Test
-    @DisplayName("내 정보 수정 API 실패 - 유효성 검증 실패 (이메일 형식 오류)")
-    void updateMyProfile_Fail_InvalidEmail() throws Exception {
-        // given
-        User user = userRepository.save(createUser("test@example.com", "hong123"));
-        String accessToken = authTokenService.genAccessToken(user);
-
-        UserUpdateRequest updateRequest = new UserUpdateRequest(
-                "invalid-email", // 잘못된 이메일 형식
-                "hong123",
-                LocalDate.of(1990, 1, 1),
-                null
-        );
-        String requestBody = objectMapper.writeValueAsString(updateRequest);
-
-        // when & then
-        mockMvc.perform(patch("/api/v1/users/me")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andDo(print())
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("내 정보 수정 API 성공 - 자신의 이메일로 변경 (중복 아님)")
-    void updateMyProfile_Success_SameEmail() throws Exception {
-        // given
-        User user = userRepository.save(createUser("test@example.com", "hong123"));
-        String accessToken = authTokenService.genAccessToken(user);
-
-        UserUpdateRequest updateRequest = new UserUpdateRequest(
-                "test@example.com", // 자신의 기존 이메일
-                "newNickname",
-                LocalDate.of(1995, 5, 5),
-                null
-        );
-        String requestBody = objectMapper.writeValueAsString(updateRequest);
-
-        // when & then
-        mockMvc.perform(patch("/api/v1/users/me")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.data.email").value("test@example.com"))
-                .andExpect(jsonPath("$.data.nickname").value("newNickname"));
-    }
-
-    @Test
-    @DisplayName("내 정보 수정 API 성공 - 자신의 닉네임으로 변경 (중복 아님)")
-    void updateMyProfile_Success_SameNickname() throws Exception {
-        // given
-        User user = userRepository.save(createUser("test@example.com", "hong123"));
-        String accessToken = authTokenService.genAccessToken(user);
-
-        UserUpdateRequest updateRequest = new UserUpdateRequest(
-                "updated@example.com",
-                "hong123", // 자신의 기존 닉네임
-                LocalDate.of(1995, 5, 5),
-                null
-        );
-        String requestBody = objectMapper.writeValueAsString(updateRequest);
-
-        // when & then
-        mockMvc.perform(patch("/api/v1/users/me")
-                        .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200"))
-                .andExpect(jsonPath("$.data.email").value("updated@example.com"))
-                .andExpect(jsonPath("$.data.nickname").value("hong123"));
-    }
-
     private User createUser(String email, String nickname) {
         User user = User.builder()
                 .email(email)
@@ -537,9 +293,9 @@ class UserControllerTest {
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .role(User.UserRole.USER)
                 .build();
-        
+
         user = userRepository.save(user);
-        
+
         // EMAIL Provider 생성 (이메일 로그인을 위해 필요)
         Provider provider = Provider.builder()
                 .providerType(Provider.ProviderType.EMAIL)
@@ -547,7 +303,7 @@ class UserControllerTest {
                 .user(user)
                 .build();
         providerRepository.save(provider);
-        
+
         return user;
     }
 }

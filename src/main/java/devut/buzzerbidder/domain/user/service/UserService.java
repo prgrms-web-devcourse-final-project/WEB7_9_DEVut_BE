@@ -5,10 +5,12 @@ import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
 import devut.buzzerbidder.domain.user.dto.request.UserUpdateRequest;
 import devut.buzzerbidder.domain.user.dto.response.LoginResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserProfileResponse;
+import devut.buzzerbidder.domain.user.dto.response.UserUpdateResponse;
 import devut.buzzerbidder.domain.user.entity.Provider;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
+import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.util.Optional;
@@ -25,6 +27,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final ProviderRepository providerRepository;
     private final PasswordEncoder passwordEncoder;
+    private final WalletService walletService;
 
     @Transactional
     public LoginResponse signUp(EmailSignUpRequest request) {
@@ -70,7 +73,7 @@ public class UserService {
                 .password(encodedPassword)
                 .nickname(request.nickname())
                 .birthDate(request.birthDate())
-                .profileImageUrl(request.profileImageUrl())
+                .profileImageUrl(request.image())
                 .role(User.UserRole.USER)
                 .build();
 
@@ -114,11 +117,11 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
     public UserProfileResponse getMyProfile(User user) {
-        return UserProfileResponse.from(user);
+        return UserProfileResponse.from(user, walletService.getBizzBalance(user));
     }
 
     @Transactional
-    public UserProfileResponse updateMyProfile(User user, UserUpdateRequest request) {
+    public UserUpdateResponse updateMyProfile(User user, UserUpdateRequest request) {
         // 이메일 변경 시 중복 체크
         if (request.email() != null && !request.email().equals(user.getEmail())) {
             if (userRepository.existsByEmail(request.email())) {
@@ -137,10 +140,10 @@ public class UserService {
         user.updateProfile(
                 request.email(),
                 request.nickname(),
-                request.birth(),
+                request.birthDate(),
                 request.image()
         );
 
-        return UserProfileResponse.from(user);
+        return UserUpdateResponse.from(user);
     }
 }
