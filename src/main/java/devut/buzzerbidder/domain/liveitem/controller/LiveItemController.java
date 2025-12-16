@@ -4,7 +4,6 @@ import devut.buzzerbidder.domain.liveitem.dto.request.AuctionStatusRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
-import devut.buzzerbidder.domain.liveitem.dto.request.PagingRequest;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemDetailResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemListResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
@@ -14,6 +13,8 @@ import devut.buzzerbidder.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -77,11 +78,12 @@ public class LiveItemController {
     @Operation(summary = "경매품 다건 조회")
     public ApiResponse<LiveItemListResponse> getLiveItems(
         LiveItemSearchRequest reqBody,
-        PagingRequest paging
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "15") int size
     ) {
-
+        Pageable pageable = PageRequest.of(page - 1, size);
         LiveItemListResponse response =
-            liveItemService.getLiveItems(reqBody, paging.toPageable());
+            liveItemService.getLiveItems(reqBody, pageable);
 
         return ApiResponse.ok("경매품 다건 조회", response);
     }

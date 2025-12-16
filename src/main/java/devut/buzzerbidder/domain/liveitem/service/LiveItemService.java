@@ -16,6 +16,7 @@ import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,7 @@ public class LiveItemService {
     private final LiveItemRepository liveItemRepository;
     private final LikeLiveService likeLiveService;
     private final AuctionRoomService auctionRoomService;
+    private final StringRedisTemplate redisTemplate;
 
     //TODO: 이미지 처리 코드 활성화
     @Transactional
@@ -235,14 +238,11 @@ public class LiveItemService {
         Pageable pageable
     ) {
 
-        Page<LiveItem> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), pageable);
+        Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), pageable);
 
         // 이곳에 레디스 가격 필터링
 
-        List<LiveItemResponse> dtoList =
-            page.getContent().stream()
-                .map(LiveItemResponse::new)
-                .toList();
+        List<LiveItemResponse> dtoList = page.getContent();
 
         return new LiveItemListResponse(dtoList, page.getTotalElements());
     }
