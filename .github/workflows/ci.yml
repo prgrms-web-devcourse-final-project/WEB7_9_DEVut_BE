@@ -1,0 +1,82 @@
+name: ci.yml
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize] # synchronize: PR에 commit push
+    paths:
+      - "WEB7_9_DEVut_BE/src/main/**"
+      - "WEB7_9_DEVut_BE/src/test/**"
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 코드 체크아웃
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. JDK 설치
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # 도커 mysql 및 redis 이미지 캐시
+      - name: Cache Docker image for Testcontainers
+        id: docker-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /tmp/mysql-image.tar
+            /tmp/redis-image.tar
+          # redis가 추가되었으므로 key를 변경하여 새로운 캐시를 생성하도록 유도
+          key: docker-image-mysql-8-0-33-redis-latest
+          restore-keys: docker-image-mysql-
+
+      # GitHub Actions 두번째 실행부터는 캐시된 docker 이미지 load
+      - name: Load cached Docker image (if exists)
+        if: steps.docker-cache.outputs.cache-hit == 'true'
+        run: |
+          echo "Loading cached Docker images..."
+          docker load -i /tmp/mysql-image.tar
+          docker load -i /tmp/redis-image.tar
+
+      # GitHub Actions 최초 실행시, docker pull (Cache Miss 상황)
+      - name: Pull Docker image (first run only)
+        if: steps.docker-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Pulling Docker images..."
+          
+          # MySQL Pull & Save
+          docker pull mysql:8.0.33
+          docker save mysql:8.0.33 -o /tmp/mysql-image.tar
+          
+          # Redis Pull & Save (추가됨)
+          docker pull redis:latest
+          docker save redis:latest -o /tmp/redis-image.tar
+
+      # Gradle 캐시
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper/
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+
+      # 3. Gradle 권한 부여
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4. 빌드 + 테스트
+      - name: Build with Gradle
+        env:
+          # testcontainers 실행시 발생할 수 있는 메모리 부족 방지를 위해 최대 힙메모리 지정
+          GRADLE_OPTS: "-Xmx1024m"
+        run: ./gradlew clean build -x test
