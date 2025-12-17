@@ -116,8 +116,8 @@ public class DelayedItem extends BaseEntity {
 
     // Enum 정의
     public enum Category {
-        APPAREL, ENTERTAINMENT, ELECTRONICS, COLLECTIBLES, SPORTS_LEISURE,
-        SHOES, BAGS, PLATES, ART_COLLECTIBLES, MOVIES
+        CLOTHES, ENTERTAINMENT, ELECTRONICS, COLLECTIBLES, SPORTS,
+        SHOES, BAGS, PLATES, ART, MOVIE
     }
 
     public enum ItemStatus {

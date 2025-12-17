@@ -2,11 +2,13 @@ package devut.buzzerbidder.domain.delayeditem.repository;
 
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.Category;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -49,5 +51,10 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
         WHERE di.id IN :ids
         """)
     List<DelayedItem> findDelayedItemsWithImages(@Param("ids") List<Long> ids);
+
+    // 입찰 시 동시성 제어를 위한 비관적 락
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT di FROM DelayedItem di WHERE di.id = :id")
+    Optional<DelayedItem> findByIdWithLock(@Param("id") Long id);
 
 }

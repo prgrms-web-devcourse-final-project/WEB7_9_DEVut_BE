@@ -39,8 +39,9 @@ public class DelayedItemService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // 종료 시간 검증 - 최소 1시간 이후
-        if (reqBody.endTime().isBefore(now.plusHours(1))) {
+        // 종료 시간 검증 - 최소 3일 이후, 최대 10일 이내
+        if (reqBody.endTime().isBefore(now.plusDays(3)) ||
+            reqBody.endTime().isAfter(now.plusDays(10))) {
             throw new BusinessException(ErrorCode.INVALID_END_TIME);
         }
 
@@ -83,9 +84,10 @@ public class DelayedItemService {
         // 일반 정보 수정
         delayedItem.modifyDelayedItem(reqBody);
 
-        // 종료 시간 검증
+        // 종료 시간 검증 - 최소 3일 이후, 최대 10일 이내
         LocalDateTime now = LocalDateTime.now();
-        if (reqBody.endTime().isBefore(now.plusHours(1))) {
+        if (reqBody.endTime().isBefore(now.plusDays(3)) ||
+            reqBody.endTime().isAfter(now.plusDays(10))) {
             throw new BusinessException(ErrorCode.INVALID_END_TIME);
         }
 

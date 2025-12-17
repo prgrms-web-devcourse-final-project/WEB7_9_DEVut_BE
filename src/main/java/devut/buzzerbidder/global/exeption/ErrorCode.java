@@ -59,10 +59,14 @@ public enum ErrorCode {
     EDIT_UNAVAILABLE("LI003", HttpStatus.BAD_REQUEST,"1시간안에 시작하는 경매는 수정 및 삭제가 불가능합니다."),
 
     // ========== DelayedItem 도메인 에러 ==========
-    INVALID_END_TIME("DI001", HttpStatus.BAD_REQUEST, "종료 시간이 유효하지 않습니다."),
+    INVALID_END_TIME("DI001", HttpStatus.BAD_REQUEST, "종료 시간은 최소 3일 이후, 최대 10일 이내여야 합니다."),
     EDIT_UNAVAILABLE_DUE_TO_BIDS("DI002", HttpStatus.CONFLICT, "입찰이 있어 수정할 수 없습니다."),
     DELETE_UNAVAILABLE_DUE_TO_BIDS("DI003", HttpStatus.CONFLICT, "입찰이 있어 삭제할 수 없습니다."),
     AUCTION_ALREADY_ENDED("DI004", HttpStatus.BAD_REQUEST,"이미 종료된 경매입니다."),
+    CANNOT_BID_OWN_ITEM("DI005", HttpStatus.BAD_REQUEST, "본인의 경매품에는 입찰할 수 없습니다."),
+    BID_PRICE_TOO_LOW("DI006", HttpStatus.BAD_REQUEST, "입찰 금액이 현재가보다 같거나 낮습니다."),
+    INSUFFICIENT_COINS("DI007", HttpStatus.BAD_REQUEST, "코인이 부족합니다."),
+    ALREADY_HIGHEST_BIDDER("DI008", HttpStatus.BAD_REQUEST, "이미 최고가 입찰자입니다."),
 
     // ========== Notification 도메인 에러 ==========
     NOTIFICATION_NOT_FOUND("NO001", HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
