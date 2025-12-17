@@ -8,7 +8,6 @@ import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.TestcontainersConfig;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
-import java.time.LocalDate;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -62,7 +61,6 @@ class AuthTokenServiceTest {
                 .email("test@example.com")
                 .password(passwordEncoder.encode("password123!"))
                 .nickname("hong123")
-                .birthDate(LocalDate.of(1990, 1, 1))
                 .role(User.UserRole.USER)
                 .build();
         testUser = userRepository.save(testUser);
@@ -198,7 +196,6 @@ class AuthTokenServiceTest {
                 .email("user2@example.com")
                 .password(passwordEncoder.encode("password123!"))
                 .nickname("kim123")
-                .birthDate(LocalDate.of(1995, 5, 5))
                 .role(User.UserRole.USER)
                 .build();
         user2 = userRepository.save(user2);
@@ -283,7 +280,6 @@ class AuthTokenServiceTest {
                 .email("user2@example.com")
                 .password(passwordEncoder.encode("password123!"))
                 .nickname("kim123")
-                .birthDate(LocalDate.of(1995, 5, 5))
                 .role(User.UserRole.USER)
                 .build();
         user2 = userRepository.save(user2);

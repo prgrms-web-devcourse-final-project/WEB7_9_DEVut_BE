@@ -30,6 +30,24 @@ spring:
         hbm2ddl:
           auto: create
 
+  # Redis 설정 (Testcontainers가 동적으로 설정합니다)
+  data:
+    redis:
+      timeout: 1000ms
+  
+  # 메일 설정 (테스트 환경용)
+  mail:
+    host: localhost
+    port: 587
+    username: test@test.com
+    password: test
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
 # 로깅 설정 - Hibernate 스키마 관리 경고 메시지 숨기기
 logging:
   level:
@@ -60,6 +78,9 @@ custom:
     secretPattern: test-secret-key-for-jwt-token-generation-minimum-256-bits-long-for-security
     expireSeconds: 1800  # 30분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)
+  email:
+    verification:
+      subject: "테스트 이메일 인증 코드"
 # AWS S3 설정 (테스트 환경용 더미 값)
 cloud:
   aws:
