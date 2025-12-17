@@ -1,4 +1,4 @@
-package devut.buzzerbidder.domain.payment.dto.request;
+package devut.buzzerbidder.domain.wallet.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

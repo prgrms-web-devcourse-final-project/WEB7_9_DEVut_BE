@@ -1,20 +1,25 @@
 package devut.buzzerbidder.domain.payment.service;
 
 import devut.buzzerbidder.domain.payment.dto.PaymentHistoryItemDto;
-import devut.buzzerbidder.domain.payment.dto.request.*;
-import devut.buzzerbidder.domain.payment.dto.response.*;
+import devut.buzzerbidder.domain.payment.dto.request.PaymentConfirmRequestDto;
+import devut.buzzerbidder.domain.payment.dto.request.PaymentCreateRequestDto;
+import devut.buzzerbidder.domain.payment.dto.request.PaymentFailRequestDto;
+import devut.buzzerbidder.domain.payment.dto.request.PaymentHistoryRequestDto;
+import devut.buzzerbidder.domain.payment.dto.response.PaymentConfirmResponseDto;
+import devut.buzzerbidder.domain.payment.dto.response.PaymentCreateResponseDto;
+import devut.buzzerbidder.domain.payment.dto.response.PaymentFailResponseDto;
+import devut.buzzerbidder.domain.payment.dto.response.PaymentHistoryResponseDto;
 import devut.buzzerbidder.domain.payment.entity.Payment;
 import devut.buzzerbidder.domain.payment.entity.PaymentMethod;
 import devut.buzzerbidder.domain.payment.entity.PaymentStatus;
-import devut.buzzerbidder.domain.payment.entity.Withdraw;
 import devut.buzzerbidder.domain.payment.infrastructure.tosspayments.TossPaymentsClient;
 import devut.buzzerbidder.domain.payment.infrastructure.tosspayments.dto.response.TossConfirmResponseDto;
 import devut.buzzerbidder.domain.payment.repository.PaymentRepository;
-import devut.buzzerbidder.domain.payment.repository.WithdrawRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.entity.Wallet;
 import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
+import devut.buzzerbidder.domain.wallet.repository.WithdrawRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
@@ -164,32 +169,8 @@ public class PaymentService {
         return PaymentHistoryResponseDto.from(payments, paymentPage);
     }
 
-    @Transactional
-    public WithdrawResponseDto withdrawPayment(Long userId, WithdrawRequestDto request) {
-
-        // 동시 출금 요청 방지용(비관적 락)
-        Wallet wallet = walletRepository.findByUserIdWithLock(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.WALLET_NOT_FOUND));
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        Long amount = request.amount();
-
-        if (wallet.getBizz() < amount) {
-            throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
-        }
-
-        walletService.withdrawBizz(user, amount);
-        walletRepository.save(wallet);
-
-        Withdraw withdraw = new Withdraw(user, amount, request.bankName(), request.accountNumber(), request.accountHolder());
-        withdrawRepository.save(withdraw);
-
-        return WithdrawResponseDto.from(withdraw);
-    }
-
     private String genOrderId() {
         return "ORDER_" + System.currentTimeMillis();
     }
+
 }

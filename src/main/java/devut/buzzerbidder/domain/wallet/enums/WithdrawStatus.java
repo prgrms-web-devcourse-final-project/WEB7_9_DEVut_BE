@@ -1,4 +1,4 @@
-package devut.buzzerbidder.domain.payment.entity;
+package devut.buzzerbidder.domain.wallet.enums;
 
 public enum WithdrawStatus {
     REQUESTED,      // 출금 요청 완료

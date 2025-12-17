@@ -1,6 +1,6 @@
-package devut.buzzerbidder.domain.payment.dto.response;
+package devut.buzzerbidder.domain.wallet.dto.response;
 
-import devut.buzzerbidder.domain.payment.entity.Withdraw;
+import devut.buzzerbidder.domain.wallet.entity.Withdraw;
 
 import java.time.LocalDateTime;
 

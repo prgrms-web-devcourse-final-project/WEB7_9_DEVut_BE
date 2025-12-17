@@ -1,5 +1,6 @@
-package devut.buzzerbidder.domain.payment.entity;
+package devut.buzzerbidder.domain.wallet.entity;
 
+import devut.buzzerbidder.domain.wallet.enums.WithdrawStatus;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;

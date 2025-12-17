@@ -52,12 +52,5 @@ public class PaymentController {
         return ApiResponse.ok("결제 내역 조회에 성공했습니다.", response);
     }
 
-    @PostMapping("/withdraw")
-    public ApiResponse<WithdrawResponseDto> withdrawPayment(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody WithdrawRequestDto request
-    ) {
-        WithdrawResponseDto response = paymentService.withdrawPayment(userDetails.getId(), request);
-        return ApiResponse.ok("출금요청이 완료되었습니다.", response);
-    }
+
 }
