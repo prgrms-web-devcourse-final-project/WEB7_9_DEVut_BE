@@ -13,11 +13,12 @@ import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -91,6 +92,8 @@ public class UserService {
                 .user(user)
                 .build();
         providerRepository.save(provider);
+
+        walletService.createWallet(user);
 
         // 회원가입 완료 후 인증 완료 표시 삭제
         emailVerificationService.deleteVerifiedEmail(request.email());
