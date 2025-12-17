@@ -2,10 +2,16 @@ package devut.buzzerbidder.domain.user.controller;
 
 import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
+import devut.buzzerbidder.domain.user.dto.request.EmailVerificationCodeRequest;
+import devut.buzzerbidder.domain.user.dto.request.EmailVerificationRequest;
 import devut.buzzerbidder.domain.user.dto.response.LoginResponse;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
+import devut.buzzerbidder.domain.user.service.EmailService;
+import devut.buzzerbidder.domain.user.service.EmailVerificationService;
 import devut.buzzerbidder.domain.user.service.UserService;
+import devut.buzzerbidder.global.exeption.BusinessException;
+import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
 import devut.buzzerbidder.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +32,28 @@ public class AuthController {
     private final UserService userService;
     private final AuthTokenService authTokenService;
     private final RequestContext requestContext;
+    private final EmailService emailService;
+    private final EmailVerificationService emailVerificationService;
+
+    @Operation(summary = "이메일 인증 코드 발송", description = "회원가입을 위한 이메일 인증 코드를 발송합니다.")
+    @PostMapping("/email/verification")
+    public ApiResponse<Void> sendVerificationCode(
+            @Valid @RequestBody EmailVerificationRequest request) {
+        String code = emailVerificationService.generateAndSaveVerificationCode(request.email());
+        emailService.sendVerificationCode(request.email(), code);
+        return ApiResponse.ok("이메일 인증 코드가 발송되었습니다.");
+    }
+
+    @Operation(summary = "이메일 인증 코드 검증", description = "발송된 이메일 인증 코드를 검증합니다.")
+    @PostMapping("/email/verification/verify")
+    public ApiResponse<Void> verifyCode(
+            @Valid @RequestBody EmailVerificationCodeRequest request) {
+        boolean isValid = emailVerificationService.verifyCode(request.email(), request.code());
+        if (!isValid) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return ApiResponse.ok("이메일 인증이 완료되었습니다.");
+    }
 
     @Operation(summary = "회원가입", description = "이메일을 사용한 회원가입을 진행합니다.")
     @PostMapping("/signup")

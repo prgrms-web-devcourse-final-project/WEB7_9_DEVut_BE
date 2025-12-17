@@ -8,7 +8,6 @@ import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
-import java.time.LocalDate;
 import org.springframework.stereotype.Component;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -53,7 +52,6 @@ public class UserTestUtil {
                 .email(email)
                 .password(encodedPassword)
                 .nickname(nickname)
-                .birthDate(LocalDate.of(1990, 1, 1))
                 .profileImageUrl(profileImageUrl)
                 .role(User.UserRole.USER)
                 .build();
