@@ -12,7 +12,6 @@ import devut.buzzerbidder.domain.user.entity.Provider;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +62,6 @@ public class BaseInitData {
                 .email(email)
                 .password(encodedPassword)
                 .nickname(nickname)
-                .birthDate(LocalDate.of(1990, 1, 1))
                 .profileImageUrl(null)
                 .role(devut.buzzerbidder.domain.user.entity.User.UserRole.USER)
                 .build();
