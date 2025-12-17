@@ -25,7 +25,6 @@ import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.util.UserTestUtil;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -331,7 +330,6 @@ public class UserMeControllerTest {
                     .andExpect(jsonPath("$.data.id").value(user1.getId()))
                     .andExpect(jsonPath("$.data.email").value("new@user.com"))
                     .andExpect(jsonPath("$.data.nickname").value("gildong"))
-                    .andExpect(jsonPath("$.data.birthDate").value("1990-01-01"))
                     .andExpect(jsonPath("$.data.image").value(org.hamcrest.Matchers.nullValue()))
                     .andExpect(jsonPath("$.data.createDate").exists())
                     .andExpect(jsonPath("$.data.modifyDate").exists())
@@ -358,7 +356,6 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "updated@example.com",
                     "updatedNickname",
-                    LocalDate.of(1995, 5, 5),
                     "https://example.com/updated.jpg"
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
@@ -374,7 +371,6 @@ public class UserMeControllerTest {
                     .andExpect(jsonPath("$.msg").value("회원정보 수정 성공"))
                     .andExpect(jsonPath("$.data.email").value("updated@example.com"))
                     .andExpect(jsonPath("$.data.nickname").value("updatedNickname"))
-                    .andExpect(jsonPath("$.data.birthDate").value("1995-05-05"))
                     .andExpect(jsonPath("$.data.image").value("https://example.com/updated.jpg"));
 
             // DB에서 실제로 수정되었는지 확인
@@ -392,7 +388,6 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     null, // email은 변경하지 않음
                     "newNickname",
-                    null, // birth는 변경하지 않음
                     null  // image는 변경하지 않음
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
@@ -407,7 +402,6 @@ public class UserMeControllerTest {
                     .andExpect(jsonPath("$.resultCode").value("200"))
                     .andExpect(jsonPath("$.data.email").value("new@user.com")) // 기존 값 유지
                     .andExpect(jsonPath("$.data.nickname").value("newNickname")) // 변경됨
-                    .andExpect(jsonPath("$.data.birthDate").value("1990-01-01")) // 기존 값 유지
                     .andExpect(jsonPath("$.data.image").value(org.hamcrest.Matchers.nullValue()));
         }
 
@@ -418,7 +412,6 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "updated@example.com",
                     "updatedNickname",
-                    LocalDate.of(1995, 5, 5),
                     null
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
@@ -440,7 +433,6 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "new2@user.com", // 이미 사용 중인 이메일
                     null,
-                    LocalDate.of(1990, 1, 1),
                     null
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
@@ -465,7 +457,6 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "new@user.com",
                     "gilddong", // 이미 사용 중인 닉네임
-                    LocalDate.of(1990, 1, 1),
                     null
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
@@ -490,7 +481,6 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "invalid-email", // 잘못된 이메일 형식
                     null,
-                    LocalDate.of(1990, 1, 1),
                     null
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
@@ -513,7 +503,6 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "new@user.com", // 자신의 기존 이메일
                     "newNickname",
-                    LocalDate.of(1995, 5, 5),
                     null
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
@@ -539,7 +528,6 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "updated@example.com",
                     "gildong", // 자신의 기존 닉네임
-                    LocalDate.of(1995, 5, 5),
                     null
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);

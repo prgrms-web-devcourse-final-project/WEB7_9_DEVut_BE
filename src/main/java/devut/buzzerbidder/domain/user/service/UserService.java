@@ -27,10 +27,16 @@ public class UserService {
     private final UserRepository userRepository;
     private final ProviderRepository providerRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
     private final WalletService walletService;
 
     @Transactional
     public LoginResponse signUp(EmailSignUpRequest request) {
+        // 이메일 인증 완료 여부 확인
+        if (!emailVerificationService.isEmailVerified(request.email())) {
+            throw new BusinessException(ErrorCode.USER_EMAIL_NOT_VERIFIED);
+        }
+
         // 이메일로 기존 사용자 조회
         Optional<User> existingUser = userRepository.findByEmail(request.email());
         
@@ -60,9 +66,9 @@ public class UserService {
 
         // 신규 사용자 생성
         // 닉네임 중복 체크
-        if (userRepository.existsByNickname(request.nickname())) {
-            throw new BusinessException(ErrorCode.USER_NICKNAME_DUPLICATE);
-        }
+        // if (userRepository.existsByNickname(request.nickname())) {
+        // throw new BusinessException(ErrorCode.USER_NICKNAME_DUPLICATE);
+        // }
 
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(request.password());
@@ -72,7 +78,6 @@ public class UserService {
                 .email(request.email())
                 .password(encodedPassword)
                 .nickname(request.nickname())
-                .birthDate(request.birthDate())
                 .profileImageUrl(request.image())
                 .role(User.UserRole.USER)
                 .build();
@@ -86,6 +91,9 @@ public class UserService {
                 .user(user)
                 .build();
         providerRepository.save(provider);
+
+        // 회원가입 완료 후 인증 완료 표시 삭제
+        emailVerificationService.deleteVerifiedEmail(request.email());
 
         return LoginResponse.of(user);
     }
@@ -116,8 +124,10 @@ public class UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
+
     public UserProfileResponse getMyProfile(User user) {
-        return UserProfileResponse.from(user, walletService.getBizzBalance(user));
+        Long bizz = walletService.getBizzBalance(user);
+        return UserProfileResponse.from(user, bizz);
     }
 
     @Transactional
@@ -140,7 +150,6 @@ public class UserService {
         user.updateProfile(
                 request.email(),
                 request.nickname(),
-                request.birthDate(),
                 request.image()
         );
 
