@@ -7,12 +7,13 @@ import devut.buzzerbidder.domain.delayeditem.dto.response.DelayedItemDetailRespo
 import devut.buzzerbidder.domain.delayeditem.dto.response.DelayedItemListResponse;
 import devut.buzzerbidder.domain.delayeditem.dto.response.DelayedItemResponse;
 import devut.buzzerbidder.domain.delayeditem.service.DelayedItemService;
-import devut.buzzerbidder.domain.liveitem.dto.request.PagingRequest;
 import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -70,10 +71,12 @@ public class DelayedItemController {
     @Operation(summary = "지연 경매 목록 조회")
     public ApiResponse<DelayedItemListResponse> getDelayedItems(
         DelayedItemSearchRequest reqBody,
-        PagingRequest paging
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "15") int size
     ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
         DelayedItemListResponse response =
-            delayedItemService.getDelayedItems(reqBody, paging.toPageable());
+            delayedItemService.getDelayedItems(reqBody, pageable);
 
         return ApiResponse.ok("지연 경매 목록 조회", response);
     }

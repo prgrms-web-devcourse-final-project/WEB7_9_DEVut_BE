@@ -156,6 +156,7 @@ public class DelayedItemService {
         long likeCount = likeDelayedService.countByDelayedItemId(id);
 
         return new DelayedItemDetailResponse(
+            delayedItem.getId(),
             delayedItem.getName(),
             delayedItem.getCategory(),
             delayedItem.getDescription(),

@@ -4,18 +4,20 @@ import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidListResponse;
 import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidRequest;
 import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidResponse;
 import devut.buzzerbidder.domain.delayedbid.service.DelayedBidService;
-import devut.buzzerbidder.domain.liveitem.dto.request.PagingRequest;
 import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -46,11 +48,13 @@ public class DelayedBidController {
     @Operation(summary = "지연 경매 입찰 내역 조회")
     public ApiResponse<DelayedBidListResponse> getBidHistory(
         @PathVariable Long id,
-        PagingRequest paging
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "15") int size
     ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
         DelayedBidListResponse response = delayedBidService.getBidHistory(
             id,
-            paging.toPageable()
+            pageable
         );
 
         return ApiResponse.ok("입찰 내역 조회", response);
@@ -70,11 +74,13 @@ public class DelayedBidController {
     @Operation(summary = "내 입찰 내역 조회")
     public ApiResponse<DelayedBidListResponse> getMyBids(
         @AuthenticationPrincipal CustomUserDetails userDetails,
-        PagingRequest paging
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "15") int size
     ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
         DelayedBidListResponse response = delayedBidService.getMyBids(
             userDetails.getUser(),
-            paging.toPageable()
+            pageable
         );
 
         return ApiResponse.ok("내 입찰 내역 조회", response);
