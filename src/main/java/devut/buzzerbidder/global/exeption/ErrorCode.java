@@ -57,7 +57,8 @@ public enum ErrorCode {
     CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
     INVALID_LIVETIME("LI002", HttpStatus.BAD_REQUEST,"유효한 경매 시작 시간이 아닙니다."),
     EDIT_UNAVAILABLE("LI003", HttpStatus.BAD_REQUEST,"1시간안에 시작하는 경매는 수정 및 삭제가 불가능합니다."),
-    IMAGE_FILE_EMPTY("LI003", HttpStatus.BAD_REQUEST,"이미지는 필수입니다."),
+    IMAGE_FILE_EMPTY("LI004", HttpStatus.BAD_REQUEST,"이미지는 필수입니다."),
+    LIVEITEM_NOT_FOUND("LI005", HttpStatus.NOT_FOUND, "라이브 경매품을 찾을 수 없습니다."),
 
     // ========== Notification 도메인 에러 ==========
     NOTIFICATION_NOT_FOUND("NO001", HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
