@@ -155,4 +155,3 @@ springdoc:
 # 토스 설정
 toss:
   secret-key: ${TOSS_SECRET_KEY}
-
