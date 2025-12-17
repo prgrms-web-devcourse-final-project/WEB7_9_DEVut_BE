@@ -58,12 +58,12 @@ public class BaseInitData {
             return;
         }
         String email = "new@user.com";
-        String encodedPassword = passwordEncoder.encode("asdf1234!");
+        String password = "asdf1234!";
         String nickname = "gildong";
 
         EmailSignUpRequest signUpRequest = new EmailSignUpRequest(
                 email,
-                encodedPassword,
+                password,
                 nickname,
                 null
         );
