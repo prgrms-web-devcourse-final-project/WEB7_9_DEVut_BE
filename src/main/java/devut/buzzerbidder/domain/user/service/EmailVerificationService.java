@@ -1,12 +1,11 @@
 package devut.buzzerbidder.domain.user.service;
 
+import java.security.SecureRandom;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -93,7 +92,7 @@ public class EmailVerificationService {
      * 6자리 랜덤 숫자 코드 생성
      */
     private String generateRandomCode() {
-        Random random = new Random();
+        SecureRandom random = new SecureRandom();
         StringBuilder code = new StringBuilder();
         for (int i = 0; i < CODE_LENGTH; i++) {
             code.append(random.nextInt(10));
