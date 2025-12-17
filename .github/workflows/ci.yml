@@ -4,8 +4,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize] # synchronize: PR에 commit push
     paths:
-      - "WEB7_9_DEVut_BE/src/main/**"
-      - "WEB7_9_DEVut_BE/src/test/**"
+      - 'src/**'
+      - 'build.gradle'
+      - 'settings.gradle'
     branches:
       - main
 
