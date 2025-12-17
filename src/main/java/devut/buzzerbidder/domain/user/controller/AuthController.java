@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailVerificationCodeRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailVerificationRequest;
+import devut.buzzerbidder.domain.user.dto.response.EmailVerificationResponse;
 import devut.buzzerbidder.domain.user.dto.response.LoginResponse;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
@@ -17,6 +18,7 @@ import devut.buzzerbidder.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -37,11 +39,16 @@ public class AuthController {
 
     @Operation(summary = "이메일 인증 코드 발송", description = "회원가입을 위한 이메일 인증 코드를 발송합니다.")
     @PostMapping("/email/verification")
-    public ApiResponse<Void> sendVerificationCode(
+    public ApiResponse<EmailVerificationResponse> sendVerificationCode(
             @Valid @RequestBody EmailVerificationRequest request) {
         String code = emailVerificationService.generateAndSaveVerificationCode(request.email());
         emailService.sendVerificationCode(request.email(), code);
-        return ApiResponse.ok("이메일 인증 코드가 발송되었습니다.");
+        
+        Long remainingSeconds = emailVerificationService.getRemainingSeconds(request.email());
+        LocalDateTime expiresAt = emailVerificationService.getExpiresAt(request.email());
+        EmailVerificationResponse response = new EmailVerificationResponse(remainingSeconds, expiresAt);
+        
+        return ApiResponse.ok("이메일 인증 코드가 발송되었습니다.", response);
     }
 
     @Operation(summary = "이메일 인증 코드 검증", description = "발송된 이메일 인증 코드를 검증합니다.")

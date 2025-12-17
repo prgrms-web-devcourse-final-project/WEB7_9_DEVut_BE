@@ -1,6 +1,9 @@
 package devut.buzzerbidder.domain.user.service;
 
 import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +37,7 @@ public class EmailVerificationService {
         String existingVerifiedKey = VERIFIED_EMAIL_PREFIX + email;
         redisTemplate.delete(existingVerifiedKey);
         
-        // 6자리 숫자 인증 코드 생성
+        // 6자리 인증 코드 생성 (숫자, 알파벳, 특수문자 포함)
         String code = generateRandomCode();
         
         // Redis에 저장 (만료 시간: 10분)
@@ -89,13 +92,43 @@ public class EmailVerificationService {
     }
 
     /**
-     * 6자리 랜덤 숫자 코드 생성
+     * 이메일 인증 코드의 남은 시간 조회 (초 단위)
+     * @param email 이메일 주소
+     * @return 남은 시간(초), 인증 코드가 없으면 0
+     */
+    public Long getRemainingSeconds(String email) {
+        String key = VERIFICATION_CODE_PREFIX + email;
+        Long ttl = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+        return ttl != null && ttl > 0 ? ttl : 0L;
+    }
+
+    /**
+     * 이메일 인증 코드의 만료 시간 계산
+     * @param email 이메일 주소
+     * @return 만료 시간(LocalDateTime), 인증 코드가 없으면 null
+     */
+    public LocalDateTime getExpiresAt(String email) {
+        Long remainingSeconds = getRemainingSeconds(email);
+        if (remainingSeconds == null || remainingSeconds <= 0) {
+            return null;
+        }
+        return LocalDateTime.ofInstant(
+            Instant.now().plusSeconds(remainingSeconds),
+            ZoneId.systemDefault()
+        );
+    }
+
+    /**
+     * 6자리 랜덤 인증 코드 생성 (숫자, 알파벳 대소문자, 특수문자 포함)
      */
     private String generateRandomCode() {
         SecureRandom random = new SecureRandom();
+        // 사용 가능한 문자 집합: 숫자(0-9), 대문자(A-Z), 소문자(a-z), 특수문자(!@#$%^&*)
+        String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*";
         StringBuilder code = new StringBuilder();
         for (int i = 0; i < CODE_LENGTH; i++) {
-            code.append(random.nextInt(10));
+            int index = random.nextInt(chars.length());
+            code.append(chars.charAt(index));
         }
         return code.toString();
     }
