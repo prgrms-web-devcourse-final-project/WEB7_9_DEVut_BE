@@ -90,7 +90,7 @@ public class LiveItem extends BaseEntity {
     // 순서대로 입찰전, 입찰중, 잔금처리대기, 거래중, 구매확정, 유찰
     public enum AuctionStatus {
         BEFORE_BIDDING, IN_PROGRESS, PAYMENT_PENDING,
-        IN_DEAL, PURCHASE_CONFIRMED, FAILED, ABC
+        IN_DEAL, PURCHASE_CONFIRMED, FAILED
     }
 
     // 라이브 경매 시간
