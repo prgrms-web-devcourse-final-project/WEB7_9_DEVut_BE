@@ -46,18 +46,12 @@ jobs:
     name: 도커 이미지 빌드와 푸시
     needs: makeTagAndRelease
     runs-on: ubuntu-latest
-    # 자동배포 도입 시 여기 outputs 코드 삽입
+    outputs:
+      owner_lc: ${{ steps.export_owner.outputs.owner_lc }}
+      image_name: ${{ steps.export_image.outputs.image_name }}
+
     steps:
       - uses: actions/checkout@v4
-
-      # Doppler에서 앱 시크릿 가져오기
-      - name: Install Doppler CLI
-        uses: dopplerhq/cli-action@v2
-
-      - name: Doppler Pull
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: doppler run -- echo "Doppler secrets loaded"
 
       - name: Docker Buildx 설치
         uses: docker/setup-buildx-action@v2
@@ -69,12 +63,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 자동 배포 도입시 여기부터 코드 교체
       - name: set lower case owner name
+        id: export_owner
         run: |
-          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
-        env:
-          OWNER: "${{ github.repository_owner }}"
+          OWNER_LC="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "owner_lc=$OWNER_LC" >> $GITHUB_OUTPUT
+
+      - name: export image name
+        id: export_image
+        run: echo "image_name=devut-buzzerbidder" >> $GITHUB_OUTPUT
 
       - name: 빌드 앤 푸시
         uses: docker/build-push-action@v3
@@ -82,5 +79,34 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_NAME }}:${{ needs.makeTagAndRelease.outputs.tag_name }},
-            ghcr.io/${{ env.OWNER_LC }}/${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:${{ needs.makeTagAndRelease.outputs.tag_name }},
+            ghcr.io/${{ steps.export_owner.outputs.owner_lc }}/${{ steps.export_image.outputs.image_name }}:latest
+            
+  Deploy:
+    runs-on: ubuntu-latest
+    needs: [ buildImageAndPush ]
+    steps:
+      - name: AWS SSM Send-Command
+        uses: peterkimzz/aws-ssm-send-command@master
+        id: ssm
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          instance-ids: "i-069ab43935e575882"
+          working-directory: /
+          comment: Deploy
+          command: |
+            sudo docker pull ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
+            sudo docker stop app1 2>/dev/null || true && \
+            sudo docker rm app1 2>/dev/null || true && \
+            sudo docker run -d \
+              --name app1 \
+              --restart unless-stopped \
+              --network common \
+              -p 8080:8080 \
+              -e DOPPLER_TOKEN=$DOPPLER_TOKEN \
+              -e TZ=Asia/Seoul \
+              ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest \
+              doppler run -- java -jar /app/app.jar && \
+            sudo docker image prune -f
