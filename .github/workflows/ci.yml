@@ -75,7 +75,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 4. 빌드 + 테스트
+      # 4. 현재 빌드가 안 깨지는지 테스트 (테스트코드 추가시 -x test 지울것)
       - name: Build with Gradle
         env:
           # testcontainers 실행시 발생할 수 있는 메모리 부족 방지를 위해 최대 힙메모리 지정
