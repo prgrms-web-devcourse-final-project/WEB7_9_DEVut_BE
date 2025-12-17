@@ -41,6 +41,7 @@ public enum ErrorCode {
     INVALID_WALLET_AMOUNT("W005", HttpStatus.BAD_REQUEST, "충전/차감 금액은 null 또는 0 이하일 수 없습니다."),
     INVALID_TRANSFER("W006", HttpStatus.BAD_REQUEST, "자기 자신에게 지불할 수 없습니다."),
     WALLET_ALREADY_EXISTS("W007", HttpStatus.CONFLICT, "사용자 지갑이 이미 존재합니다."),
+
     // ========== Payment 도메인 에러 ==========
     PAYMENT_NOT_FOUND("P001", HttpStatus.NOT_FOUND, "결제정보를 찾을 수 없습니다."),
     NOT_PENDING_PAYMENT("P002", HttpStatus.CONFLICT, "결제대기 상태가 아닙니다."),
@@ -50,6 +51,9 @@ public enum ErrorCode {
     NOT_SUCCESS_PAYMENT("P006", HttpStatus.CONFLICT, "결제완료 상태가 아닙니다."),
     AMOUNT_EXCEEDS_LIMIT("P007", HttpStatus.BAD_REQUEST, "취소 가능 금액을 초과했습니다."),
     PAYMENT_CANCELED_FAILED("P008", HttpStatus.BAD_REQUEST, "결제취소 요청이 실패했습니다."),
+    INVALID_PAGE_ERROR("P009", HttpStatus.BAD_REQUEST, "요청한 페이지가 허용범위를 초과했습니다."),
+    INVALID_PAGE_SIZE("P010", HttpStatus.BAD_REQUEST, "조회 건수는 최대 30건까지 가능합니다."),
+
     // ========== AuctionRoom 도메인 에러 ==========
     FULL_AUCTION_ROOM("AR001", HttpStatus.CONFLICT, "경매방이 가득 찼습니다."),
     AUCTION_ROOM_BUSY("AR002", HttpStatus.CONFLICT, "잠시 후 다시 시도해주세요."),

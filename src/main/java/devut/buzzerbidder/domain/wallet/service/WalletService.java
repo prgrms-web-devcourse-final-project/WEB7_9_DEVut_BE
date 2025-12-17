@@ -1,9 +1,14 @@
 package devut.buzzerbidder.domain.wallet.service;
 
+import devut.buzzerbidder.domain.wallet.dto.request.WithdrawRequestDto;
+import devut.buzzerbidder.domain.wallet.dto.response.WithdrawResponseDto;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.entity.Wallet;
+import devut.buzzerbidder.domain.wallet.entity.Withdraw;
 import devut.buzzerbidder.domain.wallet.enums.WalletTransactionType;
 import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
+import devut.buzzerbidder.domain.wallet.repository.WithdrawRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +22,8 @@ public class WalletService {
 
     private final WalletRepository walletRepository;
     private final WalletHistoryService walletHistoryService;
+    private final WithdrawRepository withdrawRepository;
+    private final UserRepository userRepository;
 
     // 잔액 조회
     @Transactional(readOnly = true)
@@ -161,4 +168,42 @@ public class WalletService {
         walletHistoryService.recordWalletHistory(user, amount, type, balanceBefore, balanceAfter);
     }
 
+    // 생성된 지갑 없으면 지갑 생성 후 조회(비관적 락)
+    public Wallet getOrCreateWalletWithLock(User user) {
+        return walletRepository.findByUserIdWithLock(user.getId())
+                .orElseGet(() -> walletRepository.save(
+                        Wallet.builder()
+                                .user(user)
+                                .bizz(0L)
+                                .build()
+                ));
+    }
+
+    // 보유 잔액 검증 후, 출금 요청
+    @Transactional
+    public WithdrawResponseDto withdraw(Long userId, WithdrawRequestDto request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Long amount = request.amount();
+        validateAmount(amount);
+
+        Wallet wallet = findByUserIdWithLockOrThrow(userId);
+        if (wallet.getBizz() < amount) {
+            throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
+        }
+
+        updateBizzAndRecordHistory(wallet, user, amount, WalletTransactionType.WITHDRAW);
+
+        Withdraw withdraw = new Withdraw(user,
+                amount,
+                request.bankName(),
+                request.accountNumber(),
+                request.accountHolder()
+        );
+        withdrawRepository.save(withdraw);
+
+        return WithdrawResponseDto.from(withdraw);
+    }
 }
