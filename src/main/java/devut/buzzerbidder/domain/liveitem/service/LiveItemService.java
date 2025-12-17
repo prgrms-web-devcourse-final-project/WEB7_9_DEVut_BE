@@ -19,14 +19,19 @@ import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.image.ImageService;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +41,9 @@ public class LiveItemService {
     private final LikeLiveService likeLiveService;
     private final AuctionRoomService auctionRoomService;
     private final ImageService imageService;
+    private final RedissonClient redissonClient;
+    private final TransactionTemplate transactionTemplate;
 
-    @Transactional
     public LiveItemResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
 
         LocalDateTime now = LocalDateTime.now();
@@ -60,25 +66,46 @@ public class LiveItemService {
             throw new BusinessException(ErrorCode.INVALID_LIVETIME);
         }
 
-        // 경매 시간 기반 방 할당
-        AuctionRoom auctionRoom = auctionRoomService.assignRoom(reqBody.liveTime());
-
-        LiveItem liveItem = new LiveItem(reqBody, user);
-
-        liveItemRepository.save(liveItem);
-
-        auctionRoom.addItem(liveItem);
-
-
+        // 4. 이미지 있는지 체크
         if (reqBody.images() == null || reqBody.images().isEmpty()) {
             throw new BusinessException(ErrorCode.IMAGE_FILE_EMPTY);
         }
 
-        reqBody.images().forEach(url ->
-            liveItem.addImage(new LiveItemImage(url, liveItem)));
+        String lockKey = "lock:auction-room:" + reqBody.liveTime().truncatedTo(ChronoUnit.MINUTES);
+        RLock lock = redissonClient.getLock(lockKey);
+        boolean acquired = false;
 
-        return new LiveItemResponse(liveItem);
+        try {
+            // 락 획득 (최대 3초 대기, TTL 15초)
+            acquired = lock.tryLock(3, TimeUnit.SECONDS);
+            if (!acquired) {
+                throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+            }
+            // ===== 임계 영역: 트랜잭션 안에서 DB 작업 =====
+            return transactionTemplate.execute(status -> {
 
+                // 경매 시간 기반 방 할당
+                AuctionRoom auctionRoom = auctionRoomService.assignRoom(reqBody.liveTime());
+
+                LiveItem liveItem = new LiveItem(reqBody, user);
+                liveItemRepository.save(liveItem);
+                auctionRoom.addItem(liveItem);
+
+                reqBody.images().forEach(url ->
+                    liveItem.addImage(new LiveItemImage(url, liveItem))
+                );
+
+                return new LiveItemResponse(liveItem);
+            });
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+        } finally {
+            if (acquired && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
     }
 
     @Transactional
@@ -163,7 +190,6 @@ public class LiveItemService {
 
     }
 
-    @Transactional
     public void deleteLiveItem(Long id, User user) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
@@ -180,21 +206,44 @@ public class LiveItemService {
             throw new BusinessException(ErrorCode.EDIT_UNAVAILABLE);
         }
 
-        AuctionRoom auctionRoom = liveItem.getAuctionRoom();
-        auctionRoom.removeItem(liveItem);
+        List<String> imagesToDelete = liveItem.getImages().stream()
+            .map(LiveItemImage::getImageUrl)
+            .toList();
 
+        // 분산 락 설정 (해당 아이템이 속한 경매 시간대 기준)
+        String lockKey = "lock:auction-room:" + liveItem.getLiveTime().truncatedTo(ChronoUnit.MINUTES);
+        RLock lock = redissonClient.getLock(lockKey);
+        boolean acquired = false;
 
-        if (!liveItem.getImages().isEmpty()) {
-            List<String> oldImageUrls = liveItem.getImages().stream()
-                .map(LiveItemImage::getImageUrl)
-                .toList();
-            imageService.deleteFiles(oldImageUrls);
-            liveItem.deleteImageUrls(); // 이미지 리스트 초기화
+        try {
+            acquired = lock.tryLock(3, TimeUnit.SECONDS); // 워치독 활용
+            if (!acquired) {
+                throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+            }
+
+            // 임계 영역: 트랜잭션 시작
+            transactionTemplate.executeWithoutResult(status -> {
+                // 방에서 제거
+                AuctionRoom auctionRoom = liveItem.getAuctionRoom();
+                auctionRoom.removeItem(liveItem);
+
+                // DB에서 삭제 (OrphanRemoval 설정에 따라 이미지도 함께 삭제됨)
+                liveItemRepository.delete(liveItem);
+            });
+
+            // 트랜잭션 성공 후에만 S3 파일 삭제 (데이터 일관성)
+            if (!imagesToDelete.isEmpty()) {
+                imageService.deleteFiles(imagesToDelete);
+            }
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+        } finally {
+            if (acquired && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
-
-
-
-        liveItemRepository.delete(liveItem);
     }
 
     //TODO: 레디스에서 현재 입찰가 찾아서 추가하는 로직
