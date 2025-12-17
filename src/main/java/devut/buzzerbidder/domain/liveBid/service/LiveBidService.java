@@ -38,7 +38,8 @@ public class LiveBidService {
         LiveItem liveItem = liveItemRepository.findById(request.liveItemId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.LIVEITEM_NOT_FOUND));
 
-        User seller = userRepository.findById(request.sellerId())
+        Long sellerId = liveItem.getSellerUserId();
+        User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         AuctionRoom auctionRoom = liveItem.getAuctionRoom();

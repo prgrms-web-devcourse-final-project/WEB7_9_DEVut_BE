@@ -6,5 +6,5 @@ public record LiveBidRequest(
         @NotNull Long liveItemId,
         @NotNull Long auctionId,
         @NotNull Long sellerId,
-        @NotNull int bidPrice
+        @NotNull Integer bidPrice
 ) {}

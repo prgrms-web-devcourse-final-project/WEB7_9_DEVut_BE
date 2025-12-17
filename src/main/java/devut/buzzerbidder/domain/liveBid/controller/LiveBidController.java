@@ -7,6 +7,7 @@ import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,7 +26,7 @@ public class LiveBidController {
     @PostMapping
     @Operation(summary = "입찰 하기", description = "특정 라이브 경매 상품에 입찰을 시도합니다.")
     public ApiResponse<LiveBidResponse> bid(
-            @RequestBody LiveBidRequest request,
+            @Valid @RequestBody LiveBidRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         LiveBidResponse response = liveBidService.bid(request, userDetails.getUser());
