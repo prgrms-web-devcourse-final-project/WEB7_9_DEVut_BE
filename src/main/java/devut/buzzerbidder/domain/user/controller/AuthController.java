@@ -10,6 +10,7 @@ import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
 import devut.buzzerbidder.domain.user.service.EmailService;
 import devut.buzzerbidder.domain.user.service.EmailVerificationService;
+import devut.buzzerbidder.domain.user.service.RefreshTokenService;
 import devut.buzzerbidder.domain.user.service.UserService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
@@ -33,6 +34,7 @@ public class AuthController {
 
     private final UserService userService;
     private final AuthTokenService authTokenService;
+    private final RefreshTokenService refreshTokenService;
     private final RequestContext requestContext;
     private final EmailService emailService;
     private final EmailVerificationService emailVerificationService;
@@ -95,6 +97,22 @@ public class AuthController {
         setTokensInResponse(user.getId());
 
         return ApiResponse.ok("AccessToken 재발급에 성공했습니다.");
+    }
+
+    @Operation(summary = "로그아웃", description = "로그아웃을 진행합니다. Refresh Token이 Redis에서 삭제되고 쿠키가 제거됩니다.")
+    @PostMapping("/signout")
+    public ApiResponse<Void> signOut() {
+        // 현재 인증된 사용자 정보 가져오기
+        User user = requestContext.getCurrentUser();
+
+        // Redis에서 refresh token 삭제
+        refreshTokenService.deleteRefreshToken(user.getId());
+
+        // 쿠키 삭제
+        requestContext.deleteCookie("accessToken");
+        requestContext.deleteCookie("refreshToken");
+
+        return ApiResponse.ok("로그아웃에 성공했습니다.");
     }
     
     private void setTokensInResponse(Long userId) {
