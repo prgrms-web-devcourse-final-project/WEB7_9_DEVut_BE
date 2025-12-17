@@ -3,13 +3,15 @@ package devut.buzzerbidder.domain.payment.entity;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @Entity
 @Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Payment extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,11 +30,6 @@ public class Payment extends BaseEntity {
     @Column(nullable = false)
     private Long amount;
 
-    private Long canceledAmount;
-
-    @Column(length = 255)
-    private String cancelReason;
-
     @Column(length = 100)
     private String failCode;
 
@@ -48,21 +45,12 @@ public class Payment extends BaseEntity {
 
     private OffsetDateTime approvedAt;
 
-    private LocalDateTime canceledAt;
-
-    public static Payment create(
-            User user,
-            String orderId,
-            String orderName,
-            Long amount
-    ) {
-        Payment payment = new Payment();
-        payment.user = user;
-        payment.orderId = orderId;
-        payment.orderName = orderName;
-        payment.amount = amount;
-        payment.status = PaymentStatus.PENDING;
-        return payment;
+    public Payment(User user, String orderId, String orderName, Long amount) {
+        this.user = user;
+        this.orderId = orderId;
+        this.orderName = orderName;
+        this.amount = amount;
+        this.status = PaymentStatus.PENDING;
     }
 
     public void confirm(
@@ -83,17 +71,6 @@ public class Payment extends BaseEntity {
         this.failCode = code;
         this.failReason = msg;
         this.status = PaymentStatus.FAILED;
-    }
-
-    public void cancel(
-            Long amount,
-            String msg,
-            LocalDateTime cancelledAt
-    ) {
-        this.canceledAmount += amount;
-        this.cancelReason = msg;
-        this.canceledAt = cancelledAt;
-        this.status = PaymentStatus.CANCELED;
     }
 
     public boolean isPending() { return PaymentStatus.PENDING.equals(status); }
