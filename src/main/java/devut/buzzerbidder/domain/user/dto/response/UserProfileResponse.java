@@ -16,9 +16,6 @@ public record UserProfileResponse(
         @Schema(description = "닉네임", example = "gildong")
         String nickname,
 
-        @Schema(description = "생년월일", example = "2000-01-01")
-        LocalDate birth,
-
         @Schema(description = "프로필 이미지 URL", example = "https://example.com/image.jpg")
         String image,
 
@@ -26,17 +23,20 @@ public record UserProfileResponse(
         LocalDate createDate,
 
         @Schema(description = "수정일", example = "2025-12-09")
-        LocalDate modifyDate
+        LocalDate modifyDate,
+
+        @Schema(description = "보유 Bizz 잔액", example = "38200")
+        Long bizz
 ) {
-    public static UserProfileResponse from(User user) {
+    public static UserProfileResponse from(User user, Long bizz) {
         return new UserProfileResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
-                user.getBirthDate(),
                 user.getProfileImageUrl(),
                 user.getCreateDate() != null ? user.getCreateDate().toLocalDate() : null,
-                user.getModifyDate() != null ? user.getModifyDate().toLocalDate() : null
+                user.getModifyDate() != null ? user.getModifyDate().toLocalDate() : null,
+                bizz
         );
     }
 }

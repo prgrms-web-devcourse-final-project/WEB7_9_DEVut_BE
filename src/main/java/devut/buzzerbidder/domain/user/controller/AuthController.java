@@ -2,20 +2,24 @@ package devut.buzzerbidder.domain.user.controller;
 
 import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
-import devut.buzzerbidder.domain.user.dto.request.UserUpdateRequest;
+import devut.buzzerbidder.domain.user.dto.request.EmailVerificationCodeRequest;
+import devut.buzzerbidder.domain.user.dto.request.EmailVerificationRequest;
+import devut.buzzerbidder.domain.user.dto.response.EmailVerificationResponse;
 import devut.buzzerbidder.domain.user.dto.response.LoginResponse;
-import devut.buzzerbidder.domain.user.dto.response.UserProfileResponse;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
+import devut.buzzerbidder.domain.user.service.EmailService;
+import devut.buzzerbidder.domain.user.service.EmailVerificationService;
 import devut.buzzerbidder.domain.user.service.UserService;
+import devut.buzzerbidder.global.exeption.BusinessException;
+import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
 import devut.buzzerbidder.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,11 +29,38 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
-public class UserController {
+public class AuthController {
 
     private final UserService userService;
     private final AuthTokenService authTokenService;
     private final RequestContext requestContext;
+    private final EmailService emailService;
+    private final EmailVerificationService emailVerificationService;
+
+    @Operation(summary = "이메일 인증 코드 발송", description = "회원가입을 위한 이메일 인증 코드를 발송합니다.")
+    @PostMapping("/email/verification")
+    public ApiResponse<EmailVerificationResponse> sendVerificationCode(
+            @Valid @RequestBody EmailVerificationRequest request) {
+        String code = emailVerificationService.generateAndSaveVerificationCode(request.email());
+        emailService.sendVerificationCode(request.email(), code);
+        
+        Long remainingSeconds = emailVerificationService.getRemainingSeconds(request.email());
+        LocalDateTime expiresAt = emailVerificationService.getExpiresAt(request.email());
+        EmailVerificationResponse response = new EmailVerificationResponse(remainingSeconds, expiresAt);
+        
+        return ApiResponse.ok("이메일 인증 코드가 발송되었습니다.", response);
+    }
+
+    @Operation(summary = "이메일 인증 코드 검증", description = "발송된 이메일 인증 코드를 검증합니다.")
+    @PostMapping("/email/verification/verify")
+    public ApiResponse<Void> verifyCode(
+            @Valid @RequestBody EmailVerificationCodeRequest request) {
+        boolean isValid = emailVerificationService.verifyCode(request.email(), request.code());
+        if (!isValid) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return ApiResponse.ok("이메일 인증이 완료되었습니다.");
+    }
 
     @Operation(summary = "회원가입", description = "이메일을 사용한 회원가입을 진행합니다.")
     @PostMapping("/signup")
@@ -64,23 +95,6 @@ public class UserController {
         setTokensInResponse(user.getId());
 
         return ApiResponse.ok("AccessToken 재발급에 성공했습니다.");
-    }
-
-    @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 정보를 조회합니다.")
-    @GetMapping("/me")
-    public ApiResponse<UserProfileResponse> getMyProfile() {
-        User currentUser = requestContext.getCurrentUser();
-        UserProfileResponse response = userService.getMyProfile(currentUser);
-        return ApiResponse.ok("회원정보 조회 성공", response);
-    }
-
-    @Operation(summary = "내 정보 수정", description = "현재 로그인한 사용자의 정보를 수정합니다.")
-    @PatchMapping("/me")
-    public ApiResponse<UserProfileResponse> updateMyProfile(
-            @Valid @RequestBody UserUpdateRequest request) {
-        User currentUser = requestContext.getCurrentUser();
-        UserProfileResponse response = userService.updateMyProfile(currentUser, request);
-        return ApiResponse.ok("회원정보 수정 성공", response);
     }
     
     private void setTokensInResponse(Long userId) {

@@ -39,6 +39,22 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1ms
+  # 이메일 설정
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
   web:
     error:
       include-message: always
@@ -70,6 +86,16 @@ spring:
               - email
               - profile_image
             client-name: Naver
+          google:
+            client-id: 516250457314-ilbkvu1ittv47pbugdjk3qusl4kbg47o.apps.googleusercontent.com
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: http://localhost:8080/login/oauth2/code/google
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            scope:
+              - profile
+              - email
+            client-name: Google
         provider:
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize
@@ -81,6 +107,11 @@ spring:
             token-uri: https://nid.naver.com/oauth2.0/token
             user-info-uri: https://openapi.naver.com/v1/nid/me
             user-name-attribute: response
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://www.googleapis.com/oauth2/v4/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            user-name-attribute: sub
 
 # 서버 설정
 server:
@@ -89,10 +120,15 @@ server:
 # JWT 설정
 custom:
   jwt:
-    secretPattern: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
+    secretPattern: ${JWT_SECRET}
     expireSeconds: 1800  # 30분 (초)
     shortExpireSeconds: 600  # 10분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)
+  # 이메일 인증 설정
+  email:
+    verification:
+      expireMinutes: 10  # 인증 코드 유효 시간 (분)
+      subject: "[BuzzerBidder] 이메일 인증 코드"
 
 delivery:
   client-id: ${DELIVERY_CLIENT_ID:your-client-key}
@@ -102,10 +138,10 @@ delivery:
 cloud:
   aws:
     credentials:
-      access-key: ${AWS_ACCESS_KEY:your-access-key}
-      secret-key: ${AWS_SECRET_KEY:your-secret-key}
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
     s3:
-      bucket: ${AWS_S3_BUCKET:your-bucket-name}
+      bucket: ${AWS_S3_BUCKET}
     region:
       static: ${AWS_REGION:ap-northeast-2}
 
@@ -118,5 +154,4 @@ springdoc:
 
 # 토스 설정
 toss:
-  secret-key: "test_sk_kYG57Eba3G46gWZWbe1EVpWDOxmA"
-
+  secret-key: ${TOSS_SECRET_KEY}

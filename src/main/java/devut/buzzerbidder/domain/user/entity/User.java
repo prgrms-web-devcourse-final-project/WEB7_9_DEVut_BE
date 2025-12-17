@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,9 +25,6 @@ public class User extends BaseEntity {
     @Column(nullable = false, length = 50)
     private String nickname;
 
-    @Column(nullable = false)
-    private LocalDate birthDate;
-
     @Column(length = 500)
     private String profileImageUrl;
 
@@ -44,11 +40,10 @@ public class User extends BaseEntity {
 
     @Builder
     public User(String email, String password, String nickname,
-                  LocalDate birthDate, String profileImageUrl, UserRole role) {
+                  String profileImageUrl, UserRole role) {
         this.email = email;
         this.password = password;
         this.nickname = nickname;
-        this.birthDate = birthDate;
         this.profileImageUrl = profileImageUrl;
         this.role = role != null ? role : UserRole.USER;
         this.deleted = false;
@@ -68,15 +63,12 @@ public class User extends BaseEntity {
         }
     }
 
-    public void updateProfile(String email, String nickname, LocalDate birthDate, String profileImageUrl) {
+    public void updateProfile(String email, String nickname, String profileImageUrl) {
         if (email != null && !email.isBlank()) {
             this.email = email;
         }
         if (nickname != null && !nickname.isBlank()) {
             this.nickname = nickname;
-        }
-        if (birthDate != null) {
-            this.birthDate = birthDate;
         }
         if (profileImageUrl != null) {
             this.profileImageUrl = profileImageUrl;

@@ -1,5 +1,6 @@
 package devut.buzzerbidder.domain.liveitem.repository;
 
+import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.Category;
 import java.util.List;
@@ -12,13 +13,21 @@ import org.springframework.data.repository.query.Param;
 
 public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
 
+
     @Query("""
-        SELECT li FROM LiveItem li
-        LEFT JOIN li.images img
-        WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
-        AND (:category IS NULL OR li.category = :category)
-        """)
-    Page<LiveItem> searchLiveItems(
+    SELECT new devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse(
+        li.id,
+        li.name,
+        MIN(img.imageUrl),
+        li.liveTime
+    )
+    FROM LiveItem li
+    LEFT JOIN li.images img
+    WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
+      AND (:category IS NULL OR li.category = :category)
+    GROUP BY li.id, li.name, li.liveTime
+""")
+    Page<LiveItemResponse> searchLiveItems(
         @Param("name") String name,
         @Param("category") Category category,
         Pageable pageable
