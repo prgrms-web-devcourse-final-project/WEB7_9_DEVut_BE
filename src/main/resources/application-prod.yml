@@ -87,4 +87,4 @@ springdoc:
 
 # 토스 설정
 toss:
-  secret-key: "test_sk_kYG57Eba3G46gWZWbe1EVpWDOxmA"
+  secret-key: ${TOSS_SECRET_KEY}

@@ -53,9 +53,9 @@ public class LiveItem extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Category category;
 
-    //TODO 얘기해서 채워넣기
     public enum Category {
-        ELECTRONICS
+        CLOTHES, ENTERTAINMENT, ELECTRONICS, COLLECTIBLES, SPORTS,
+        SHOES, BAGS, PLATES, ART, MOVIE
     }
 
     @Column(name = "description", columnDefinition = "TEXT")

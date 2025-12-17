@@ -5,6 +5,7 @@ import devut.buzzerbidder.domain.liveitem.entity.LiveItem.ItemStatus;
 import java.util.List;
 
 public record LiveItemDetailResponse(
+    Long id,
     String name,
     Category category,
     String description,

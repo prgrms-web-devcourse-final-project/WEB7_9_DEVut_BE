@@ -41,6 +41,7 @@ public enum ErrorCode {
     INVALID_WALLET_AMOUNT("W005", HttpStatus.BAD_REQUEST, "충전/차감 금액은 null 또는 0 이하일 수 없습니다."),
     INVALID_TRANSFER("W006", HttpStatus.BAD_REQUEST, "자기 자신에게 지불할 수 없습니다."),
     WALLET_ALREADY_EXISTS("W007", HttpStatus.CONFLICT, "사용자 지갑이 이미 존재합니다."),
+
     // ========== Payment 도메인 에러 ==========
     PAYMENT_NOT_FOUND("P001", HttpStatus.NOT_FOUND, "결제정보를 찾을 수 없습니다."),
     NOT_PENDING_PAYMENT("P002", HttpStatus.CONFLICT, "결제대기 상태가 아닙니다."),
@@ -50,13 +51,18 @@ public enum ErrorCode {
     NOT_SUCCESS_PAYMENT("P006", HttpStatus.CONFLICT, "결제완료 상태가 아닙니다."),
     AMOUNT_EXCEEDS_LIMIT("P007", HttpStatus.BAD_REQUEST, "취소 가능 금액을 초과했습니다."),
     PAYMENT_CANCELED_FAILED("P008", HttpStatus.BAD_REQUEST, "결제취소 요청이 실패했습니다."),
+    INVALID_PAGE_ERROR("P009", HttpStatus.BAD_REQUEST, "요청한 페이지가 허용범위를 초과했습니다."),
+    INVALID_PAGE_SIZE("P010", HttpStatus.BAD_REQUEST, "조회 건수는 최대 30건까지 가능합니다."),
+
     // ========== AuctionRoom 도메인 에러 ==========
     FULL_AUCTION_ROOM("AR001", HttpStatus.CONFLICT, "경매방이 가득 찼습니다."),
-
+    AUCTION_ROOM_BUSY("AR002", HttpStatus.CONFLICT, "잠시 후 다시 시도해주세요."),
     // ========== LIVEITEM 도메인 에러 ==========
     CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
     INVALID_LIVETIME("LI002", HttpStatus.BAD_REQUEST,"유효한 경매 시작 시간이 아닙니다."),
     EDIT_UNAVAILABLE("LI003", HttpStatus.BAD_REQUEST,"1시간안에 시작하는 경매는 수정 및 삭제가 불가능합니다."),
+    IMAGE_FILE_EMPTY("LI004", HttpStatus.BAD_REQUEST,"이미지는 필수입니다."),
+    LIVEITEM_NOT_FOUND("LI005", HttpStatus.NOT_FOUND, "라이브 경매품을 찾을 수 없습니다."),
 
     // ========== DelayedItem 도메인 에러 ==========
     INVALID_END_TIME("DI001", HttpStatus.BAD_REQUEST, "종료 시간은 최소 3일 이후, 최대 10일 이내여야 합니다."),
