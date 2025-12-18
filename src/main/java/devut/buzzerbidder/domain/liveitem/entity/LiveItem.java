@@ -53,9 +53,9 @@ public class LiveItem extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Category category;
 
-    //TODO 얘기해서 채워넣기
     public enum Category {
-        ELECTRONICS
+        CLOTHES, ENTERTAINMENT, ELECTRONICS, COLLECTIBLES, SPORTS,
+        SHOES, BAGS, PLATES, ART, MOVIE
     }
 
     @Column(name = "description", columnDefinition = "TEXT")
@@ -95,7 +95,7 @@ public class LiveItem extends BaseEntity {
 
     // 라이브 경매 시간
     @Column(name = "live_time")
-    @NotNull(message = "경매 일자는 필수입니다.")
+    @NotNull(message = "경매 시간은 필수입니다.")
     private LocalDateTime liveTime;
 
     // 직거래 가능 여부
@@ -113,6 +113,7 @@ public class LiveItem extends BaseEntity {
 
     @BatchSize(size = 50)
     @OneToMany(mappedBy = "liveItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<LiveItemImage> images = new ArrayList<>();
 
 
@@ -169,6 +170,5 @@ public class LiveItem extends BaseEntity {
             auctionRoom.getLiveItems().add(this);
         }
     }
-
 
 }

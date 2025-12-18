@@ -8,20 +8,24 @@ import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
+import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import devut.buzzerbidder.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 @RequiredArgsConstructor
@@ -31,6 +35,8 @@ public class BaseInitData {
     @Lazy
     private BaseInitData self;
 
+    private final RedisTemplate<String, String> redisTemplate;
+    private final UserService userService;
     private final UserRepository userRepository;
     private final LiveDealRepository liveDealRepository;
     private final LiveItemRepository liveItemRepository;
@@ -52,21 +58,19 @@ public class BaseInitData {
             return;
         }
         String email = "new@user.com";
-        String encodedPassword = passwordEncoder.encode("asdf1234!");
+        String password = "asdf1234!";
         String nickname = "gildong";
 
-        // 회원 생성
-        User user = devut.buzzerbidder.domain.user.entity.User.builder()
-                .email(email)
-                .password(encodedPassword)
-                .nickname(nickname)
-                .birthDate(LocalDate.of(1990, 1, 1))
-                .profileImageUrl(null)
-                .role(devut.buzzerbidder.domain.user.entity.User.UserRole.USER)
-                .providerType(devut.buzzerbidder.domain.user.entity.User.ProviderType.EMAIL)
-                .build();
+        EmailSignUpRequest signUpRequest = new EmailSignUpRequest(
+                email,
+                password,
+                nickname,
+                null
+        );
 
-        userRepository.save(user);
+        String verifiedKey = "verified_email:" + email;
+        redisTemplate.opsForValue().set(verifiedKey, "verified", 10, TimeUnit.SECONDS);
+        userService.signUp(signUpRequest);
     }
 
     @Transactional

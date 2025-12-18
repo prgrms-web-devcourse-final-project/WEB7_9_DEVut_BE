@@ -7,7 +7,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -22,13 +23,7 @@ public class User extends BaseEntity {
     private String password;
 
     @Column(nullable = false, length = 50)
-    private String name;
-
-    @Column(nullable = false, unique = true, length = 50)
     private String nickname;
-
-    @Column(nullable = false)
-    private LocalDate birthDate;
 
     @Column(length = 500)
     private String profileImageUrl;
@@ -37,33 +32,41 @@ public class User extends BaseEntity {
     @Column(nullable = false, length = 20)
     private UserRole role;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private ProviderType providerType;
-
-    @Column(length = 100)
-    private String providerId;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Provider> providers = new ArrayList<>();
 
     @Column(nullable = false)
     private Boolean deleted = false;
 
     @Builder
-    public User(String email, String password, String name, String nickname,
-                  LocalDate birthDate, String profileImageUrl, UserRole role,
-                  ProviderType providerType, String providerId) {
+    public User(String email, String password, String nickname,
+                  String profileImageUrl, UserRole role) {
         this.email = email;
         this.password = password;
-        this.name = name;
         this.nickname = nickname;
-        this.birthDate = birthDate;
         this.profileImageUrl = profileImageUrl;
         this.role = role != null ? role : UserRole.USER;
-        this.providerType = providerType != null ? providerType : ProviderType.EMAIL;
-        this.providerId = providerId;
         this.deleted = false;
     }
 
+    public void addProvider(Provider provider) {
+        this.providers.add(provider);
+        provider.setUser(this);
+    }
+
     public void updateProfile(String nickname, String profileImageUrl) {
+        if (nickname != null && !nickname.isBlank()) {
+            this.nickname = nickname;
+        }
+        if (profileImageUrl != null) {
+            this.profileImageUrl = profileImageUrl;
+        }
+    }
+
+    public void updateProfile(String email, String nickname, String profileImageUrl) {
+        if (email != null && !email.isBlank()) {
+            this.email = email;
+        }
         if (nickname != null && !nickname.isBlank()) {
             this.nickname = nickname;
         }
@@ -82,10 +85,6 @@ public class User extends BaseEntity {
 
     public enum UserRole {
         USER, ADMIN
-    }
-
-    public enum ProviderType {
-        EMAIL, KAKAO, NAVER, GOOGLE
     }
 }
 

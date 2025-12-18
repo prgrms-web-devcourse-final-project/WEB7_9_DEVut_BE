@@ -12,40 +12,45 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import devut.buzzerbidder.TestcontainersConfig;
 import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
+import devut.buzzerbidder.domain.user.dto.request.EmailVerificationCodeRequest;
+import devut.buzzerbidder.domain.user.dto.request.EmailVerificationRequest;
+import devut.buzzerbidder.domain.user.entity.Provider;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
+import devut.buzzerbidder.domain.user.service.EmailVerificationService;
 import devut.buzzerbidder.domain.user.service.RefreshTokenService;
-import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@AutoConfigureMockMvc
 @Import(TestcontainersConfig.class)
 @Transactional
-class UserControllerTest {
-
-    private MockMvc mockMvc;
+class AuthControllerTest {
 
     @Autowired
-    private WebApplicationContext webApplicationContext;
+    private MockMvc mockMvc;
 
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ProviderRepository providerRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -56,22 +61,20 @@ class UserControllerTest {
     @Autowired
     private RefreshTokenService refreshTokenService;
 
+    @Autowired
+    private EmailVerificationService emailVerificationService;
+
     private EmailSignUpRequest signUpRequest;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-        
-        // 각 테스트 전에 데이터 정리
-        userRepository.deleteAll();
-        userRepository.flush();
-        
+        // @Transactional 어노테이션으로 인해 각 테스트 후 자동 롤백되므로
+        // 별도로 데이터를 삭제할 필요가 없습니다.
+
         signUpRequest = new EmailSignUpRequest(
                 "test@example.com",
                 "password123!",
-                "홍길동",
                 "hong123",
-                LocalDate.of(1990, 1, 1),
                 "https://example.com/image.jpg"
         );
     }
@@ -80,6 +83,9 @@ class UserControllerTest {
     @DisplayName("회원가입 API 성공")
     void signUp_Success() throws Exception {
         // given
+        // 이메일 인증 완료 처리
+        verifyEmailForSignUp("test@example.com");
+        
         String requestBody = objectMapper.writeValueAsString(signUpRequest);
 
         // when & then
@@ -91,7 +97,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("200"))
                 .andExpect(jsonPath("$.msg").value("회원가입에 성공했습니다."))
                 .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()));
-        
+
         // 회원가입이 실제로 성공했는지 DB에서 확인
         assert userRepository.existsByEmail("test@example.com");
     }
@@ -101,6 +107,9 @@ class UserControllerTest {
     void signUp_Fail_DuplicateEmail() throws Exception {
         // given
         userRepository.save(createUser("test@example.com", "hong123"));
+        // 이메일 인증 완료 처리
+        verifyEmailForSignUp("test@example.com");
+        
         String requestBody = objectMapper.writeValueAsString(signUpRequest);
 
         // when & then
@@ -114,10 +123,31 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("회원가입 API 실패 - 닉네임 중복")
-    void signUp_Fail_DuplicateNickname() throws Exception {
+    @DisplayName("회원가입 API 실패 - 유효성 검증 실패 (이메일 형식 오류)")
+    void signUp_Fail_InvalidEmail() throws Exception {
         // given
-        userRepository.save(createUser("another@example.com", "hong123"));
+        EmailSignUpRequest invalidRequest = new EmailSignUpRequest(
+                "invalid-email",
+                "password123!",
+                "hong123",
+                null
+        );
+        String requestBody = objectMapper.writeValueAsString(invalidRequest);
+
+        // when & then
+        // 이메일 형식 오류는 유효성 검증 단계에서 실패하므로 이메일 인증 단계까지 가지 않음
+        mockMvc.perform(post("/api/v1/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("회원가입 API 실패 - 이메일 인증 미완료")
+    void signUp_Fail_EmailNotVerified() throws Exception {
+        // given
+        // 이메일 인증을 완료하지 않음
         String requestBody = objectMapper.writeValueAsString(signUpRequest);
 
         // when & then
@@ -125,31 +155,9 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andDo(print())
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.resultCode").value("M003"))
-                .andExpect(jsonPath("$.msg").value("이미 사용 중인 닉네임입니다."));
-    }
-
-    @Test
-    @DisplayName("회원가입 API 실패 - 유효성 검증 실패 (이메일 형식 오류)")
-    void signUp_Fail_InvalidEmail() throws Exception {
-        // given
-        EmailSignUpRequest invalidRequest = new EmailSignUpRequest(
-                "invalid-email",
-                "password123!",
-                "홍길동",
-                "hong123",
-                LocalDate.of(1990, 1, 1),
-                null
-        );
-        String requestBody = objectMapper.writeValueAsString(invalidRequest);
-
-        // when & then
-        mockMvc.perform(post("/api/v1/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andDo(print())
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.resultCode").value("M011"))
+                .andExpect(jsonPath("$.msg").value("이메일 인증이 완료되지 않았습니다."));
     }
 
     @Test
@@ -271,7 +279,7 @@ class UserControllerTest {
         // given
         User user = userRepository.save(createUser("test@example.com", "hong123"));
         String refreshToken = authTokenService.genRefreshToken(user);
-        
+
         // Redis에서 토큰 삭제
         refreshTokenService.deleteRefreshToken(user.getId());
 
@@ -284,16 +292,157 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("유효하지 않은 토큰입니다."));
     }
 
+    @Test
+    @DisplayName("이메일 인증 코드 발송 API 성공")
+    void sendVerificationCode_Success() throws Exception {
+        // given
+        EmailVerificationRequest request = new EmailVerificationRequest("test@example.com");
+        String requestBody = objectMapper.writeValueAsString(request);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/users/email/verification")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("이메일 인증 코드가 발송되었습니다."));
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 발송 API 실패 - 유효하지 않은 이메일 형식")
+    void sendVerificationCode_Fail_InvalidEmail() throws Exception {
+        // given
+        EmailVerificationRequest request = new EmailVerificationRequest("invalid-email");
+        String requestBody = objectMapper.writeValueAsString(request);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/users/email/verification")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 검증 API 성공")
+    void verifyCode_Success() throws Exception {
+        // given
+        String email = "test@example.com";
+        String code = emailVerificationService.generateAndSaveVerificationCode(email);
+        
+        EmailVerificationCodeRequest request = new EmailVerificationCodeRequest(email, code);
+        String requestBody = objectMapper.writeValueAsString(request);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/users/email/verification/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("이메일 인증이 완료되었습니다."));
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 검증 API 실패 - 잘못된 코드")
+    void verifyCode_Fail_InvalidCode() throws Exception {
+        // given
+        String email = "test@example.com";
+        emailVerificationService.generateAndSaveVerificationCode(email);
+        
+        EmailVerificationCodeRequest request = new EmailVerificationCodeRequest(email, "000000");
+        String requestBody = objectMapper.writeValueAsString(request);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/users/email/verification/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.resultCode").value("CMN003"))
+                .andExpect(jsonPath("$.msg").value("잘못된 입력값입니다."));
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 검증 API 실패 - 만료된 코드")
+    void verifyCode_Fail_ExpiredCode() throws Exception {
+        // given
+        String email = "test@example.com";
+        // 코드를 생성하지 않음 (만료된 상태)
+        
+        EmailVerificationCodeRequest request = new EmailVerificationCodeRequest(email, "123456");
+        String requestBody = objectMapper.writeValueAsString(request);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/users/email/verification/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.resultCode").value("CMN003"))
+                .andExpect(jsonPath("$.msg").value("잘못된 입력값입니다."));
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 검증 API 실패 - 유효하지 않은 이메일 형식")
+    void verifyCode_Fail_InvalidEmail() throws Exception {
+        // given
+        EmailVerificationCodeRequest request = new EmailVerificationCodeRequest("invalid-email", "123456");
+        String requestBody = objectMapper.writeValueAsString(request);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/users/email/verification/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("이메일 인증 코드 검증 API 실패 - 유효하지 않은 코드 형식 (6자리가 아님)")
+    void verifyCode_Fail_InvalidCodeFormat() throws Exception {
+        // given
+        EmailVerificationCodeRequest request = new EmailVerificationCodeRequest("test@example.com", "12345");
+        String requestBody = objectMapper.writeValueAsString(request);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/users/email/verification/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * 테스트용 이메일 인증 완료 처리
+     * 회원가입 테스트에서 이메일 인증이 완료된 상태로 만들어줍니다.
+     */
+    private void verifyEmailForSignUp(String email) {
+        // 인증 코드 생성 및 검증하여 인증 완료 상태로 만듦
+        String code = emailVerificationService.generateAndSaveVerificationCode(email);
+        emailVerificationService.verifyCode(email, code);
+    }
+
     private User createUser(String email, String nickname) {
-        return User.builder()
+        User user = User.builder()
                 .email(email)
                 .password(passwordEncoder.encode("password123!"))
-                .name("홍길동")
                 .nickname(nickname)
-                .birthDate(LocalDate.of(1990, 1, 1))
                 .role(User.UserRole.USER)
-                .providerType(User.ProviderType.EMAIL)
                 .build();
+
+        user = userRepository.save(user);
+
+        // EMAIL Provider 생성 (이메일 로그인을 위해 필요)
+        Provider provider = Provider.builder()
+                .providerType(Provider.ProviderType.EMAIL)
+                .providerId(email)
+                .user(user)
+                .build();
+        providerRepository.save(provider);
+
+        return user;
     }
 }
 

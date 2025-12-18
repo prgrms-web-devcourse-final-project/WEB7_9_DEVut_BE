@@ -4,6 +4,13 @@ spring:
   profiles:
     active: dev
 
+# Doppler 설정 (선택적)
+doppler:
+  enabled: ${DOPPLER_ENABLED:true}
+  token: ${DOPPLER_TOKEN:}
+  project: ${DOPPLER_PROJECT:buzzerbidder}
+  config: ${DOPPLER_CONFIG:dev_main}
+
 # Swagger 공통 설정
 springdoc:
   swagger-ui:
@@ -12,7 +19,6 @@ springdoc:
     tags-sorter: alpha
   api-docs:
     path: /api-docs
-
 ---
 # 개발 환경 설정
 spring:
@@ -39,13 +45,12 @@ logging:
   level:
     root: WARN
     devut.buzzerbidder: INFO
-
 # Swagger 테스트 환경 설정
 springdoc:
   swagger-ui:
     enabled: true
-
 ---
+
 # 프로덕션 환경 설정
 spring:
   config:
@@ -60,3 +65,7 @@ logging:
 delivery:
   client-id: ${DELIVERY_CLIENT_ID}
   client-secret: ${DELIVERY_CLIENT_SECRET}
+
+# 토스 설정
+toss:
+  secret-key: ${TOSS_SECRET_KEY}
