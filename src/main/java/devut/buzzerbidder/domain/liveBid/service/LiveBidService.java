@@ -86,6 +86,8 @@ public class LiveBidService {
         if(liveItem.getAuctionStatus() != LiveItem.AuctionStatus.IN_PROGRESS) {
             throw new BusinessException(ErrorCode.LIVEBID_NOT_IN_PROGRESS);
         }
+
+        // TODO: 지갑 잔고 검증
     }
 
     /**
@@ -108,7 +110,7 @@ public class LiveBidService {
     }
 
     private void processSuccessfulBid(LiveBidRequest request, User bidder, Long sellerId) {
-        // redis 최고가 갱신 성공. kafka에 이벤트 발행
+        // redis 최고가 갱신 성공.
         LiveBidEvent event = new LiveBidEvent(
                 request.auctionId(),
                 request.liveItemId(),
@@ -117,8 +119,9 @@ public class LiveBidService {
                 request.bidPrice()
         );
 
-        // itemId를 키로 하여 각 경매품의 입찰 순서 보장
+        // itemId를 키로 하여 각 경매품의 입찰 순서 보장. kafka에 이벤트 발행
         kafkaTemplate.send(BID_TOPIC, String.valueOf(request.liveItemId()), event);
+        // TODO: Kafka 발행 실패 시 재시도 로직 구현
 
         log.info("라이브 입찰 성공. Item: {} Price: {}", request.liveItemId(), request.bidPrice());
 

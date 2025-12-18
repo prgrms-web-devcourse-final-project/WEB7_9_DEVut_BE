@@ -34,5 +34,7 @@ public class LiveBidKafkaConsumer {
                 .build();
 
         liveBidRepository.save(logEntity);
+
+        //TODO: DB 저장 실패 시 재시도 로직 구현
     }
 }
