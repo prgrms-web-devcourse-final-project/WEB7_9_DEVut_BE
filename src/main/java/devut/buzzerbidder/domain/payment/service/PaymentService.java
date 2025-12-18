@@ -19,7 +19,6 @@ import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.entity.Wallet;
 import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
-import devut.buzzerbidder.domain.wallet.repository.WithdrawRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
@@ -42,7 +41,6 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final TossPaymentsClient tossPaymentsClient;
-    private final WithdrawRepository withdrawRepository;
     private final WalletRepository walletRepository;
     private final WalletService walletService;
 
