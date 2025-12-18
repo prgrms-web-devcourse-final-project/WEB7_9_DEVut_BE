@@ -74,6 +74,11 @@ public enum ErrorCode {
     INSUFFICIENT_COINS("DI007", HttpStatus.BAD_REQUEST, "코인이 부족합니다."),
     ALREADY_HIGHEST_BIDDER("DI008", HttpStatus.BAD_REQUEST, "이미 최고가 입찰자입니다."),
 
+    // ========== LIVEBID 도메인 에러 ==========
+    LIVEBID_CANNOT_BID_OWN_ITEM("LB001", HttpStatus.CONFLICT, "본인의 경매품에는 입찰할 수 없습니다."),
+    LIVEBID_NOT_IN_PROGRESS("LB002", HttpStatus.CONFLICT, "경매 진행중이 아닙니다."),
+    LIVEBID_ALREADY_HIGHEST_BIDDER("LB003", HttpStatus.CONFLICT, "현재 최고 입찰자입니다. 다른 입찰 후에 다시 시도해주세요."),
+
     // ========== Notification 도메인 에러 ==========
     NOTIFICATION_NOT_FOUND("NO001", HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
     NOTIFICATION_FORBIDDEN("NO002", HttpStatus.FORBIDDEN, "알림에 접근할 권한이 없습니다."),
