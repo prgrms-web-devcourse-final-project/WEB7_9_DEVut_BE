@@ -6,6 +6,7 @@ import devut.buzzerbidder.domain.deal.repository.DelayedDealRepository;
 import devut.buzzerbidder.domain.delayedbid.entity.DelayedBidLog;
 import devut.buzzerbidder.domain.delayedbid.repository.DelayedBidRepository;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
 import devut.buzzerbidder.domain.deliveryTracking.service.DeliveryTrackingService;
@@ -53,7 +54,7 @@ public class DelayedDealService {
 
         // 최고가 입찰자 조회
         DelayedBidLog highestBid = delayedBidRepository
-            .findTopByDelayedItemOrderByBidAmountDesc(item)
+            .findTopByDelayedItemIdOrderByBidAmountDesc(item.getId())
             .orElseThrow(() -> new BusinessException(ErrorCode.NO_BID_EXISTS));
 
         User buyer = userRepository.findById(highestBid.getBidderUserId())
@@ -72,18 +73,28 @@ public class DelayedDealService {
 
     // 배송 정보 입력
     @Transactional
-    public void patchDeliveryInfo(Long currentUser, Long dealId, String carrierCode, String trackingNumber) {
-        // TODO : 권한 체크 로직 추가 (currentUser가 판매자인지 확인)
+    public void patchDeliveryInfo(User currentUser, Long dealId, String carrierCode, String trackingNumber) {
         DelayedDeal deal = findByIdOrThrow(dealId);
+
+        // 판매자 권한 체크
+        if (!deal.getItem().getSellerUserId().equals(currentUser.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
         deal.updateDeliveryInfo(carrierCode, trackingNumber);
         deal.updateStatus(DealStatus.SHIPPING);
     }
 
     // 배공 조회
     public DeliveryTrackingResponse track(User currentUser, Long dealId) {
-        // TODO: 권한 체크 로직 추가 (currentUser가 해당 deal에 접근할 수 있는지 확인)
-
         DelayedDeal deal = findByIdOrThrow(dealId);
+
+        // 판매자 또는 구매자 권한 체크
+        boolean isSeller = deal.getItem().getSellerUserId().equals(currentUser.getId());
+        boolean isBuyer = deal.getBuyer().getId().equals(currentUser.getId());
+        if (!isSeller && !isBuyer) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
 
         String carrierCode = deal.getCarrier() != null ? deal.getCarrier().getCode() : null;
         String trackingNumber = deal.getTrackingNumber();
@@ -93,6 +104,30 @@ public class DelayedDealService {
         }
 
         return deliveryTrackingService.track(carrierCode, trackingNumber);
+    }
+
+    // 구매 확정
+    @Transactional
+    public void confirmPurchase(User currentUser, Long dealId) {
+        DelayedDeal deal = findByIdOrThrow(dealId);
+
+        // 구매자 권한 체크
+        if (!deal.getBuyer().getId().equals(currentUser.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
+        // 상태 체크 - SHIPPING 상태여야 구매 확정 가능
+        if (deal.getStatus() != DealStatus.SHIPPING) {
+            throw new BusinessException(ErrorCode.DEAL_INVALID_STATUS);
+        }
+
+        // Deal 상태 업데이트
+        deal.updateStatus(DealStatus.COMPLETED);
+
+        // DelayedItem 상태 업데이트
+        deal.getItem().changeAuctionStatus(
+            AuctionStatus.PURCHASE_CONFIRMED
+        );
     }
 
 
