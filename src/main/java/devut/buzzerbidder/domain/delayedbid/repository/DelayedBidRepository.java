@@ -15,12 +15,12 @@ public interface DelayedBidRepository extends JpaRepository<DelayedBidLog, Long>
 
     @Query("""
         SELECT db FROM DelayedBidLog db
-        WHERE db.delayedItem = :delayedItem
+        WHERE db.delayedItem.id = :delayedItemId
         ORDER BY db.bidAmount DESC
         LIMIT 1
         """)
-    Optional<DelayedBidLog> findTopByDelayedItemOrderByBidAmountDesc(
-        @Param("delayedItem") DelayedItem delayedItem
+    Optional<DelayedBidLog> findTopByDelayedItemIdOrderByBidAmountDesc(
+        @Param("delayedItemId") Long delayedItemId
     );
 
     Page<DelayedBidLog> findByDelayedItemOrderByBidTimeDesc(DelayedItem delayedItem, Pageable pageable);

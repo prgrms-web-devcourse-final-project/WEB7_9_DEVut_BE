@@ -209,11 +209,14 @@ public class LiveItemService {
         // 현재 입찰가 보내는 로직 추가
         return new LiveItemDetailResponse(
             liveItem.getId(),
+            liveItem.getSellerUserId(),
             liveItem.getName(),
             liveItem.getCategory(),
             liveItem.getDescription(),
             liveItem.getDeliveryInclude(),
             liveItem.getItemStatus(),
+            liveItem.getAuctionStatus(),
+            liveItem.getLiveTime(),
             liveItem.getDirectDealAvailable(),
             liveItem.getRegion(),
             liveItem.getPreferredPlace(),

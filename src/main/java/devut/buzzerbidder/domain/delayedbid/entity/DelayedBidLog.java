@@ -45,19 +45,11 @@ public class DelayedBidLog extends BaseEntity {
     @NotNull
     private LocalDateTime bidTime;
 
-    @Column(name = "is_highest")
-    private Boolean isHighest;
-
     public DelayedBidLog(DelayedItem item, Long bidderUserId, Long bidAmount) {
         this.delayedItem = item;
         this.bidderUserId = bidderUserId;
         this.bidAmount = bidAmount;
         this.bidTime = LocalDateTime.now();
-        this.isHighest = true;
-    }
-
-    public void updateHighestStatus(Boolean isHighest) {
-        this.isHighest = isHighest;
     }
 
 }
