@@ -95,7 +95,7 @@ public class LiveItem extends BaseEntity {
 
     // 라이브 경매 시간
     @Column(name = "live_time")
-    @NotNull(message = "경매 일자는 필수입니다.")
+    @NotNull(message = "경매 시간은 필수입니다.")
     private LocalDateTime liveTime;
 
     // 직거래 가능 여부
