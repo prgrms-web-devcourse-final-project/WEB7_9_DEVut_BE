@@ -20,6 +20,8 @@ import devut.buzzerbidder.global.image.ImageService;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -108,7 +110,6 @@ public class LiveItemService {
         }
     }
 
-    @Transactional
     public LiveItemResponse modifyLiveItem(Long id, LiveItemModifyRequest reqBody, User user) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
@@ -125,8 +126,40 @@ public class LiveItemService {
             throw new BusinessException(ErrorCode.EDIT_UNAVAILABLE);
         }
 
-        // 일반정보 수정
+        // 이미지 있는지 체크
+        if (reqBody.images() == null || reqBody.images().isEmpty()) {
+            throw new BusinessException(ErrorCode.IMAGE_FILE_EMPTY);
+        }
+
+        // 시간정보 획득
         LocalDateTime oldLiveTime = liveItem.getLiveTime();
+        LocalDateTime newLiveTime = reqBody.liveTime();
+
+        // 락 키 결정, 바뀌어도 같은 시간인지 체크
+        List<String> lockKeys = new ArrayList<>();
+        lockKeys.add("lock:auction-room:" + oldLiveTime.truncatedTo(ChronoUnit.MINUTES));
+        if (!oldLiveTime.equals(newLiveTime)) {
+            lockKeys.add("lock:auction-room:" + newLiveTime.truncatedTo(ChronoUnit.MINUTES));
+        }
+
+        // Deadlock 방지: 락 키 정렬 후 획득
+        Collections.sort(lockKeys);
+
+        List<RLock> locks = lockKeys.stream()
+            .map(redissonClient::getLock)
+            .toList();
+
+        boolean acquired = false;
+
+        try {
+            // 락 획득
+            for (RLock lock : locks) {
+                acquired = lock.tryLock(3, TimeUnit.SECONDS);
+                if (!acquired) {
+                    throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+                }
+            }
+
         liveItem.modifyLiveItem(reqBody);
 
         // 경매시각이 바뀐 경우 유효성 검사 및 방 재할당
