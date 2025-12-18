@@ -28,6 +28,7 @@ public enum ErrorCode {
     USER_PROVIDER_ID_DUPLICATE("M008", HttpStatus.CONFLICT, "이미 사용 중인 SNS ID입니다."),
     USER_SOCIAL_ACCOUNT("M009", HttpStatus.BAD_REQUEST, "소셜 로그인으로 가입한 계정입니다. 소셜 로그인을 사용해주세요."),
     USER_INVALID_PROVIDER("M010", HttpStatus.BAD_REQUEST, "유효하지 않은 로그인 제공자입니다."),
+    USER_EMAIL_NOT_VERIFIED("M011", HttpStatus.BAD_REQUEST, "이메일 인증이 완료되지 않았습니다."),
 
     // ========== Deal 도메인 에러 ==========
     DEAL_NOT_FOUND("D001", HttpStatus.NOT_FOUND, "존재하지 않는 거래입니다."),
