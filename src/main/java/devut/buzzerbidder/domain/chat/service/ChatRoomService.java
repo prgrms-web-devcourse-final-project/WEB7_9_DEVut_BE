@@ -5,6 +5,8 @@ import devut.buzzerbidder.domain.chat.entity.ChatRoomEntered;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.wallet.service.WalletRedisService;
+import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,8 @@ import java.util.Optional;
 @Transactional
 public class ChatRoomService {
 
+    private final WalletRedisService walletRedisService;
+    private final WalletService walletService;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomEnteredRepository chatRoomEnteredRepository;
 
@@ -42,13 +46,22 @@ public class ChatRoomService {
 
     // 채팅방 참여 상태 관리
     public void enterChatRoom(User user, ChatRoom chatRoom) {
+        Long userId =  user.getId();
+        Long chatRoomId = chatRoom.getReferenceEntityId();
+        Long userBizzFromDb = walletService.getBizzBalance(user);
 
         chatRoomEnteredRepository.findByUserAndChatRoom(user, chatRoom)
                 .orElseGet(() -> {
                     ChatRoomEntered newEntry = new ChatRoomEntered(user, chatRoom);
-
                     return chatRoomEnteredRepository.save(newEntry);
                 });
+
+        // Redis에서 세션 획득하고 보유 bizz 등록
+        boolean acquired = walletRedisService.tryAcquireSessionAndInitBalance(userId, chatRoomId, userBizzFromDb, null);
+        // 이미 세션이 있으면 ttl만 연장
+        if (!acquired) {
+            walletRedisService.extendTtl(userId);
+        }
     }
 
     public void exitAuctionChatRoom(Long auctionId, User user) {
