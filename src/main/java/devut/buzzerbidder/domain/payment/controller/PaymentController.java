@@ -1,18 +1,30 @@
 package devut.buzzerbidder.domain.payment.controller;
 
-import devut.buzzerbidder.domain.payment.dto.request.*;
-import devut.buzzerbidder.domain.payment.dto.response.*;
+import devut.buzzerbidder.domain.payment.dto.request.PaymentConfirmRequestDto;
+import devut.buzzerbidder.domain.payment.dto.request.PaymentCreateRequestDto;
+import devut.buzzerbidder.domain.payment.dto.request.PaymentFailRequestDto;
+import devut.buzzerbidder.domain.payment.dto.request.PaymentHistoryRequestDto;
+import devut.buzzerbidder.domain.payment.dto.response.PaymentConfirmResponseDto;
+import devut.buzzerbidder.domain.payment.dto.response.PaymentCreateResponseDto;
+import devut.buzzerbidder.domain.payment.dto.response.PaymentFailResponseDto;
+import devut.buzzerbidder.domain.payment.dto.response.PaymentHistoryResponseDto;
 import devut.buzzerbidder.domain.payment.service.PaymentService;
 import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.OffsetDateTime;
+
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/payments")
+@Tag(name = "Payment", description = "결제 API")
 public class PaymentController {
 
     private final PaymentService paymentService;
@@ -46,11 +58,19 @@ public class PaymentController {
     @GetMapping("/history")
     public ApiResponse<PaymentHistoryResponseDto> getPaymentHistory(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody PaymentHistoryRequestDto request
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime endDate,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size
     ) {
+        PaymentHistoryRequestDto request = new PaymentHistoryRequestDto(startDate, endDate, status, page, size);
         PaymentHistoryResponseDto response = paymentService.getPaymentHistory(userDetails.getId(), request);
         return ApiResponse.ok("결제 내역 조회에 성공했습니다.", response);
     }
 
 
 }
+
+
+
