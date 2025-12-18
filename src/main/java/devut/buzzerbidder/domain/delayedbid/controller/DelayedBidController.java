@@ -60,16 +60,6 @@ public class DelayedBidController {
         return ApiResponse.ok("입찰 내역 조회", response);
     }
 
-    @GetMapping("/{id}/highest-bid")
-    @Operation(summary = "최고가 입찰 조회")
-    public ApiResponse<DelayedBidResponse> getHighestBid(
-        @PathVariable Long id
-    ) {
-        DelayedBidResponse response = delayedBidService.getHighestBid(id);
-
-        return ApiResponse.ok("최고가 입찰 조회", response);
-    }
-
     @GetMapping("/my-bids")
     @Operation(summary = "내 입찰 내역 조회")
     public ApiResponse<DelayedBidListResponse> getMyBids(

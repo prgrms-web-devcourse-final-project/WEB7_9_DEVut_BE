@@ -59,7 +59,7 @@ public class DelayedBidService {
 
         // 6. 이전 최고가 입찰 확인 및 환불
         Optional<DelayedBidLog> previousBidOpt = delayedBidRepository
-            .findTopByDelayedItemOrderByBidAmountDesc(delayedItem);
+            .findTopByDelayedItemIdOrderByBidAmountDesc(delayedItemId);
 
         if (previousBidOpt.isPresent()) {
             DelayedBidLog previousBid = previousBidOpt.get();
@@ -83,7 +83,6 @@ public class DelayedBidService {
             .bidderUserId(user.getId())
             .bidAmount(request.bidPrice())
             .bidTime(LocalDateTime.now())
-            .isHighest(true)
             .build();
 
         delayedBidRepository.save(bidLog);
@@ -127,28 +126,6 @@ public class DelayedBidService {
             .toList();
 
         return new DelayedBidListResponse(bidList, page.getTotalElements());
-    }
-
-    @Transactional(readOnly = true)
-    public DelayedBidResponse getHighestBid(Long delayedItemId) {
-
-        DelayedItem delayedItem = delayedItemRepository.findById(delayedItemId)
-            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
-
-        DelayedBidLog highestBid = delayedBidRepository
-            .findTopByDelayedItemOrderByBidAmountDesc(delayedItem)
-            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
-
-        User bidder = userRepository.findById(highestBid.getBidderUserId())
-            .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        return new DelayedBidResponse(
-            highestBid.getId(),
-            delayedItem.getId(),
-            bidder.getNickname(),
-            highestBid.getBidAmount(),
-            highestBid.getCreateDate()
-        );
     }
 
     @Transactional(readOnly = true)
