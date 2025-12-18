@@ -6,6 +6,7 @@ import java.util.List;
 
 public record LiveItemDetailResponse(
     Long id,
+    Long sellerId,
     String name,
     Category category,
     String description,
