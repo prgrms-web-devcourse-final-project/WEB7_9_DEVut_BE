@@ -11,6 +11,7 @@ import devut.buzzerbidder.domain.payment.dto.response.PaymentHistoryResponseDto;
 import devut.buzzerbidder.domain.payment.service.PaymentService;
 import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping()
+    @Operation(summary = "결제 생성")
     public ApiResponse<PaymentCreateResponseDto> createPayment(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody PaymentCreateRequestDto request
@@ -39,6 +41,7 @@ public class PaymentController {
     }
 
     @PostMapping("/confirm")
+    @Operation(summary = "결제 승인")
     public ApiResponse<PaymentConfirmResponseDto> confirmPayment(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody PaymentConfirmRequestDto request
@@ -48,6 +51,7 @@ public class PaymentController {
     }
 
     @PostMapping("/fail")
+    @Operation(summary = "결제 실패")
     public ApiResponse<PaymentFailResponseDto> failPayment(
             @Valid @RequestBody PaymentFailRequestDto request
     ) {
@@ -56,6 +60,7 @@ public class PaymentController {
     }
 
     @GetMapping("/history")
+    @Operation(summary = "결제 내역 조회")
     public ApiResponse<PaymentHistoryResponseDto> getPaymentHistory(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startDate,
