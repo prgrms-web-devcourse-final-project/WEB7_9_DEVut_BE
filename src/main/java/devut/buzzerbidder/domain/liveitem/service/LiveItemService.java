@@ -287,7 +287,7 @@ public class LiveItemService {
 
             // 트랜잭션 성공 후에만 S3 파일 삭제 (데이터 일관성)
             if (!imagesToDelete.isEmpty()) {
-                //imageService.deleteFiles(imagesToDelete);
+                imageService.deleteFiles(imagesToDelete);
             }
 
         } catch (InterruptedException e) {
