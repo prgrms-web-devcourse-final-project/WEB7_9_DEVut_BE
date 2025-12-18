@@ -1,6 +1,7 @@
 package devut.buzzerbidder.domain.user.controller;
 
 import devut.buzzerbidder.domain.deal.enums.AuctionType;
+import devut.buzzerbidder.domain.deal.service.DelayedDealService;
 import devut.buzzerbidder.domain.deal.service.LiveDealService;
 import devut.buzzerbidder.domain.deliveryTracking.dto.request.DeliveryRequest;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
@@ -27,6 +28,7 @@ public class UserMeController {
 
     private final RequestContext requestContext;
     private final LiveDealService liveDealService;
+    private final DelayedDealService delayedDealService;
     private final UserService userService;
 
     @PatchMapping("/deals/{type}/{dealId}/delivery")
@@ -45,7 +47,8 @@ public class UserMeController {
 
         if(auctionType.equals(AuctionType.LIVE))
             liveDealService.patchDeliveryInfo(currentUser, dealId, request.carrierCode(), request.trackingNumber());
-//        TODO: else if ~ 지연경매 코드
+        else if(auctionType.equals(AuctionType.DELAYED))
+            delayedDealService.patchDeliveryInfo(currentUser, dealId, request.carrierCode(), request.trackingNumber());
 
         return ApiResponse.ok("배송 정보가 입력되었습니다.", null);
     }
@@ -63,7 +66,8 @@ public class UserMeController {
         DeliveryTrackingResponse trackInfo = null;
         if(auctionType.equals(AuctionType.LIVE))
             trackInfo = liveDealService.track(currentUser, dealId);
-//        TODO: else if ~ 지연경매 코드
+        else if(auctionType.equals(AuctionType.DELAYED))
+            trackInfo = delayedDealService.track(currentUser, dealId);
 
         return trackInfo != null ? ApiResponse.ok("배송조회 성공", trackInfo) : ApiResponse.error(ErrorCode.DEAL_DELIVERY_INFO_NOT_FOUND, null);
     }

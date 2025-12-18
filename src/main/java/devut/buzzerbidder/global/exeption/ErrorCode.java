@@ -34,6 +34,8 @@ public enum ErrorCode {
     DEAL_NOT_FOUND("D001", HttpStatus.NOT_FOUND, "존재하지 않는 거래입니다."),
     DEAL_INVALID_TYPE("D002", HttpStatus.BAD_REQUEST, "잘못된 경매 유형입니다."),
     DEAL_DELIVERY_INFO_NOT_FOUND("D003", HttpStatus.NOT_FOUND, "배송 정보가 존재하지 않습니다."),
+    AUCTION_NOT_ENDED("D004", HttpStatus.BAD_REQUEST, "경매가 아직 종료되지 않았습니다."),
+    NO_BID_EXISTS("D005", HttpStatus.BAD_REQUEST, "입찰 내역이 없습니다."),
 
     // ========== Wallet 도메인 에러 ==========
     WALLET_NOT_FOUND("W001", HttpStatus.NOT_FOUND, "지갑이 존재하지 않습니다."),
