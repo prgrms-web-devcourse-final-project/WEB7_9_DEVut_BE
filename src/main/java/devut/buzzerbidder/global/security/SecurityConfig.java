@@ -33,7 +33,6 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable) // 임시로 CORS 비활성화
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
@@ -57,6 +56,7 @@ public class SecurityConfig {
         } catch (org.springframework.beans.factory.NoSuchBeanDefinitionException e) {
             // OAuth2 설정이 없으면 OAuth2 로그인을 비활성화 (테스트 환경 등)
         }
+        http.cors(cors -> {});
 
         return http.build();
     }

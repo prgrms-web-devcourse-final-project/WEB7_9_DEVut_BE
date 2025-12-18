@@ -28,6 +28,7 @@ public enum ErrorCode {
     USER_PROVIDER_ID_DUPLICATE("M008", HttpStatus.CONFLICT, "이미 사용 중인 SNS ID입니다."),
     USER_SOCIAL_ACCOUNT("M009", HttpStatus.BAD_REQUEST, "소셜 로그인으로 가입한 계정입니다. 소셜 로그인을 사용해주세요."),
     USER_INVALID_PROVIDER("M010", HttpStatus.BAD_REQUEST, "유효하지 않은 로그인 제공자입니다."),
+    USER_EMAIL_NOT_VERIFIED("M011", HttpStatus.BAD_REQUEST, "이메일 인증이 완료되지 않았습니다."),
 
     // ========== Deal 도메인 에러 ==========
     DEAL_NOT_FOUND("D001", HttpStatus.NOT_FOUND, "존재하지 않는 거래입니다."),
@@ -41,6 +42,7 @@ public enum ErrorCode {
     INVALID_WALLET_AMOUNT("W005", HttpStatus.BAD_REQUEST, "충전/차감 금액은 null 또는 0 이하일 수 없습니다."),
     INVALID_TRANSFER("W006", HttpStatus.BAD_REQUEST, "자기 자신에게 지불할 수 없습니다."),
     WALLET_ALREADY_EXISTS("W007", HttpStatus.CONFLICT, "사용자 지갑이 이미 존재합니다."),
+
     // ========== Payment 도메인 에러 ==========
     PAYMENT_NOT_FOUND("P001", HttpStatus.NOT_FOUND, "결제정보를 찾을 수 없습니다."),
     NOT_PENDING_PAYMENT("P002", HttpStatus.CONFLICT, "결제대기 상태가 아닙니다."),
@@ -50,6 +52,9 @@ public enum ErrorCode {
     NOT_SUCCESS_PAYMENT("P006", HttpStatus.CONFLICT, "결제완료 상태가 아닙니다."),
     AMOUNT_EXCEEDS_LIMIT("P007", HttpStatus.BAD_REQUEST, "취소 가능 금액을 초과했습니다."),
     PAYMENT_CANCELED_FAILED("P008", HttpStatus.BAD_REQUEST, "결제취소 요청이 실패했습니다."),
+    INVALID_PAGE_ERROR("P009", HttpStatus.BAD_REQUEST, "요청한 페이지가 허용범위를 초과했습니다."),
+    INVALID_PAGE_SIZE("P010", HttpStatus.BAD_REQUEST, "조회 건수는 최대 30건까지 가능합니다."),
+
     // ========== AuctionRoom 도메인 에러 ==========
     FULL_AUCTION_ROOM("AR001", HttpStatus.CONFLICT, "경매방이 가득 찼습니다."),
     AUCTION_ROOM_BUSY("AR002", HttpStatus.CONFLICT, "잠시 후 다시 시도해주세요."),
@@ -57,8 +62,17 @@ public enum ErrorCode {
     CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
     INVALID_LIVETIME("LI002", HttpStatus.BAD_REQUEST,"유효한 경매 시작 시간이 아닙니다."),
     EDIT_UNAVAILABLE("LI003", HttpStatus.BAD_REQUEST,"1시간안에 시작하는 경매는 수정 및 삭제가 불가능합니다."),
-    IMAGE_FILE_EMPTY("LI004", HttpStatus.BAD_REQUEST,"이미지는 필수입니다."),
-    LIVEITEM_NOT_FOUND("LI005", HttpStatus.NOT_FOUND, "라이브 경매품을 찾을 수 없습니다."),
+    LIVEITEM_NOT_FOUND("LI004", HttpStatus.NOT_FOUND, "라이브 경매품을 찾을 수 없습니다."),
+
+    // ========== DelayedItem 도메인 에러 ==========
+    INVALID_END_TIME("DI001", HttpStatus.BAD_REQUEST, "종료 시간은 최소 3일 이후, 최대 10일 이내여야 합니다."),
+    EDIT_UNAVAILABLE_DUE_TO_BIDS("DI002", HttpStatus.CONFLICT, "입찰이 있어 수정할 수 없습니다."),
+    DELETE_UNAVAILABLE_DUE_TO_BIDS("DI003", HttpStatus.CONFLICT, "입찰이 있어 삭제할 수 없습니다."),
+    AUCTION_ALREADY_ENDED("DI004", HttpStatus.BAD_REQUEST,"이미 종료된 경매입니다."),
+    CANNOT_BID_OWN_ITEM("DI005", HttpStatus.BAD_REQUEST, "본인의 경매품에는 입찰할 수 없습니다."),
+    BID_PRICE_TOO_LOW("DI006", HttpStatus.BAD_REQUEST, "입찰 금액이 현재가보다 같거나 낮습니다."),
+    INSUFFICIENT_COINS("DI007", HttpStatus.BAD_REQUEST, "코인이 부족합니다."),
+    ALREADY_HIGHEST_BIDDER("DI008", HttpStatus.BAD_REQUEST, "이미 최고가 입찰자입니다."),
 
     // ========== LIVEBID 도메인 에러 ==========
     LIVEBID_CANNOT_BID_OWN_ITEM("LB001", HttpStatus.CONFLICT, "본인의 경매품에는 입찰할 수 없습니다."),
@@ -76,6 +90,7 @@ public enum ErrorCode {
     IMAGE_URL_INVALID("IMG004", HttpStatus.BAD_REQUEST, "유효하지 않은 이미지 URL입니다."),
     IMAGE_URL_NOT_ALLOWED("IMG005", HttpStatus.FORBIDDEN, "허용되지 않은 S3 버킷입니다."),
     IMAGE_UPLOAD_FAILED("IMG006", HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드에 실패했습니다."),
+    IMAGE_FILE_EMPTY("IMG007", HttpStatus.NOT_FOUND, "이미지 파일이 비어있습니다."),
 
     // ========== chat 도메인 에러 ==========
     CHATROOM_NOT_FOUND("C001", HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."),

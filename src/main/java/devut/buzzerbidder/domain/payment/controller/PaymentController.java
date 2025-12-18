@@ -11,75 +11,71 @@ import devut.buzzerbidder.domain.payment.dto.response.PaymentHistoryResponseDto;
 import devut.buzzerbidder.domain.payment.service.PaymentService;
 import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.OffsetDateTime;
+
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/payments")
+@Tag(name = "Payment", description = "결제 API")
 public class PaymentController {
 
     private final PaymentService paymentService;
 
     @PostMapping()
+    @Operation(summary = "결제 생성")
     public ApiResponse<PaymentCreateResponseDto> createPayment(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody PaymentCreateRequestDto request
     ) {
         PaymentCreateResponseDto response = paymentService.create(userDetails.getId(), request);
-
         return ApiResponse.ok("결제가 생성되었습니다.", response);
     }
 
     @PostMapping("/confirm")
+    @Operation(summary = "결제 승인")
     public ApiResponse<PaymentConfirmResponseDto> confirmPayment(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody PaymentConfirmRequestDto request
     ) {
-        PaymentConfirmResponseDto response = paymentService.confirm(request);
-
+        PaymentConfirmResponseDto response = paymentService.confirm(userDetails.getId(), request);
         return ApiResponse.ok("결제가 승인되었습니다.", response);
     }
 
     @PostMapping("/fail")
+    @Operation(summary = "결제 실패")
     public ApiResponse<PaymentFailResponseDto> failPayment(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody PaymentFailRequestDto request
     ) {
-        PaymentFailResponseDto response = paymentService.fail(userDetails.getId(), request);
-
+        PaymentFailResponseDto response = paymentService.fail(request);
         return ApiResponse.ok("결제가 실패했습니다.", response);
     }
 
     @GetMapping("/history")
+    @Operation(summary = "결제 내역 조회")
     public ApiResponse<PaymentHistoryResponseDto> getPaymentHistory(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody PaymentHistoryRequestDto request
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime endDate,
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size
     ) {
+        PaymentHistoryRequestDto request = new PaymentHistoryRequestDto(startDate, endDate, status, page, size);
         PaymentHistoryResponseDto response = paymentService.getPaymentHistory(userDetails.getId(), request);
-
         return ApiResponse.ok("결제 내역 조회에 성공했습니다.", response);
     }
 
-//    @PostMapping("/cancel")
-//    public ApiResponse<PaymentCancelResponseDto> cancelPayment(
-//            @AuthenticationPrincipal CustomUserDetails userDetails,
-//            @Valid @RequestBody PaymentCancelRequestDto request
-//    ) {
-//        PaymentCancelResponseDto response = paymentService.cancelPayment(userDetails.getId(), request);
-//
-//        return ApiResponse.ok("결제가 취소되었습니다.", response);
-//    }
 
-//    @PostMapping("/withdraw")
-//    public ApiResponse<PaymentWithdrawResponseDto> withdrawPayment(
-//            @AuthenticationPrincipal CustomUserDetails userDetails,
-//            @Valid @RequestBody PaymentWithdrawRequestDto request
-//    ) {
-//        PaymentWithdrawResponseDto response = paymentService.withdrawPayment(userDetails.getId(), request);
-//
-//        return ApiResponse.ok("결제환불 요청이 성공했습니다.", response);
-//    }
 }
+
+
+

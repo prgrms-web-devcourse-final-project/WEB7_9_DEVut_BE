@@ -16,9 +16,6 @@ public record UserProfileResponse(
         @Schema(description = "닉네임", example = "gildong")
         String nickname,
 
-        @Schema(description = "생년월일", example = "2000-01-01")
-        LocalDate birthDate,
-
         @Schema(description = "프로필 이미지 URL", example = "https://example.com/image.jpg")
         String image,
 
@@ -36,7 +33,6 @@ public record UserProfileResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
-                user.getBirthDate(),
                 user.getProfileImageUrl(),
                 user.getCreateDate() != null ? user.getCreateDate().toLocalDate() : null,
                 user.getModifyDate() != null ? user.getModifyDate().toLocalDate() : null,
