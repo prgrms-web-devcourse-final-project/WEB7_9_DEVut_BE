@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class AuctionScheduler {
+public class DelayedAuctionScheduler {
 
     private final DelayedItemRepository delayedItemRepository;
     private final DelayedDealService delayedDealService;
