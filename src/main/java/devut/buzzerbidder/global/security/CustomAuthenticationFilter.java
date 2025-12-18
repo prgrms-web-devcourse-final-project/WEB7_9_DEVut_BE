@@ -69,13 +69,15 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         // 허용된 API 경로들 (회원가입, 로그인, 토큰 재발급, 이메일 인증, 글 조회)
         String method = request.getMethod();
+        // 개인정보 관련 GET API는 인증 필요
+        boolean isPersonalApi = requestURI.endsWith("/my-bids");
         if(requestURI.equals("/api/v1/users/signup") || 
            requestURI.equals("/api/v1/users/signin") ||
            requestURI.equals("/api/v1/users/refresh") ||
            requestURI.equals("/api/v1/users/email/verification") ||
            requestURI.equals("/api/v1/users/email/verification/verify") ||
            // GET 메서드의 경매품 조회는 로그인 불필요
-           (method.equals("GET") && requestURI.startsWith("/api/v1/auction/live"))){
+           (method.equals("GET") && requestURI.startsWith("/api/v1/auction/") && !isPersonalApi)) {
             filterChain.doFilter(request, response);
             return;
         }

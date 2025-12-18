@@ -88,6 +88,16 @@ public class WalletService {
         changeBizz(user, amount, WalletTransactionType.ADMIN_DEDUCT);
     }
 
+    // 입찰 시 코인 차감
+    public void lockBizzForBid(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.BID_LOCK);
+    }
+
+    // 입찰 실패 시 코인 환불
+    public void refundBidBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.BID_REFUND);
+    }
+
     // A유저 -> B유저 송금
     public void transferBizz(User fromUser, User toUser, Long amount) {
         if (fromUser == null || toUser == null) {
