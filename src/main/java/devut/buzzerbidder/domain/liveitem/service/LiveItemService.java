@@ -215,6 +215,8 @@ public class LiveItemService {
             liveItem.getDescription(),
             liveItem.getDeliveryInclude(),
             liveItem.getItemStatus(),
+            liveItem.getAuctionStatus(),
+            liveItem.getLiveTime(),
             liveItem.getDirectDealAvailable(),
             liveItem.getRegion(),
             liveItem.getPreferredPlace(),
