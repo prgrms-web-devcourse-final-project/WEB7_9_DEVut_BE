@@ -44,8 +44,8 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -61,9 +61,9 @@ spring:
       client:
         registration:
           kakao:
-            client-id: ${KAKAO_CLIENT_ID:}
+            client-id: c136afd324de5358829c83363ee0ba6b
             client-secret: ${KAKAO_CLIENT_SECRET:}
-            redirect-uri: ${KAKAO_REDIRECT_URI:}
+            redirect-uri: https://api.app1.buzzerbidder.site/login/oauth2/code/kakao
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
             scope:
@@ -71,9 +71,9 @@ spring:
               - account_email
             client-name: Kakao
           naver:
-            client-id: ${NAVER_CLIENT_ID:}
+            client-id: n4GkssO1dLxOBT8PQ8Z0
             client-secret: ${NAVER_CLIENT_SECRET:}
-            redirect-uri: ${NAVER_REDIRECT_URI:}
+            redirect-uri: https://api.app1.buzzerbidder.site/login/oauth2/code/naver
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
             scope:
@@ -82,9 +82,9 @@ spring:
               - profile_image
             client-name: Naver
           google:
-            client-id: ${GOOGLE_CLIENT_ID:516250457314-ilbkvu1ittv47pbugdjk3qusl4kbg47o.apps.googleusercontent.com}
-            client-secret: ${GOOGLE_CLIENT_SECRET:}
-            redirect-uri: ${GOOGLE_REDIRECT_URI:}
+            client-id: 516250457314-ilbkvu1ittv47pbugdjk3qusl4kbg47o.apps.googleusercontent.com
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: https://api.app1.buzzerbidder.site/login/oauth2/code/google
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
             scope:
@@ -110,7 +110,7 @@ spring:
 
 # 서버 설정
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
 
 # 관리 엔드포인트 설정
 management:
