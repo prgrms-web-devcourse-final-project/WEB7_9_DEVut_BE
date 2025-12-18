@@ -256,14 +256,12 @@ public class LiveItemService {
             throw new BusinessException(ErrorCode.EDIT_UNAVAILABLE);
         }
 
-        List<String> imagesToDelete = liveItem.getImages().stream()
-            .map(LiveItemImage::getImageUrl)
-            .toList();
-
         // 분산 락 설정 (해당 아이템이 속한 경매 시간대 기준)
         String lockKey = "lock:auction-room:" + liveItem.getLiveTime().truncatedTo(ChronoUnit.MINUTES);
         RLock lock = redissonClient.getLock(lockKey);
         boolean acquired = false;
+
+        List<String> imagesToDelete = new ArrayList<>();
 
         try {
             acquired = lock.tryLock(3, TimeUnit.SECONDS); // 워치독 활용
@@ -273,17 +271,23 @@ public class LiveItemService {
 
             // 임계 영역: 트랜잭션 시작
             transactionTemplate.executeWithoutResult(status -> {
+                LiveItem currentItem = liveItemRepository.findLiveItemWithImagesById(id)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+
+                imagesToDelete.addAll(currentItem.getImages().stream()
+                    .map(LiveItemImage::getImageUrl).toList());
+
                 // 방에서 제거
-                AuctionRoom auctionRoom = liveItem.getAuctionRoom();
-                auctionRoom.removeItem(liveItem);
+                AuctionRoom auctionRoom = currentItem.getAuctionRoom();
+                auctionRoom.removeItem(currentItem);
 
                 // DB에서 삭제 (OrphanRemoval 설정에 따라 이미지도 함께 삭제됨)
-                liveItemRepository.delete(liveItem);
+                liveItemRepository.delete(currentItem);
             });
 
             // 트랜잭션 성공 후에만 S3 파일 삭제 (데이터 일관성)
             if (!imagesToDelete.isEmpty()) {
-                imageService.deleteFiles(imagesToDelete);
+                //imageService.deleteFiles(imagesToDelete);
             }
 
         } catch (InterruptedException e) {
