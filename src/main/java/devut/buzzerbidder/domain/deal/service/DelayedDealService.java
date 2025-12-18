@@ -116,8 +116,8 @@ public class DelayedDealService {
             throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
         }
 
-        // 상태 체크 - SHIPPING 상태여야 구매 확정 가능
-        if (deal.getStatus() != DealStatus.SHIPPING) {
+        // 상태 체크 - PAID나 SHIPPING 상태여야 구매 확정 가능
+        if (deal.getStatus() != DealStatus.PAID && deal.getStatus() != DealStatus.SHIPPING) {
             throw new BusinessException(ErrorCode.DEAL_INVALID_STATUS);
         }
 
