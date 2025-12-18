@@ -15,7 +15,7 @@ public record LiveItemDetailResponse(
     Boolean deliveryInclude,
     ItemStatus itemStatus,
     AuctionStatus auctionStatus,
-    LocalDateTime liveTIem,
+    LocalDateTime liveTime,
     Boolean DirectDealAvailable,
     String region,
     String preferredPlace,
