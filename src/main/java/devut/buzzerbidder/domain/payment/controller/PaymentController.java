@@ -37,9 +37,10 @@ public class PaymentController {
 
     @PostMapping("/fail")
     public ApiResponse<PaymentFailResponseDto> failPayment(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody PaymentFailRequestDto request
     ) {
-        PaymentFailResponseDto response = paymentService.fail(request);
+        PaymentFailResponseDto response = paymentService.fail(userDetails.getId(), request);
         return ApiResponse.ok("결제가 실패했습니다.", response);
     }
 

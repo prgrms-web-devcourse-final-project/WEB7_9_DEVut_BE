@@ -102,13 +102,14 @@ public class PaymentService {
         return PaymentConfirmResponseDto.from(payment);
     }
 
-    public PaymentFailResponseDto fail(PaymentFailRequestDto request) {
+    public PaymentFailResponseDto fail(Long userId, PaymentFailRequestDto request) {
         String orderId = request.orderId();
         String code = request.code();
         String msg = request.msg();
 
-        Payment payment = paymentRepository.findByOrderId((orderId))
+        Payment payment = paymentRepository.findByUserIdAndOrderId(userId, orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+
 
         if (!payment.isPending()) {
             throw new BusinessException(ErrorCode.NOT_PENDING_PAYMENT);
