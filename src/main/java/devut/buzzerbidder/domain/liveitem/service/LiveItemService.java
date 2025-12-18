@@ -134,69 +134,36 @@ public class LiveItemService {
         // 시간정보 획득
         LocalDateTime oldLiveTime = liveItem.getLiveTime();
         LocalDateTime newLiveTime = reqBody.liveTime();
+        boolean liveTimeChanged = !oldLiveTime.equals(newLiveTime);
 
-        // 락 키 결정, 바뀌어도 같은 시간인지 체크
+        // 락 키 결정, 수정은 경매 시간이 바뀔 경우 양쪽 락을 획득해야함
         List<String> lockKeys = new ArrayList<>();
         lockKeys.add("lock:auction-room:" + oldLiveTime.truncatedTo(ChronoUnit.MINUTES));
-        if (!oldLiveTime.equals(newLiveTime)) {
+        if (liveTimeChanged) {
             lockKeys.add("lock:auction-room:" + newLiveTime.truncatedTo(ChronoUnit.MINUTES));
         }
 
-        // Deadlock 방지: 락 키 정렬 후 획득
-        Collections.sort(lockKeys);
-
-        List<RLock> locks = lockKeys.stream()
+        // MultiLock 생성
+        RLock[] locks = lockKeys.stream()
             .map(redissonClient::getLock)
-            .toList();
+            .toArray(RLock[]::new);
+        RLock multiLock = redissonClient.getMultiLock(locks);
 
         boolean acquired = false;
+        LiveItemResponse response;
 
         try {
-            // 락 획득
-            for (RLock lock : locks) {
-                acquired = lock.tryLock(3, TimeUnit.SECONDS);
-                if (!acquired) {
-                    throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
-                }
-            }
+            // 모든 락을 한 번에 시도
+            acquired = multiLock.tryLock(3, TimeUnit.SECONDS);
+            if (!acquired)
+                throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
 
-        liveItem.modifyLiveItem(reqBody);
-
-        // 경매시각이 바뀐 경우 유효성 검사 및 방 재할당
-        boolean liveTimeChanged = !oldLiveTime.equals(reqBody.liveTime());
-        if (liveTimeChanged) {
-
-            // 1. 현재 시간과 liveTime 차이 확인
-            if (reqBody.liveTime().isBefore(now.plusHours(1))) {
-                throw new BusinessException(ErrorCode.INVALID_LIVETIME);
-            }
-
-            LocalTime liveTimeOnly = reqBody.liveTime().toLocalTime();
-            // 2. 허용 시간 범위 체크 (09:00 ~ 23:00)
-            if (liveTimeOnly.isBefore(LocalTime.of(9, 0)) || liveTimeOnly.isAfter(LocalTime.of(23, 0))) {
-                throw new BusinessException(ErrorCode.INVALID_LIVETIME);
-            }
-
-            // 3. 30분 단위 체크 + 초 체크
-            int minute = liveTimeOnly.getMinute();
-            int second = liveTimeOnly.getSecond();
-            if ((minute != 0 && minute != 30)|| second !=0) {
-                throw new BusinessException(ErrorCode.INVALID_LIVETIME);
-            }
-
-            AuctionRoom oldRoom = liveItem.getAuctionRoom();
-            oldRoom.removeItem(liveItem);
-
-            AuctionRoom newRoom = auctionRoomService.assignRoom(reqBody.liveTime());
-            liveItem.changeAuctionRoom(newRoom);
-
-            newRoom.addItem(liveItem);
-        }
+            LiveItem currentliveItem = liveItemRepository.findLiveItemWithImagesById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
 
-        // 새 이미지 URL이 있고, 기존과 다를 때만 교체
-        if (reqBody.images() != null) {
-            List<String> oldImageUrls = liveItem.getImages().stream()
+            // 기존 이미지와 바뀔 이미지 세팅
+            List<String> oldImageUrls = currentliveItem.getImages().stream()
                 .map(LiveItemImage::getImageUrl)
                 .toList();
             List<String> newImageUrls = reqBody.images();
@@ -206,22 +173,72 @@ public class LiveItemService {
                 .filter(url -> !newImageUrls.contains(url))
                 .toList();
 
+            // 이 블록은 트랜젝션
+            response = transactionTemplate.execute(status -> {
+
+                // 일반정보 수정
+                currentliveItem.modifyLiveItem(reqBody);
+
+                // 경매시간 변경 시
+                if (liveTimeChanged) {
+
+                    // 1. 1시간 안에 시작하는지 확인
+                    if (reqBody.liveTime().isBefore(now.plusHours(1))) {
+                        throw new BusinessException(ErrorCode.INVALID_LIVETIME);
+                    }
+
+                    LocalTime liveTimeOnly = reqBody.liveTime().toLocalTime();
+                    // 2. 허용 시간 범위 체크 (09:00 ~ 23:00)
+                    if (liveTimeOnly.isBefore(LocalTime.of(9, 0)) || liveTimeOnly.isAfter(
+                        LocalTime.of(23, 0))) {
+                        throw new BusinessException(ErrorCode.INVALID_LIVETIME);
+                    }
+
+                    // 3. 30분 단위 체크 + 초 체크
+                    int minute = liveTimeOnly.getMinute();
+                    int second = liveTimeOnly.getSecond();
+                    if ((minute != 0 && minute != 30) || second != 0) {
+                        throw new BusinessException(ErrorCode.INVALID_LIVETIME);
+                    }
+
+                    // 경매방 재할당
+                    AuctionRoom oldRoom = currentliveItem.getAuctionRoom();
+                    oldRoom.removeItem(currentliveItem);
+
+                    AuctionRoom newRoom = auctionRoomService.assignRoom(reqBody.liveTime());
+                    currentliveItem.changeAuctionRoom(newRoom);
+
+                    newRoom.addItem(currentliveItem);
+                }
+
+                // DB 이미지 목록 갱신
+                currentliveItem.deleteImageUrls();
+                newImageUrls.forEach(url ->
+                    currentliveItem.addImage(new LiveItemImage(url, currentliveItem)));
+
+                liveItemRepository.save(currentliveItem);
+                return new LiveItemResponse(currentliveItem);
+
+            });
+
             // S3에서 삭제
             if (!toDelete.isEmpty()) {
                 imageService.deleteFiles(toDelete);
             }
 
-            // DB 이미지 목록 갱신
-            liveItem.deleteImageUrls();
-            newImageUrls.forEach(url ->
-                liveItem.addImage(new LiveItemImage(url, liveItem)));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
+        } finally {
+            // 락 해제
+            if (acquired) {
+                multiLock.unlock();
+            }
         }
-
-        liveItemRepository.save(liveItem);
-
-        return new LiveItemResponse(liveItem);
-
+        return response;
     }
+
+
 
     public void deleteLiveItem(Long id, User user) {
 
