@@ -11,7 +11,6 @@ import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
-import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +36,9 @@ class UserServiceTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private EmailVerificationService emailVerificationService;
+
     private EmailSignUpRequest signUpRequest;
 
     @BeforeEach
@@ -45,7 +47,6 @@ class UserServiceTest {
                 "test@example.com",
                 "password123!",
                 "hong123",
-                LocalDate.of(1990, 1, 1),
                 "https://example.com/image.jpg"
         );
     }
@@ -53,6 +54,9 @@ class UserServiceTest {
     @Test
     @DisplayName("회원가입 성공")
     void signUp_Success() {
+        // given
+        verifyEmailForSignUp("test@example.com");
+        
         // when
         LoginResponse response = userService.signUp(signUpRequest);
 
@@ -67,7 +71,11 @@ class UserServiceTest {
     @DisplayName("회원가입 실패 - 이메일 중복")
     void signUp_Fail_DuplicateEmail() {
         // given
+        verifyEmailForSignUp("test@example.com");
         userService.signUp(signUpRequest);
+        
+        // 다시 이메일 인증 완료 처리
+        verifyEmailForSignUp("test@example.com");
 
         // when & then
         assertThatThrownBy(() -> userService.signUp(signUpRequest))
@@ -77,29 +85,10 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 실패 - 닉네임 중복")
-    void signUp_Fail_DuplicateNickname() {
-        // given
-        userService.signUp(signUpRequest);
-        EmailSignUpRequest anotherRequest = new EmailSignUpRequest(
-                "another@example.com",
-                "password123!",
-                "hong123", // 동일한 닉네임
-                LocalDate.of(1995, 5, 5),
-                null
-        );
-
-        // when & then
-        assertThatThrownBy(() -> userService.signUp(anotherRequest))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.USER_NICKNAME_DUPLICATE);
-    }
-
-    @Test
     @DisplayName("로그인 성공")
     void login_Success() {
         // given
+        verifyEmailForSignUp("test@example.com");
         userService.signUp(signUpRequest);
         EmailLoginRequest loginRequest = new EmailLoginRequest(
                 "test@example.com",
@@ -134,6 +123,7 @@ class UserServiceTest {
     @DisplayName("로그인 실패 - 잘못된 비밀번호")
     void login_Fail_WrongPassword() {
         // given
+        verifyEmailForSignUp("test@example.com");
         userService.signUp(signUpRequest);
         EmailLoginRequest loginRequest = new EmailLoginRequest(
                 "test@example.com",
@@ -150,6 +140,9 @@ class UserServiceTest {
     @Test
     @DisplayName("비밀번호 암호화 확인")
     void signUp_PasswordEncrypted() {
+        // given
+        verifyEmailForSignUp("test@example.com");
+        
         // when
         userService.signUp(signUpRequest);
         User savedUser = userRepository.findByEmail("test@example.com").orElseThrow();
@@ -163,6 +156,7 @@ class UserServiceTest {
     @DisplayName("회원 조회 성공")
     void findById_Success() {
         // given
+        verifyEmailForSignUp("test@example.com");
         LoginResponse signUpResponse = userService.signUp(signUpRequest);
         Long userId = signUpResponse.userInfo().id();
 
@@ -182,6 +176,27 @@ class UserServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.USER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 - 이메일 인증 미완료")
+    void signUp_Fail_EmailNotVerified() {
+        // when & then
+        // 이메일 인증을 완료하지 않고 회원가입 시도
+        assertThatThrownBy(() -> userService.signUp(signUpRequest))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.USER_EMAIL_NOT_VERIFIED);
+    }
+
+    /**
+     * 테스트용 이메일 인증 완료 처리
+     * 회원가입 테스트에서 이메일 인증이 완료된 상태로 만들어줍니다.
+     */
+    private void verifyEmailForSignUp(String email) {
+        // 인증 코드 생성 및 검증하여 인증 완료 상태로 만듦
+        String code = emailVerificationService.generateAndSaveVerificationCode(email);
+        emailVerificationService.verifyCode(email, code);
     }
 }
 
