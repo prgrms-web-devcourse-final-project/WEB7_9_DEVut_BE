@@ -44,4 +44,76 @@ public class SwaggerConfig {
             .build();
     }
 
+    @Bean
+    public GroupedOpenApi userMeApi() {
+        return GroupedOpenApi.builder()
+            .group("02. User Me API")
+            .pathsToMatch("/api/v1/users/me/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi liveItemApi() {
+        return GroupedOpenApi.builder()
+            .group("03. Live Item API")
+            .pathsToMatch("/api/v1/auction/live/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi liveBidApi() {
+        return GroupedOpenApi.builder()
+            .group("04. Live Bid API")
+            .pathsToMatch("/api/v1/live-bids/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi chatRoomApi() {
+        return GroupedOpenApi.builder()
+            .group("05. Chat Room API")
+            .pathsToMatch("/api/v1/chatrooms/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi paymentApi() {
+        return GroupedOpenApi.builder()
+            .group("06. Payment API")
+            .pathsToMatch("/api/v1/payments/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi walletApi() {
+        return GroupedOpenApi.builder()
+            .group("07. Wallet API")
+            .pathsToMatch("/api/v1/wallets/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi imageApi() {
+        return GroupedOpenApi.builder()
+            .group("08. Image API")
+            .pathsToMatch("/api/v1/images/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi liveDealApi() {
+        return GroupedOpenApi.builder()
+            .group("09. Live Deal API")
+            .pathsToMatch("/api/v1/user/me/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi allApi() {
+        return GroupedOpenApi.builder()
+            .group("00. All APIs")
+            .pathsToMatch("/api/v1/**")
+            .build();
+    }
+
 }
