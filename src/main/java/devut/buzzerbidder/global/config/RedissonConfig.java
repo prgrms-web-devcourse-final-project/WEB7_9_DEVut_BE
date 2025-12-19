@@ -24,8 +24,8 @@ public class RedissonConfig {
     @Bean
     public RedissonClient redissonClient(){
         Config config = new Config();
-        config.useSingleServer().setAddress(REDISSON_HOST_PREFIX + host + ":" + port)
-            .setPassword(password); // 이 한 줄이 빠져 있었음;
+        config.useSingleServer().setAddress(REDISSON_HOST_PREFIX + host + ":" + port);
+            //.setPassword(password); 운영서버에서는 필요
 
 
         return Redisson.create(config);
