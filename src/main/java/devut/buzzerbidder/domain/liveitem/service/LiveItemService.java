@@ -394,10 +394,24 @@ public class LiveItemService {
         List<LiveItem> items = liveItemRepository.findLiveItemsWithImages(ids);
 
 
-        List<LiveItemResponse> dtoList =
-            items.stream()
-                .map(LiveItemResponse::new)
-                .toList();
+        List<LiveItemResponse> dtoList = items.stream()
+            .map(item -> {
+                String redisKey = "liveItem:" + item.getId();
+                String maxBidPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
+
+                Long currentMaxBidPrice = (maxBidPriceStr != null)
+                    ? Long.parseLong(maxBidPriceStr)
+                    : item.getInitPrice(); // DB 값 fallback
+
+                return new LiveItemResponse(
+                    item.getId(),
+                    item.getName(),
+                    item.getImages().get(0).getImageUrl(),
+                    item.getLiveTime(),
+                    currentMaxBidPrice
+                );
+            })
+            .toList();
 
         return new LiveItemListResponse(dtoList, dtoList.size());
 
