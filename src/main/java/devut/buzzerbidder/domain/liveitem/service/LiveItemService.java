@@ -345,9 +345,26 @@ public class LiveItemService {
 
         Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), pageable);
 
-        // 이곳에 레디스 가격 필터링
+        // 2. Redis에서 현재 입찰가 가져오기
+        List<LiveItemResponse> dtoList = page.getContent().stream()
+            .map(item -> {
+                String redisKey = "liveItem:" + item.id();
+                String maxBidPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
 
-        List<LiveItemResponse> dtoList = page.getContent();
+                Long currentMaxBidPrice = (maxBidPriceStr != null)
+                    ? Long.parseLong(maxBidPriceStr)
+                    : item.currentPrice();
+
+                // DTO에 현재 입찰가 세팅
+                return new LiveItemResponse(
+                    item.id(),
+                    item.name(),
+                    item.image(),
+                    item.liveTime(),
+                    currentMaxBidPrice
+                );
+            })
+            .toList();
 
         return new LiveItemListResponse(dtoList, page.getTotalElements());
     }
