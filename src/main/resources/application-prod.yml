@@ -134,6 +134,12 @@ custom:
     verification:
       expireMinutes: 10  # 인증 코드 유효 시간 (분)
       subject: "[BuzzerBidder] 이메일 인증 코드"
+  kafka:
+    topic:
+      live-bid:
+        name: live-bid-events
+        partitions: 3  # 처리량 증대를 위해 파티션 개수
+        replicas: 3    # 데이터 보존을 위한 복제본 개수
 
 delivery:
   client-id: ${DELIVERY_CLIENT_ID}
