@@ -25,8 +25,9 @@ public class WalletRedisService {
     // 잔액 변경/flush 이벤트를 쌓는 Redis Stream
     private static final String EVENT_STREAM = "auction:bizz:events";
 
-    // TTL은 heartbeat(주기적으로 연결이 살아있는지 확인하는 신호) 또는 잔액 변경 때마다 연장
-    private static final Duration TTL = Duration.ofSeconds(30);
+    // SESSION_TTL은 heartbeat(주기적으로 연결이 살아있는지 확인하는 신호) 또는 잔액 변경 때마다 연장
+    private static final Duration SESSION_TTL = Duration.ofSeconds(60);
+    private static final Duration BALANCE_TTL = Duration.ofMinutes(10); // 예시
 
     // Lua에서 'Redis에 키가 없는 상태'를 표현하기 위한 값
     private static final long MISS = -2L;
@@ -88,15 +89,16 @@ public class WalletRedisService {
 
         // result: 성공 시 1, 실패 시 0
         Long result = Objects.requireNonNull(stringRedisTemplate.execute(
-                acquireAndInitScript,
-                List.of(sKey, bKey, vKey),
-                userId.toString(),
-                roomId.toString(),
-                balanceFromDb.toString(),
-                String.valueOf(TTL.getSeconds()),
-                EVENT_STREAM,
-                STREAM_MAXLEN.toString(),
-                traceId == null ? "" : traceId
+                        acquireAndInitScript,
+                        List.of(sKey, bKey, vKey),
+                        userId.toString(),
+                        roomId.toString(),
+                        balanceFromDb.toString(),
+                        String.valueOf(SESSION_TTL.getSeconds()),
+                        String.valueOf(BALANCE_TTL.getSeconds()),
+                        EVENT_STREAM,
+                        STREAM_MAXLEN.toString(),
+                        traceId == null ? "" : traceId
                 ),
                 "Redis script가 null을 반환했습니다."
         );
@@ -130,7 +132,8 @@ public class WalletRedisService {
                 isIncrease ? "1" : "0",
                 reason == null ? "" : reason,
                 traceId == null ? "" : traceId,
-                String.valueOf(TTL.getSeconds()),
+                String.valueOf(SESSION_TTL.getSeconds()),
+                String.valueOf(BALANCE_TTL.getSeconds()),
                 EVENT_STREAM,
                 STREAM_MAXLEN.toString()
         );
@@ -197,9 +200,9 @@ public class WalletRedisService {
 
     /** 세션/잔액/버전 키의 TTL을 연장 */
     public void extendTtl(Long userId) {
-        stringRedisTemplate.expire(SESSION_KEY_PREFIX + userId, TTL);
-        stringRedisTemplate.expire(BAL_KEY_PREFIX + userId, TTL);
-        stringRedisTemplate.expire(VER_KEY_PREFIX + userId, TTL);
+        stringRedisTemplate.expire(SESSION_KEY_PREFIX + userId, SESSION_TTL);
+        stringRedisTemplate.expire(BAL_KEY_PREFIX + userId, BALANCE_TTL);
+        stringRedisTemplate.expire(VER_KEY_PREFIX + userId, BALANCE_TTL);
     }
 
     /* ==================== execute 헬퍼 (unchecked 경고를 한 곳에만 모음) ==================== */
@@ -232,10 +235,13 @@ public class WalletRedisService {
             local userId = ARGV[1]
             local roomId = ARGV[2]
             local bal = ARGV[3]
-            local ttl = tonumber(ARGV[4])
-            local stream = ARGV[5]
-            local maxlen = tonumber(ARGV[6])
-            local traceId = ARGV[7]
+        
+            local sessionTtl = tonumber(ARGV[4])   -- SESSION_TTL.getSeconds()
+            local balanceTtl = tonumber(ARGV[5])   -- BALANCE_TTL.getSeconds()
+        
+            local stream = ARGV[6]
+            local maxlen = tonumber(ARGV[7])
+            local traceId = ARGV[8]
 
             -- 세션이 이미 있으면 “획득 실패”
             if redis.call('EXISTS', sKey) == 1 then
@@ -243,9 +249,9 @@ public class WalletRedisService {
             end
 
             -- 세션 획득 + 초기화
-            redis.call('SET', sKey, roomId, 'EX', ttl)
-            redis.call('SET', bKey, bal, 'EX', ttl)
-            redis.call('SET', vKey, '0', 'EX', ttl)
+            redis.call('SET', sKey, roomId, 'EX', sessionTtl)
+            redis.call('SET', bKey, bal, 'EX', balanceTtl)
+            redis.call('SET', vKey, '0', 'EX', balanceTtl)
 
             -- INIT 이벤트 기록 (Kafka는 별도 워커가 Stream을 읽어 발행)
             redis.call('XADD', stream, 'MAXLEN', '~', maxlen, '*',
@@ -279,12 +285,15 @@ public class WalletRedisService {
             local isInc = tonumber(ARGV[3])
             local reason = ARGV[4]
             local traceId = ARGV[5]
-            local ttl = tonumber(ARGV[6])
-            local stream = ARGV[7]
-            local maxlen = tonumber(ARGV[8])
+            local sessionTtl = tonumber(ARGV[6])
+            local balanceTtl = tonumber(ARGV[7])
+            local stream = ARGV[8]
+            local maxlen = tonumber(ARGV[9])
 
             --세션이 없으면 MISS
             if redis.call('EXISTS', sesKey) == 0 then
+              redis.call('DEL', balKey)
+              redis.call('DEL', verKey)
               return { %d, %d, 0 }
             end
 
@@ -309,9 +318,9 @@ public class WalletRedisService {
             local ver = redis.call('INCR', verKey)
 
             -- TTL 연장(세션/잔액/버전 모두)
-            redis.call('EXPIRE', balKey, ttl)
-            redis.call('EXPIRE', verKey, ttl)
-            redis.call('EXPIRE', sesKey, ttl)
+            redis.call('EXPIRE', sesKey, sessionTtl)
+            redis.call('EXPIRE', balKey, balanceTtl)
+            redis.call('EXPIRE', verKey, balanceTtl)
 
             -- 이벤트 기록
             redis.call('XADD', stream, 'MAXLEN', '~', maxlen, '*',
