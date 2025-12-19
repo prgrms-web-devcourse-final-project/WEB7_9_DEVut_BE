@@ -43,21 +43,21 @@ public class AuthController {
     @Operation(summary = "이메일 인증 코드 발송", description = "회원가입을 위한 이메일 인증 코드를 발송합니다.")
     @PostMapping("/email/verification")
     public ApiResponse<EmailVerificationResponse> sendVerificationCode(
-            @Valid @RequestBody EmailVerificationRequest request) {
+        @Valid @RequestBody EmailVerificationRequest request) {
         String code = emailVerificationService.generateAndSaveVerificationCode(request.email());
         emailService.sendVerificationCode(request.email(), code);
-        
+
         Long remainingSeconds = emailVerificationService.getRemainingSeconds(request.email());
         LocalDateTime expiresAt = emailVerificationService.getExpiresAt(request.email());
         EmailVerificationResponse response = new EmailVerificationResponse(remainingSeconds, expiresAt);
-        
+
         return ApiResponse.ok("이메일 인증 코드가 발송되었습니다.", response);
     }
 
     @Operation(summary = "이메일 인증 코드 검증", description = "발송된 이메일 인증 코드를 검증합니다.")
     @PostMapping("/email/verification/verify")
     public ApiResponse<Void> verifyCode(
-            @Valid @RequestBody EmailVerificationCodeRequest request) {
+        @Valid @RequestBody EmailVerificationCodeRequest request) {
         boolean isValid = emailVerificationService.verifyCode(request.email(), request.code());
         if (!isValid) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
@@ -68,7 +68,7 @@ public class AuthController {
     @Operation(summary = "회원가입", description = "이메일을 사용한 회원가입을 진행합니다.")
     @PostMapping("/signup")
     public ApiResponse<Void> signUp(
-            @Valid @RequestBody EmailSignUpRequest request) {
+        @Valid @RequestBody EmailSignUpRequest request) {
         userService.signUp(request);
         return ApiResponse.ok("회원가입에 성공했습니다.");
     }
@@ -76,9 +76,9 @@ public class AuthController {
     @Operation(summary = "로그인", description = "이메일과 비밀번호를 사용한 로그인을 진행합니다. 성공 시 JWT 토큰이 헤더와 쿠키에 설정됩니다.")
     @PostMapping("/signin")
     public ApiResponse<LoginResponse> login(
-            @Valid @RequestBody EmailLoginRequest request) {
+        @Valid @RequestBody EmailLoginRequest request) {
         LoginResponse response = userService.login(request);
-        
+
         // 토큰 생성 및 헤더/쿠키에 설정
         User user = userService.findById(response.userInfo().id());
         String accessToken = authTokenService.genAccessToken(user);
@@ -134,19 +134,19 @@ public class AuthController {
 
         return ApiResponse.ok("로그아웃에 성공했습니다.");
     }
-    
+
     private void setTokensInResponse(Long userId) {
         // User 조회
         User user = userService.findById(userId);
-        
+
         // 토큰 생성
         String accessToken = authTokenService.genAccessToken(user);
         String refreshToken = authTokenService.genRefreshToken(user);
-        
+
         // 헤더에 토큰 설정
         requestContext.setHeader("Authorization", "Bearer " + accessToken);
         requestContext.setHeader("Refresh-Token", refreshToken);
-        
+
         // 쿠키에 토큰 설정
         requestContext.setCookie("accessToken", accessToken);
         requestContext.setCookie("refreshToken", refreshToken);
