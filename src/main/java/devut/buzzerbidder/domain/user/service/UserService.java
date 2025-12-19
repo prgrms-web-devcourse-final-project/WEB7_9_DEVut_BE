@@ -245,8 +245,8 @@ public class UserService {
             ? Collections.emptyMap()
             : likeLiveRepository.countByLiveItemIdIn(liveItemIds).stream()
                 .collect(Collectors.toMap(
-                    row -> (Long) row[0], 
-                    row -> (Long) row[1],
+                    row -> ((Number) row[0]).longValue(), 
+                    row -> ((Number) row[1]).longValue(),
                     (existing, replacement) -> existing
                 ));
 
@@ -254,8 +254,8 @@ public class UserService {
             ? Collections.emptyMap()
             : likeDelayedRepository.countByDelayedItemIdIn(delayedItemIds).stream()
                 .collect(Collectors.toMap(
-                    row -> (Long) row[0], 
-                    row -> (Long) row[1],
+                    row -> ((Number) row[0]).longValue(), 
+                    row -> ((Number) row[1]).longValue(),
                     (existing, replacement) -> existing
                 ));
 
