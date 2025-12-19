@@ -5,9 +5,16 @@ import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
 import devut.buzzerbidder.domain.deal.entity.LiveDeal;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItemImage;
+import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
+import devut.buzzerbidder.domain.likedelayed.entity.LikeDelayed;
+import devut.buzzerbidder.domain.likedelayed.repository.LikeDelayedRepository;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
+import devut.buzzerbidder.domain.likelive.entity.LikeLive;
+import devut.buzzerbidder.domain.likelive.repository.LikeLiveRepository;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
@@ -40,6 +47,9 @@ public class BaseInitData {
     private final UserRepository userRepository;
     private final LiveDealRepository liveDealRepository;
     private final LiveItemRepository liveItemRepository;
+    private final DelayedItemRepository delayedItemRepository;
+    private final LikeLiveRepository likeLiveRepository;
+    private final LikeDelayedRepository likeDelayedRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuctionRoomRepository auctionRoomRepository;
 
@@ -49,6 +59,8 @@ public class BaseInitData {
             self.userInitData();
             self.liveItemInitData();
             self.liveDealInitData();
+            self.myItemsInitData();
+            self.myLikedItemsInitData();
         };
     }
 
@@ -126,5 +138,126 @@ public class BaseInitData {
         liveDealRepository.save(liveDeal);
     }
 
+    @Transactional
+    public void myItemsInitData() {
+        // 이미 데이터가 있으면 스킵
+        if (liveItemRepository.count() > 1 || delayedItemRepository.count() > 0) {
+            return;
+        }
+
+        User user = userRepository.findById(1L).orElseThrow();
+
+        // 내가 작성한 LiveItem 추가
+        List<LiveItemImage> images2 = new ArrayList<>();
+        LiveItem myLiveItem = LiveItem.builder()
+                .sellerUserId(user.getId())
+                .name("내가 작성한 라이브 경매 상품")
+                .category(LiveItem.Category.CLOTHES)
+                .description("내가 직접 등록한 라이브 경매 상품입니다.")
+                .initPrice(50000L)
+                .deliveryInclude(true)
+                .itemStatus(LiveItem.ItemStatus.USED_LIKE_NEW)
+                .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
+                .liveTime(LocalDateTime.of(2025, 12, 15, 14, 0, 0))
+                .directDealAvailable(false)
+                .region("서울시 강남구")
+                .preferredPlace(null)
+                .images(images2)
+                .build();
+
+        myLiveItem.addImage(new LiveItemImage("https://example.com/my-live-item.jpg", myLiveItem));
+
+        AuctionRoom myRoom = new AuctionRoom(myLiveItem.getLiveTime());
+        auctionRoomRepository.save(myRoom);
+        liveItemRepository.save(myLiveItem);
+        myRoom.addItem(myLiveItem);
+
+        // 내가 작성한 DelayedItem 추가
+        List<DelayedItemImage> delayedImages = new ArrayList<>();
+        DelayedItem myDelayedItem = DelayedItem.builder()
+                .sellerUserId(user.getId())
+                .name("내가 작성한 지연 경매 상품")
+                .category(DelayedItem.Category.ELECTRONICS)
+                .description("내가 직접 등록한 지연 경매 상품입니다.")
+                .startPrice(200000L)
+                .currentPrice(200000L)
+                .endTime(LocalDateTime.of(2025, 12, 20, 23, 59, 59))
+                .itemStatus(DelayedItem.ItemStatus.NEW)
+                .auctionStatus(DelayedItem.AuctionStatus.IN_PROGRESS)
+                .deliveryInclude(true)
+                .directDealAvailable(true)
+                .region("서울시 서초구")
+                .preferredPlace("서초역 근처")
+                .images(delayedImages)
+                .build();
+
+        myDelayedItem.addImage(new DelayedItemImage("https://example.com/my-delayed-item.jpg", myDelayedItem));
+        delayedItemRepository.save(myDelayedItem);
+    }
+
+    @Transactional
+    public void myLikedItemsInitData() {
+        // 이미 좋아요 데이터가 있으면 스킵
+        if (likeLiveRepository.count() > 0 || likeDelayedRepository.count() > 0) {
+            return;
+        }
+
+        User user = userRepository.findById(1L).orElseThrow();
+
+        // 다른 사용자가 작성한 LiveItem 생성 후 좋아요 추가
+        List<LiveItemImage> likedLiveImages = new ArrayList<>();
+        LiveItem likedLiveItem = LiveItem.builder()
+                .sellerUserId(999L) // 다른 사용자 ID (실제로는 존재하지 않지만 테스트용)
+                .name("다른 사용자가 작성한 라이브 경매 상품")
+                .category(LiveItem.Category.ART)
+                .description("이 상품을 좋아요 했습니다.")
+                .initPrice(300000L)
+                .deliveryInclude(true)
+                .itemStatus(LiveItem.ItemStatus.NEW)
+                .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
+                .liveTime(LocalDateTime.of(2025, 12, 18, 16, 30, 0))
+                .directDealAvailable(false)
+                .region("서울시 종로구")
+                .preferredPlace(null)
+                .images(likedLiveImages)
+                .build();
+
+        likedLiveItem.addImage(new LiveItemImage("https://example.com/liked-live-item.jpg", likedLiveItem));
+
+        AuctionRoom likedRoom = new AuctionRoom(likedLiveItem.getLiveTime());
+        auctionRoomRepository.save(likedRoom);
+        liveItemRepository.save(likedLiveItem);
+        likedRoom.addItem(likedLiveItem);
+
+        // 좋아요 추가
+        LikeLive likeLive = new LikeLive(user, likedLiveItem);
+        likeLiveRepository.save(likeLive);
+
+        // 다른 사용자가 작성한 DelayedItem 생성 후 좋아요 추가
+        List<DelayedItemImage> likedDelayedImages = new ArrayList<>();
+        DelayedItem likedDelayedItem = DelayedItem.builder()
+                .sellerUserId(999L) // 다른 사용자 ID (실제로는 존재하지 않지만 테스트용)
+                .name("다른 사용자가 작성한 지연 경매 상품")
+                .category(DelayedItem.Category.SPORTS)
+                .description("이 상품을 좋아요 했습니다.")
+                .startPrice(150000L)
+                .currentPrice(150000L)
+                .endTime(LocalDateTime.of(2025, 12, 25, 23, 59, 59))
+                .itemStatus(DelayedItem.ItemStatus.USED_LIKE_NEW)
+                .auctionStatus(DelayedItem.AuctionStatus.IN_PROGRESS)
+                .deliveryInclude(false)
+                .directDealAvailable(true)
+                .region("서울시 마포구")
+                .preferredPlace("홍대입구역")
+                .images(likedDelayedImages)
+                .build();
+
+        likedDelayedItem.addImage(new DelayedItemImage("https://example.com/liked-delayed-item.jpg", likedDelayedItem));
+        delayedItemRepository.save(likedDelayedItem);
+
+        // 좋아요 추가
+        LikeDelayed likeDelayed = new LikeDelayed(user, likedDelayedItem);
+        likeDelayedRepository.save(likeDelayed);
+    }
 
 }

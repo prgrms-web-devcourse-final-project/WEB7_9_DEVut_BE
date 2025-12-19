@@ -14,23 +14,27 @@ import devut.buzzerbidder.domain.deal.entity.LiveDeal;
 import devut.buzzerbidder.domain.deal.enums.Carrier;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItemImage;
+import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.request.DeliveryRequest;
+import devut.buzzerbidder.domain.likedelayed.entity.LikeDelayed;
+import devut.buzzerbidder.domain.likedelayed.repository.LikeDelayedRepository;
+import devut.buzzerbidder.domain.likelive.entity.LikeLive;
+import devut.buzzerbidder.domain.likelive.repository.LikeLiveRepository;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.dto.request.UserUpdateRequest;
-import devut.buzzerbidder.domain.user.entity.Provider;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
-import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.util.UserTestUtil;
-
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -46,7 +50,6 @@ import org.springframework.web.context.WebApplicationContext;
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Transactional
 public class UserMeControllerTest {
 
@@ -66,14 +69,22 @@ public class UserMeControllerTest {
     @Autowired
     private LiveItemRepository liveItemRepository;
     @Autowired
+    private DelayedItemRepository delayedItemRepository;
+    @Autowired
+    private LikeLiveRepository likeLiveRepository;
+    @Autowired
+    private LikeDelayedRepository likeDelayedRepository;
+    @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
     private ProviderRepository providerRepository;
 
     private User user1;
     private User user2;
+    private User user3;
     private String user1Token;
     private String user2Token;
+    private String user3Token;
 
     private Long liveDeal1Id;
     private Long liveDeal2Id;
@@ -85,18 +96,14 @@ public class UserMeControllerTest {
                 .apply(SecurityMockMvcConfigurers.springSecurity())
                 .build();
 
-        // 각 테스트 전에 데이터 정리
-        liveDealRepository.deleteAll();
-        liveDealRepository.flush();
-        liveItemRepository.deleteAll();
-        liveItemRepository.flush();
-        userRepository.deleteAll();
-        userRepository.flush();
+        user1Token = userTestUtil.createUserAndGetToken("member1@user.com", "asdf1234!", "gildong", null);
+        user2Token = userTestUtil.createUserAndGetToken("member2@user.com", "asdf1234!", "gilddong", null);
+        user3Token = userTestUtil.createUserAndGetToken("member3@user.com", "asdf1234!",
+            "gildong3", null);
+        user1 = userRepository.findByEmail("member1@user.com").orElseThrow();
+        user2 = userRepository.findByEmail("member2@user.com").orElseThrow();
+        user3 = userRepository.findByEmail("member3@user.com").orElseThrow();
 
-        user1Token = userTestUtil.createUserAndGetToken("new@user.com", "asdf1234!", "gildong", null);;
-        user2Token = userTestUtil.createUserAndGetToken("new2@user.com", "asdf1234!", "gilddong", null);
-        user1 = userRepository.findByEmail("new@user.com").orElseThrow();
-        user2 = userRepository.findByEmail("new2@user.com").orElseThrow();
 
         LiveItem liveItem1 = LiveItem.builder()
                 .sellerUserId(user1.getId())
@@ -153,6 +160,70 @@ public class UserMeControllerTest {
                 .build();
         liveDealRepository.save(deal2);
         liveDeal2Id = deal2.getId();
+
+        // 내가 작성한 DelayedItem 추가
+        DelayedItem myDelayedItem = DelayedItem.builder()
+                .sellerUserId(user1.getId())
+                .name("내가 작성한 지연 경매 상품")
+                .category(DelayedItem.Category.ELECTRONICS)
+                .description("내가 직접 등록한 지연 경매 상품입니다.")
+                .startPrice(200000L)
+                .currentPrice(200000L)
+                .endTime(LocalDateTime.now().plusDays(10))
+                .itemStatus(DelayedItem.ItemStatus.NEW)
+                .auctionStatus(DelayedItem.AuctionStatus.IN_PROGRESS)
+                .deliveryInclude(true)
+                .directDealAvailable(true)
+                .region("서울시 서초구")
+                .preferredPlace("서초역 근처")
+                .build();
+        myDelayedItem.addImage(new DelayedItemImage("https://example.com/my-delayed-item.jpg", myDelayedItem));
+        delayedItemRepository.save(myDelayedItem);
+
+        // 다른 사용자가 작성한 LiveItem (좋아요용)
+        LiveItem likedLiveItem = LiveItem.builder()
+                .sellerUserId(user2.getId())
+                .auctionRoom(null)
+                .name("다른 사용자가 작성한 라이브 경매 상품")
+                .category(LiveItem.Category.ART)
+                .description("이 상품을 좋아요 했습니다.")
+                .initPrice(300000L)
+                .deliveryInclude(true)
+                .itemStatus(LiveItem.ItemStatus.NEW)
+                .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
+                .liveTime(LocalDateTime.now().plusDays(5))
+                .directDealAvailable(false)
+                .region("서울시 종로구")
+                .preferredPlace(null)
+                .build();
+        likedLiveItem.addImage(new LiveItemImage("https://example.com/liked-live-item.jpg", likedLiveItem));
+        liveItemRepository.save(likedLiveItem);
+
+        // 다른 사용자가 작성한 DelayedItem (좋아요용)
+        DelayedItem likedDelayedItem = DelayedItem.builder()
+                .sellerUserId(user2.getId())
+                .name("다른 사용자가 작성한 지연 경매 상품")
+                .category(DelayedItem.Category.SPORTS)
+                .description("이 상품을 좋아요 했습니다.")
+                .startPrice(150000L)
+                .currentPrice(150000L)
+                .endTime(LocalDateTime.now().plusDays(15))
+                .itemStatus(DelayedItem.ItemStatus.USED_LIKE_NEW)
+                .auctionStatus(DelayedItem.AuctionStatus.IN_PROGRESS)
+                .deliveryInclude(false)
+                .directDealAvailable(true)
+                .region("서울시 마포구")
+                .preferredPlace("홍대입구역")
+                .build();
+        likedDelayedItem.addImage(new DelayedItemImage("https://example.com/liked-delayed-item.jpg", likedDelayedItem));
+        delayedItemRepository.save(likedDelayedItem);
+
+        // 좋아요 추가
+        LikeLive likeLive = new LikeLive(user1, likedLiveItem);
+        likeLiveRepository.save(likeLive);
+
+        LikeDelayed likeDelayed = new LikeDelayed(user1, likedDelayedItem);
+        likeDelayedRepository.save(likeDelayed);
     }
 
     @Nested
@@ -328,7 +399,7 @@ public class UserMeControllerTest {
                     .andExpect(jsonPath("$.resultCode").value("200"))
                     .andExpect(jsonPath("$.msg").value("회원정보 조회 성공"))
                     .andExpect(jsonPath("$.data.id").value(user1.getId()))
-                    .andExpect(jsonPath("$.data.email").value("new@user.com"))
+                    .andExpect(jsonPath("$.data.email").value("member1@user.com"))
                     .andExpect(jsonPath("$.data.nickname").value("gildong"))
                     .andExpect(jsonPath("$.data.image").value(org.hamcrest.Matchers.nullValue()))
                     .andExpect(jsonPath("$.data.createDate").exists())
@@ -400,7 +471,7 @@ public class UserMeControllerTest {
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.resultCode").value("200"))
-                    .andExpect(jsonPath("$.data.email").value("new@user.com")) // 기존 값 유지
+                    .andExpect(jsonPath("$.data.email").value("member1@user.com")) // 기존 값 유지
                     .andExpect(jsonPath("$.data.nickname").value("newNickname")) // 변경됨
                     .andExpect(jsonPath("$.data.image").value(org.hamcrest.Matchers.nullValue()));
         }
@@ -431,7 +502,7 @@ public class UserMeControllerTest {
             String accessToken = user1Token;
 
             UserUpdateRequest updateRequest = new UserUpdateRequest(
-                    "new2@user.com", // 이미 사용 중인 이메일
+                    "member2@user.com", // 이미 사용 중인 이메일
                     null,
                     null
             );
@@ -455,7 +526,7 @@ public class UserMeControllerTest {
             String accessToken = user1Token;
 
             UserUpdateRequest updateRequest = new UserUpdateRequest(
-                    "new@user.com",
+                    "member1@user.com",
                     "gilddong", // 이미 사용 중인 닉네임
                     null
             );
@@ -501,7 +572,7 @@ public class UserMeControllerTest {
             String accessToken = user1Token;
 
             UserUpdateRequest updateRequest = new UserUpdateRequest(
-                    "new@user.com", // 자신의 기존 이메일
+                    "member1@user.com", // 자신의 기존 이메일
                     "newNickname",
                     null
             );
@@ -515,7 +586,7 @@ public class UserMeControllerTest {
                     .andDo(print())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.resultCode").value("200"))
-                    .andExpect(jsonPath("$.data.email").value("new@user.com"))
+                    .andExpect(jsonPath("$.data.email").value("member1@user.com"))
                     .andExpect(jsonPath("$.data.nickname").value("newNickname"));
         }
 
@@ -544,5 +615,139 @@ public class UserMeControllerTest {
                     .andExpect(jsonPath("$.data.nickname").value("gildong"));
         }
 
+    }
+
+    @Nested
+    @DisplayName("내가 등록한 물품 조회 테스트")
+    class t4 {
+
+        @Test
+        @DisplayName("내가 등록한 물품 조회 성공")
+        void getMyItems_success() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/v1/users/me/items")
+                            .header("Authorization", "Bearer " + user1Token)
+                            .param("page", "1")
+                            .param("size", "15"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.resultCode").value("200"))
+                    .andExpect(jsonPath("$.msg").value("물품 목록 조회 성공"))
+                    .andExpect(jsonPath("$.data.items").isArray())
+                    .andExpect(jsonPath("$.data.totalCount").exists())
+                    .andExpect(jsonPath("$.data.items[0].type").exists())
+                    .andExpect(jsonPath("$.data.items[0].name").exists())
+                    .andExpect(jsonPath("$.data.items[0].initPrice").exists());
+        }
+
+        @Test
+        @DisplayName("내가 등록한 물품 조회 성공 - 페이징")
+        void getMyItems_success_paging() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/v1/users/me/items")
+                            .header("Authorization", "Bearer " + user1Token)
+                            .param("page", "1")
+                            .param("size", "1"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.resultCode").value("200"))
+                    .andExpect(jsonPath("$.data.items").isArray())
+                    .andExpect(jsonPath("$.data.items.length()").value(1))
+                    .andExpect(jsonPath("$.data.totalCount").exists());
+        }
+
+        @Test
+        @DisplayName("내가 등록한 물품 조회 실패 - 인증 없음")
+        void getMyItems_fail_unauthorized() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/v1/users/me/items")
+                            .param("page", "1")
+                            .param("size", "15"))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("내가 등록한 물품 조회 성공 - 빈 결과")
+        void getMyItems_success_empty() throws Exception {
+            // when & then (user3는 등록한 물품이 없음)
+            mockMvc.perform(get("/api/v1/users/me/items")
+                            .header("Authorization", "Bearer " + user3Token)
+                            .param("page", "1")
+                            .param("size", "15"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.resultCode").value("200"))
+                    .andExpect(jsonPath("$.data.items").isArray())
+                    .andExpect(jsonPath("$.data.items.length()").value(0))
+                    .andExpect(jsonPath("$.data.totalCount").value(0));
+        }
+    }
+
+    @Nested
+    @DisplayName("내가 찜한 물품 조회 테스트")
+    class t5 {
+
+        @Test
+        @DisplayName("내가 찜한 물품 조회 성공")
+        void getMyLikedItems_success() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/v1/users/me/likes")
+                            .header("Authorization", "Bearer " + user1Token)
+                            .param("page", "1")
+                            .param("size", "15"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.resultCode").value("200"))
+                    .andExpect(jsonPath("$.msg").value("물품 목록 조회 성공"))
+                    .andExpect(jsonPath("$.data.items").isArray())
+                    .andExpect(jsonPath("$.data.totalCount").exists())
+                    .andExpect(jsonPath("$.data.items[0].type").exists())
+                    .andExpect(jsonPath("$.data.items[0].name").exists())
+                    .andExpect(jsonPath("$.data.items[0].initPrice").exists());
+        }
+
+        @Test
+        @DisplayName("내가 찜한 물품 조회 성공 - 페이징")
+        void getMyLikedItems_success_paging() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/v1/users/me/likes")
+                            .header("Authorization", "Bearer " + user1Token)
+                            .param("page", "1")
+                            .param("size", "1"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.resultCode").value("200"))
+                    .andExpect(jsonPath("$.data.items").isArray())
+                    .andExpect(jsonPath("$.data.items.length()").value(1))
+                    .andExpect(jsonPath("$.data.totalCount").exists());
+        }
+
+        @Test
+        @DisplayName("내가 찜한 물품 조회 실패 - 인증 없음")
+        void getMyLikedItems_fail_unauthorized() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/v1/users/me/likes")
+                            .param("page", "1")
+                            .param("size", "15"))
+                    .andDo(print())
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("내가 찜한 물품 조회 성공 - 빈 결과")
+        void getMyLikedItems_success_empty() throws Exception {
+            // when & then (user2는 찜한 물품이 없음)
+            mockMvc.perform(get("/api/v1/users/me/likes")
+                            .header("Authorization", "Bearer " + user2Token)
+                            .param("page", "1")
+                            .param("size", "15"))
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.resultCode").value("200"))
+                    .andExpect(jsonPath("$.data.items").isArray())
+                    .andExpect(jsonPath("$.data.items.length()").value(0))
+                    .andExpect(jsonPath("$.data.totalCount").value(0));
+        }
     }
 }
