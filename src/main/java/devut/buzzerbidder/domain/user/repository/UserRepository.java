@@ -1,6 +1,5 @@
 package devut.buzzerbidder.domain.user.repository;
 
-import devut.buzzerbidder.domain.user.dto.ItemIdAndType;
 import devut.buzzerbidder.domain.user.entity.User;
 import java.util.List;
 import java.util.Optional;
