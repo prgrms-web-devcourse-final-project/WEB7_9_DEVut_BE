@@ -8,10 +8,18 @@ import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
+import devut.buzzerbidder.domain.payment.entity.Payment;
+import devut.buzzerbidder.domain.payment.entity.PaymentMethod;
+import devut.buzzerbidder.domain.payment.repository.PaymentRepository;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.user.service.UserService;
+import devut.buzzerbidder.domain.wallet.entity.Wallet;
+import devut.buzzerbidder.domain.wallet.entity.WalletHistory;
+import devut.buzzerbidder.domain.wallet.enums.WalletTransactionType;
+import devut.buzzerbidder.domain.wallet.repository.WalletHistoryRepository;
+import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -23,6 +31,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -42,13 +51,19 @@ public class BaseInitData {
     private final LiveItemRepository liveItemRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuctionRoomRepository auctionRoomRepository;
+    private final PaymentRepository paymentRepository;
+    private final WalletRepository walletRepository;
+    private final WalletHistoryRepository walletHistoryRepository;
 
     @Bean
     ApplicationRunner initDataRunner() {
         return args -> {
             self.userInitData();
+            self.adminInitData();
             self.liveItemInitData();
             self.liveDealInitData();
+            self.paymentInitData();
+            self.walletInitData();
         };
     }
 
@@ -71,6 +86,25 @@ public class BaseInitData {
         String verifiedKey = "verified_email:" + email;
         redisTemplate.opsForValue().set(verifiedKey, "verified", 10, TimeUnit.SECONDS);
         userService.signUp(signUpRequest);
+    }
+
+    @Transactional
+    public void adminInitData() {
+        String email = "admin@user.com";
+        String password = "asdf1234!";
+        String nickname = "admin";
+
+        if (userRepository.existsByEmail(email)) return;
+
+        String verifiedKey = "verified_email:" + email;
+        redisTemplate.opsForValue().set(verifiedKey, "verified", 10, TimeUnit.SECONDS);
+
+        EmailSignUpRequest request = new EmailSignUpRequest(email, password, nickname, null);
+        userService.signUp(request); // LoginResponse 반환
+
+        User admin = userRepository.findByEmail(email).orElseThrow();
+
+        admin.changeRole(User.UserRole.ADMIN);
     }
 
     @Transactional
@@ -126,5 +160,48 @@ public class BaseInitData {
         liveDealRepository.save(liveDeal);
     }
 
+    @Transactional
+    public void paymentInitData() {
+        if (paymentRepository.count() > 0) {
+            return;
+        }
 
+        User user = userRepository.findByEmail("new@user.com").orElseThrow();
+
+        // 1) 성공 결제 1건
+        Payment p1 = new Payment(user, "ORDER-001", "테스트 결제 1", 10000L);
+        p1.confirm(
+                "pay_test_key_001",
+                PaymentMethod.EASY_PAY,
+                OffsetDateTime.now().minusDays(3)
+        );
+
+        Payment p2 = new Payment(user, "ORDER-002", "테스트 결제 2", 15000L);
+        p2.fail("FAIL-001", "잔액 부족");
+
+        paymentRepository.saveAll(List.of(p1, p2));
+    }
+
+    @Transactional
+    public void walletInitData() {
+
+        User user = userRepository.findByEmail("new@user.com").orElseThrow();
+        Wallet wallet = walletRepository.findById(1L).orElseThrow();
+
+        Long chargeAmount = 10000L;
+        Long before = wallet.getBizz();
+        wallet.increaseBizz(chargeAmount);
+        Long after = wallet.getBizz();
+
+        WalletHistory walletHistory = WalletHistory.builder()
+                .user(user)
+                .amount(chargeAmount)
+                .type(WalletTransactionType.CHARGE)
+                .bizzBalanceBefore(before)
+                .bizzBalanceAfter(after)
+                .build();
+
+        walletRepository.save(wallet);
+        walletHistoryRepository.save(walletHistory);
+    }
 }

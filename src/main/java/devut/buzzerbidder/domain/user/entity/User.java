@@ -83,6 +83,10 @@ public class User extends BaseEntity {
         this.deleted = true;
     }
 
+    public void changeRole(UserRole role) {
+        this.role = role;
+    }
+
     public enum UserRole {
         USER, ADMIN
     }
