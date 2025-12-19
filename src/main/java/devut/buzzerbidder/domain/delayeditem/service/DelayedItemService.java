@@ -227,4 +227,18 @@ public class DelayedItemService {
 
         return new DelayedItemListResponse(dtoList, dtoList.size());
     }
+
+    @Transactional(readOnly = true)
+    public DelayedItemListResponse getMostBiddedDelayedItems(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Long> ids = delayedItemRepository.findMostBiddedDelayedItems(pageable);
+
+        List<DelayedItem> items = delayedItemRepository.findDelayedItemsWithImages(ids);
+
+        List<DelayedItemResponse> dtoList = items.stream()
+            .map(DelayedItemResponse::new)
+            .toList();
+
+        return new DelayedItemListResponse(dtoList, dtoList.size());
+    }
 }

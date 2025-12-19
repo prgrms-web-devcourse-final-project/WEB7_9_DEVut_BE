@@ -49,6 +49,15 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
     List<Long> findHotDelayedItems(Pageable pageable);
 
     @Query("""
+        SELECT di.id FROM DelayedItem di
+        LEFT JOIN DelayedBidLog db ON db.delayedItem = di
+        WHERE di.auctionStatus = 'IN_PROGRESS'
+        GROUP BY di.id
+        ORDER BY COUNT(db.id) DESC
+        """)
+    List<Long> findMostBiddedDelayedItems(Pageable pageable);
+
+    @Query("""
         SELECT DISTINCT di FROM DelayedItem di
         LEFT JOIN FETCH di.images
         WHERE di.id IN :ids
