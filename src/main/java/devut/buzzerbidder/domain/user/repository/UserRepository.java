@@ -33,11 +33,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     );
 
     @Query(value = """
-        SELECT COUNT(*) FROM (
-            SELECT id FROM live_item WHERE seller_user_id = :sellerUserId
-            UNION ALL
-            SELECT id FROM delayed_item WHERE seller_user_id = :sellerUserId
-        ) as combined
+        SELECT 
+            (SELECT COUNT(*) FROM live_item WHERE seller_user_id = :sellerUserId) + 
+            (SELECT COUNT(*) FROM delayed_item WHERE seller_user_id = :sellerUserId)
         """, nativeQuery = true)
     long countMyItems(@Param("sellerUserId") Long sellerUserId);
 
@@ -61,11 +59,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     );
 
     @Query(value = """
-        SELECT COUNT(*) FROM (
-            SELECT ll.id FROM like_live ll WHERE ll.user_id = :userId
-            UNION ALL
-            SELECT ld.id FROM like_delayed ld WHERE ld.user_id = :userId
-        ) as combined
+        SELECT 
+            (SELECT COUNT(*) FROM like_live ll WHERE ll.user_id = :userId) + 
+            (SELECT COUNT(*) FROM like_delayed ld WHERE ld.user_id = :userId)
         """, nativeQuery = true)
     long countMyLikedItems(@Param("userId") Long userId);
 }

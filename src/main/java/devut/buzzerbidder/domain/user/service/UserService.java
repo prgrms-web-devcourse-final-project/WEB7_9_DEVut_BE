@@ -22,14 +22,12 @@ import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -189,65 +187,10 @@ public class UserService {
             pageable.getOffset()
         );
 
-        // ID와 타입 분리
-        List<Long> liveItemIds = new ArrayList<>();
-        List<Long> delayedItemIds = new ArrayList<>();
-        
-        for (Object[] row : results) {
-            Long id = ((Number) row[0]).longValue();
-            String type = (String) row[1];
-            if ("LIVE".equals(type)) {
-                liveItemIds.add(id);
-            } else {
-                delayedItemIds.add(id);
-            }
-        }
+        // 공통 로직으로 처리
+        List<MyItemResponse> items = fetchAndMapItems(results);
 
-        // 실제 엔티티 조회
-        List<LiveItem> liveItems = liveItemIds.isEmpty() 
-            ? new ArrayList<>() 
-            : liveItemRepository.findLiveItemsWithImages(liveItemIds);
-        List<DelayedItem> delayedItems = delayedItemIds.isEmpty() 
-            ? new ArrayList<>() 
-            : delayedItemRepository.findDelayedItemsWithImages(delayedItemIds);
-
-        // Map으로 변환하여 빠른 조회
-        Map<Long, LiveItem> liveItemMap = new HashMap<>();
-        for (LiveItem item : liveItems) {
-            liveItemMap.put(item.getId(), item);
-        }
-        
-        Map<Long, DelayedItem> delayedItemMap = new HashMap<>();
-        for (DelayedItem item : delayedItems) {
-            delayedItemMap.put(item.getId(), item);
-        }
-
-        // MyItemResponse로 변환 (순서 유지)
-        List<MyItemResponse> items = new ArrayList<>();
-        for (Object[] row : results) {
-            Long id = ((Number) row[0]).longValue();
-            String type = (String) row[1];
-            
-            if ("LIVE".equals(type)) {
-                LiveItem liveItem = liveItemMap.get(id);
-                if (liveItem != null) {
-                    Long likes = likeLiveRepository.countByLiveItemId(liveItem.getId());
-                    items.add(MyItemResponse.fromLiveItem(liveItem, likes));
-                }
-            } else if ("DELAYED".equals(type)) {
-                DelayedItem delayedItem = delayedItemMap.get(id);
-                if (delayedItem != null) {
-                    Long likes = likeDelayedRepository.countByDelayedItemId(delayedItem.getId());
-                    items.add(MyItemResponse.fromDelayedItem(delayedItem, likes));
-                }
-            }
-        }
-
-        // Page 객체 생성 (다른 리스트 조회와 동일한 방식)
-        Page<MyItemResponse> page = new PageImpl<>(items, pageable, totalElements);
-        List<MyItemResponse> dtoList = page.getContent();
-
-        return new MyItemListResponse(dtoList, page.getTotalElements());
+        return new MyItemListResponse(items, totalElements);
     }
 
     public MyItemListResponse getMyLikedItems(User user, Pageable pageable) {
@@ -261,6 +204,17 @@ public class UserService {
             pageable.getOffset()
         );
 
+        // 공통 로직으로 처리
+        List<MyItemResponse> items = fetchAndMapItems(results);
+
+        return new MyItemListResponse(items, totalElements);
+    }
+
+    /**
+     * ID와 타입 리스트를 받아서 엔티티를 조회하고 DTO로 변환하는 공통 메서드
+     * N+1 문제를 해결하기 위해 좋아요 개수도 IN 절로 한 번에 조회
+     */
+    private List<MyItemResponse> fetchAndMapItems(List<Object[]> results) {
         // ID와 타입 분리
         List<Long> liveItemIds = new ArrayList<>();
         List<Long> delayedItemIds = new ArrayList<>();
@@ -275,50 +229,57 @@ public class UserService {
             }
         }
 
-        // 실제 엔티티 조회
-        List<LiveItem> liveItems = liveItemIds.isEmpty() 
-            ? new ArrayList<>() 
-            : liveItemRepository.findLiveItemsWithImages(liveItemIds);
-        List<DelayedItem> delayedItems = delayedItemIds.isEmpty() 
-            ? new ArrayList<>() 
-            : delayedItemRepository.findDelayedItemsWithImages(delayedItemIds);
+        // 엔티티 조회 (빈 리스트 체크 포함)
+        Map<Long, LiveItem> liveItemMap = liveItemIds.isEmpty() 
+            ? Collections.emptyMap()
+            : liveItemRepository.findLiveItemsWithImages(liveItemIds).stream()
+                .collect(Collectors.toMap(LiveItem::getId, item -> item));
 
-        // Map으로 변환하여 빠른 조회
-        Map<Long, LiveItem> liveItemMap = new HashMap<>();
-        for (LiveItem item : liveItems) {
-            liveItemMap.put(item.getId(), item);
-        }
-        
-        Map<Long, DelayedItem> delayedItemMap = new HashMap<>();
-        for (DelayedItem item : delayedItems) {
-            delayedItemMap.put(item.getId(), item);
-        }
+        Map<Long, DelayedItem> delayedItemMap = delayedItemIds.isEmpty() 
+            ? Collections.emptyMap()
+            : delayedItemRepository.findDelayedItemsWithImages(delayedItemIds).stream()
+                .collect(Collectors.toMap(DelayedItem::getId, item -> item));
 
-        // MyItemResponse로 변환 (순서 유지)
+        // 좋아요 개수 Batch 조회 (N+1 해결)
+        Map<Long, Long> liveLikesMap = liveItemIds.isEmpty() 
+            ? Collections.emptyMap()
+            : likeLiveRepository.countByLiveItemIdIn(liveItemIds).stream()
+                .collect(Collectors.toMap(
+                    row -> (Long) row[0], 
+                    row -> (Long) row[1],
+                    (existing, replacement) -> existing
+                ));
+
+        Map<Long, Long> delayedLikesMap = delayedItemIds.isEmpty() 
+            ? Collections.emptyMap()
+            : likeDelayedRepository.countByDelayedItemIdIn(delayedItemIds).stream()
+                .collect(Collectors.toMap(
+                    row -> (Long) row[0], 
+                    row -> (Long) row[1],
+                    (existing, replacement) -> existing
+                ));
+
+        // 최종 결과 조립 (순서 유지)
         List<MyItemResponse> items = new ArrayList<>();
         for (Object[] row : results) {
             Long id = ((Number) row[0]).longValue();
             String type = (String) row[1];
-            
+
             if ("LIVE".equals(type)) {
-                LiveItem liveItem = liveItemMap.get(id);
-                if (liveItem != null) {
-                    Long likes = likeLiveRepository.countByLiveItemId(liveItem.getId());
-                    items.add(MyItemResponse.fromLiveItem(liveItem, likes));
+                LiveItem item = liveItemMap.get(id);
+                if (item != null) {
+                    Long likes = liveLikesMap.getOrDefault(id, 0L);
+                    items.add(MyItemResponse.fromLiveItem(item, likes));
                 }
             } else if ("DELAYED".equals(type)) {
-                DelayedItem delayedItem = delayedItemMap.get(id);
-                if (delayedItem != null) {
-                    Long likes = likeDelayedRepository.countByDelayedItemId(delayedItem.getId());
-                    items.add(MyItemResponse.fromDelayedItem(delayedItem, likes));
+                DelayedItem item = delayedItemMap.get(id);
+                if (item != null) {
+                    Long likes = delayedLikesMap.getOrDefault(id, 0L);
+                    items.add(MyItemResponse.fromDelayedItem(item, likes));
                 }
             }
         }
-
-        // Page 객체 생성 (다른 리스트 조회와 동일한 방식)
-        Page<MyItemResponse> page = new PageImpl<>(items, pageable, totalElements);
-        List<MyItemResponse> dtoList = page.getContent();
-
-        return new MyItemListResponse(dtoList, page.getTotalElements());
+        
+        return items;
     }
 }
