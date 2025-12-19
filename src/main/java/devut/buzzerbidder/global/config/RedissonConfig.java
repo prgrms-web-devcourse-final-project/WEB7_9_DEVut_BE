@@ -26,8 +26,12 @@ public class RedissonConfig {
     @Bean
     public RedissonClient redissonClient(){
         Config config = new Config();
-        config.useSingleServer().setAddress(REDISSON_HOST_PREFIX + host + ":" + port);
-            //.setPassword(password); 운영서버에서는 필요
+        var serverConfig = config.useSingleServer().setAddress(REDISSON_HOST_PREFIX + host + ":" + port);
+
+        // password가 비어있지 않을 때만 설정
+        if (password != null && !password.isEmpty()) {
+            serverConfig.setPassword(password);
+        }
 
 
         return Redisson.create(config);
