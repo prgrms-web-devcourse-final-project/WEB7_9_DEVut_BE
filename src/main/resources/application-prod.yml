@@ -108,6 +108,9 @@ spring:
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
 
+  kafka:
+    bootstrap-servers: buzzerbidder-kafka:9092
+
 # 서버 설정
 server:
   port: 8080
