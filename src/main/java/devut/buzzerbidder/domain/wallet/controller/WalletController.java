@@ -5,6 +5,7 @@ import devut.buzzerbidder.domain.wallet.dto.response.WithdrawalResponseDto;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class WalletController {
     private final WalletService walletService;
 
     @PostMapping("/withdrawal")
+    @Operation(summary = "출금 요청")
     public ApiResponse<WithdrawalResponseDto> withdrawal(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody WithdrawalRequestDto request

@@ -26,7 +26,7 @@ public class AdminWithdrawalController {
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) WithdrawalStatus status,
             @RequestParam(defaultValue = "0") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @RequestParam(defaultValue = "15") Integer size
             ) {
         AdminWithdrawalResponseDto response = adminWithdrawalService.getRequestedWithdrawal(userId, status, page, size);
         return ApiResponse.ok("출금 요청 내역 조회에 성공했습니다", response);
