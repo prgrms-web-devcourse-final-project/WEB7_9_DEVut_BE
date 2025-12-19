@@ -78,6 +78,8 @@ public class UserService {
                     .user(user)
                     .build();
             providerRepository.save(emailProvider);
+            walletService.createWallet(user);
+            emailVerificationService.deleteVerifiedEmail(request.email());
             
             return LoginResponse.of(user);
         }
@@ -172,8 +174,9 @@ public class UserService {
                 request.nickname(),
                 request.image()
         );
+        User updatedUser = userRepository.save(user);
 
-        return UserUpdateResponse.from(user);
+        return UserUpdateResponse.from(updatedUser);
     }
 
     public MyItemListResponse getMyItems(User user, Pageable pageable) {
