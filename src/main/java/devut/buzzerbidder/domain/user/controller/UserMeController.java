@@ -5,6 +5,7 @@ import devut.buzzerbidder.domain.deal.service.LiveDealService;
 import devut.buzzerbidder.domain.deliveryTracking.dto.request.DeliveryRequest;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
 import devut.buzzerbidder.domain.user.dto.request.UserUpdateRequest;
+import devut.buzzerbidder.domain.user.dto.response.MyItemListResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserProfileResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserUpdateResponse;
 import devut.buzzerbidder.domain.user.entity.User;
@@ -17,6 +18,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -83,5 +86,29 @@ public class UserMeController {
         User currentUser = requestContext.getCurrentUser();
         UserUpdateResponse response = userService.updateMyProfile(currentUser, request);
         return ApiResponse.ok("회원정보 수정 성공", response);
+    }
+
+    @Operation(summary = "내가 등록한 물품 조회", description = "현재 로그인한 사용자가 등록한 물품 목록을 조회합니다.")
+    @GetMapping("/items")
+    public ApiResponse<MyItemListResponse> getMyItems(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size
+    ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        User currentUser = requestContext.getCurrentUser();
+        MyItemListResponse response = userService.getMyItems(currentUser, pageable);
+        return ApiResponse.ok("물품 목록 조회 성공", response);
+    }
+
+    @Operation(summary = "내가 찜한 물품 조회", description = "현재 로그인한 사용자가 찜한 물품 목록을 조회합니다.")
+    @GetMapping("/likes")
+    public ApiResponse<MyItemListResponse> getMyLikedItems(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size
+    ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        User currentUser = requestContext.getCurrentUser();
+        MyItemListResponse response = userService.getMyLikedItems(currentUser, pageable);
+        return ApiResponse.ok("물품 목록 조회 성공", response);
     }
 }

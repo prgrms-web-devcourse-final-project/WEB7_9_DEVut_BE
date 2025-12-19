@@ -1,9 +1,17 @@
 package devut.buzzerbidder.domain.user.service;
 
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
+import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
+import devut.buzzerbidder.domain.likedelayed.repository.LikeDelayedRepository;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
+import devut.buzzerbidder.domain.likelive.repository.LikeLiveRepository;
 import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
 import devut.buzzerbidder.domain.user.dto.request.UserUpdateRequest;
 import devut.buzzerbidder.domain.user.dto.response.LoginResponse;
+import devut.buzzerbidder.domain.user.dto.response.MyItemListResponse;
+import devut.buzzerbidder.domain.user.dto.response.MyItemResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserProfileResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserUpdateResponse;
 import devut.buzzerbidder.domain.user.entity.Provider;
@@ -13,12 +21,19 @@ import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +45,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
     private final WalletService walletService;
+    private final LiveItemRepository liveItemRepository;
+    private final DelayedItemRepository delayedItemRepository;
+    private final LikeLiveRepository likeLiveRepository;
+    private final LikeDelayedRepository likeDelayedRepository;
 
     @Transactional
     public LoginResponse signUp(EmailSignUpRequest request) {
@@ -157,5 +176,149 @@ public class UserService {
         );
 
         return UserUpdateResponse.from(user);
+    }
+
+    public MyItemListResponse getMyItems(User user, Pageable pageable) {
+        // 전체 개수 계산
+        long totalElements = userRepository.countMyItems(user.getId());
+        
+        // UNION 쿼리로 ID와 타입만 가져오기 (페이징 적용)
+        List<Object[]> results = userRepository.findMyItemIdsAndTypes(
+            user.getId(),
+            pageable.getPageSize(),
+            pageable.getOffset()
+        );
+
+        // ID와 타입 분리
+        List<Long> liveItemIds = new ArrayList<>();
+        List<Long> delayedItemIds = new ArrayList<>();
+        
+        for (Object[] row : results) {
+            Long id = ((Number) row[0]).longValue();
+            String type = (String) row[1];
+            if ("LIVE".equals(type)) {
+                liveItemIds.add(id);
+            } else {
+                delayedItemIds.add(id);
+            }
+        }
+
+        // 실제 엔티티 조회
+        List<LiveItem> liveItems = liveItemIds.isEmpty() 
+            ? new ArrayList<>() 
+            : liveItemRepository.findLiveItemsWithImages(liveItemIds);
+        List<DelayedItem> delayedItems = delayedItemIds.isEmpty() 
+            ? new ArrayList<>() 
+            : delayedItemRepository.findDelayedItemsWithImages(delayedItemIds);
+
+        // Map으로 변환하여 빠른 조회
+        Map<Long, LiveItem> liveItemMap = new HashMap<>();
+        for (LiveItem item : liveItems) {
+            liveItemMap.put(item.getId(), item);
+        }
+        
+        Map<Long, DelayedItem> delayedItemMap = new HashMap<>();
+        for (DelayedItem item : delayedItems) {
+            delayedItemMap.put(item.getId(), item);
+        }
+
+        // MyItemResponse로 변환 (순서 유지)
+        List<MyItemResponse> items = new ArrayList<>();
+        for (Object[] row : results) {
+            Long id = ((Number) row[0]).longValue();
+            String type = (String) row[1];
+            
+            if ("LIVE".equals(type)) {
+                LiveItem liveItem = liveItemMap.get(id);
+                if (liveItem != null) {
+                    Long likes = likeLiveRepository.countByLiveItemId(liveItem.getId());
+                    items.add(MyItemResponse.fromLiveItem(liveItem, likes));
+                }
+            } else if ("DELAYED".equals(type)) {
+                DelayedItem delayedItem = delayedItemMap.get(id);
+                if (delayedItem != null) {
+                    Long likes = likeDelayedRepository.countByDelayedItemId(delayedItem.getId());
+                    items.add(MyItemResponse.fromDelayedItem(delayedItem, likes));
+                }
+            }
+        }
+
+        // Page 객체 생성 (다른 리스트 조회와 동일한 방식)
+        Page<MyItemResponse> page = new PageImpl<>(items, pageable, totalElements);
+        List<MyItemResponse> dtoList = page.getContent();
+
+        return new MyItemListResponse(dtoList, page.getTotalElements());
+    }
+
+    public MyItemListResponse getMyLikedItems(User user, Pageable pageable) {
+        // 전체 개수 계산
+        long totalElements = userRepository.countMyLikedItems(user.getId());
+        
+        // UNION 쿼리로 ID와 타입만 가져오기 (페이징 적용)
+        List<Object[]> results = userRepository.findMyLikedItemIdsAndTypes(
+            user.getId(),
+            pageable.getPageSize(),
+            pageable.getOffset()
+        );
+
+        // ID와 타입 분리
+        List<Long> liveItemIds = new ArrayList<>();
+        List<Long> delayedItemIds = new ArrayList<>();
+        
+        for (Object[] row : results) {
+            Long id = ((Number) row[0]).longValue();
+            String type = (String) row[1];
+            if ("LIVE".equals(type)) {
+                liveItemIds.add(id);
+            } else {
+                delayedItemIds.add(id);
+            }
+        }
+
+        // 실제 엔티티 조회
+        List<LiveItem> liveItems = liveItemIds.isEmpty() 
+            ? new ArrayList<>() 
+            : liveItemRepository.findLiveItemsWithImages(liveItemIds);
+        List<DelayedItem> delayedItems = delayedItemIds.isEmpty() 
+            ? new ArrayList<>() 
+            : delayedItemRepository.findDelayedItemsWithImages(delayedItemIds);
+
+        // Map으로 변환하여 빠른 조회
+        Map<Long, LiveItem> liveItemMap = new HashMap<>();
+        for (LiveItem item : liveItems) {
+            liveItemMap.put(item.getId(), item);
+        }
+        
+        Map<Long, DelayedItem> delayedItemMap = new HashMap<>();
+        for (DelayedItem item : delayedItems) {
+            delayedItemMap.put(item.getId(), item);
+        }
+
+        // MyItemResponse로 변환 (순서 유지)
+        List<MyItemResponse> items = new ArrayList<>();
+        for (Object[] row : results) {
+            Long id = ((Number) row[0]).longValue();
+            String type = (String) row[1];
+            
+            if ("LIVE".equals(type)) {
+                LiveItem liveItem = liveItemMap.get(id);
+                if (liveItem != null) {
+                    Long likes = likeLiveRepository.countByLiveItemId(liveItem.getId());
+                    items.add(MyItemResponse.fromLiveItem(liveItem, likes));
+                }
+            } else if ("DELAYED".equals(type)) {
+                DelayedItem delayedItem = delayedItemMap.get(id);
+                if (delayedItem != null) {
+                    Long likes = likeDelayedRepository.countByDelayedItemId(delayedItem.getId());
+                    items.add(MyItemResponse.fromDelayedItem(delayedItem, likes));
+                }
+            }
+        }
+
+        // Page 객체 생성 (다른 리스트 조회와 동일한 방식)
+        Page<MyItemResponse> page = new PageImpl<>(items, pageable, totalElements);
+        List<MyItemResponse> dtoList = page.getContent();
+
+        return new MyItemListResponse(dtoList, page.getTotalElements());
     }
 }

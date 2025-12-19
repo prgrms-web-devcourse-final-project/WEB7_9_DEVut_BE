@@ -58,4 +58,18 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
     @Query("SELECT di FROM DelayedItem di WHERE di.id = :id")
     Optional<DelayedItem> findByIdWithLock(@Param("id") Long id);
 
+    @Query("""
+        SELECT di FROM DelayedItem di
+        LEFT JOIN FETCH di.images
+        WHERE di.sellerUserId = :sellerUserId
+        ORDER BY di.createDate DESC
+        """)
+    List<DelayedItem> findBySellerUserIdWithImages(@Param("sellerUserId") Long sellerUserId);
+
+    @Query("""
+        SELECT COUNT(di) FROM DelayedItem di
+        WHERE di.sellerUserId = :sellerUserId
+        """)
+    long countBySellerUserId(@Param("sellerUserId") Long sellerUserId);
+
 }

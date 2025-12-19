@@ -55,4 +55,18 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         """)
     List<LiveItem> findLiveItemsWithImages(@Param("ids") List<Long> ids);
 
+    @Query("""
+        SELECT li FROM LiveItem li
+        LEFT JOIN FETCH li.images
+        WHERE li.sellerUserId = :sellerUserId
+        ORDER BY li.createDate DESC
+        """)
+    List<LiveItem> findBySellerUserIdWithImages(@Param("sellerUserId") Long sellerUserId);
+
+    @Query("""
+        SELECT COUNT(li) FROM LiveItem li
+        WHERE li.sellerUserId = :sellerUserId
+        """)
+    long countBySellerUserId(@Param("sellerUserId") Long sellerUserId);
+
 }
