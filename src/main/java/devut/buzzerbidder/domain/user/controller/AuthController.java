@@ -6,6 +6,7 @@ import devut.buzzerbidder.domain.user.dto.request.EmailVerificationCodeRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailVerificationRequest;
 import devut.buzzerbidder.domain.user.dto.response.EmailVerificationResponse;
 import devut.buzzerbidder.domain.user.dto.response.LoginResponse;
+import devut.buzzerbidder.domain.user.dto.response.UserInfo;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
 import devut.buzzerbidder.domain.user.service.EmailService;
@@ -79,24 +80,43 @@ public class AuthController {
         LoginResponse response = userService.login(request);
         
         // 토큰 생성 및 헤더/쿠키에 설정
+        User user = userService.findById(response.userInfo().id());
+        String accessToken = authTokenService.genAccessToken(user);
+        String refreshToken = authTokenService.genRefreshToken(user);
         setTokensInResponse(response.userInfo().id());
         
-        return ApiResponse.ok("로그인에 성공했습니다.", response);
+        // 응답에 토큰 포함
+        LoginResponse responseWithTokens = new LoginResponse(
+                response.userInfo(),
+                accessToken,
+                refreshToken
+        );
+        
+        return ApiResponse.ok("로그인에 성공했습니다.", responseWithTokens);
     }
 
 
     @Operation(summary = "AccessToken 재발급", description = "Refresh Token을 사용하여 Access Token을 재발급합니다.")
     @PostMapping("/refresh")
-    public ApiResponse<Void> refresh() {
+    public ApiResponse<LoginResponse> refresh() {
         String refreshToken = requestContext.getCookieValue("refreshToken", "");
 
         // AuthTokenService에서 검증 및 User 조회
         User user = authTokenService.validateAndGetUserByRefreshToken(refreshToken);
 
         // 새로운 토큰 생성 및 설정
+        String newAccessToken = authTokenService.genAccessToken(user);
+        String newRefreshToken = authTokenService.genRefreshToken(user);
         setTokensInResponse(user.getId());
 
-        return ApiResponse.ok("AccessToken 재발급에 성공했습니다.");
+        // 응답에 토큰 포함
+        LoginResponse response = new LoginResponse(
+                UserInfo.from(user),
+                newAccessToken,
+                newRefreshToken
+        );
+
+        return ApiResponse.ok("AccessToken 재발급에 성공했습니다.", response);
     }
 
     @Operation(summary = "로그아웃", description = "로그아웃을 진행합니다. Refresh Token이 Redis에서 삭제되고 쿠키가 제거됩니다.")
