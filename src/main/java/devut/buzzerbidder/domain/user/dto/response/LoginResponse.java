@@ -22,14 +22,6 @@ public record LoginResponse(
 
     public static LoginResponse of(User user, String accessToken, String refreshToken) {
         return new LoginResponse(
-                UserInfo.from(user),
-                accessToken,
-                refreshToken
-        );
-    }
-
-    public static LoginResponse of(User user, String accessToken, String refreshToken) {
-        return new LoginResponse(
             UserInfo.from(user),
             accessToken,
             refreshToken
