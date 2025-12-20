@@ -61,8 +61,14 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
     Optional<DelayedItem> findByIdWithLock(@Param("id") Long id);
 
     // 스케쥴러용: 종료 시간이 지난 경매 조회
-    List<DelayedItem> findByAuctionStatusAndEndTimeBefore(
-        AuctionStatus auctionStatus,
+    @Query("""
+        SELECT di.id FROM DelayedItem di
+        WHERE di.auctionStatus IN :statuses
+        AND di.endTime < :endTime
+        ORDER BY di.endTime ASC
+        """)
+    List<Long> findIdsByAuctionStatusInAndEndTimeBefore(
+        List<AuctionStatus> statuses,
         LocalDateTime endTime
     );
 
