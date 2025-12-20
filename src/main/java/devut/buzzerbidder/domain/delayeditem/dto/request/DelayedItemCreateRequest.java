@@ -21,7 +21,7 @@ public record DelayedItemCreateRequest(
     String preferredPlace,
     List<String> images
 ) {
-    public void validate() {
+    public void validateBuyNowPrice() {
         if (buyNowPrice != null && buyNowPrice <= startPrice) {
             throw new BusinessException(ErrorCode.INVALID_BUY_NOW_PRICE);
         }

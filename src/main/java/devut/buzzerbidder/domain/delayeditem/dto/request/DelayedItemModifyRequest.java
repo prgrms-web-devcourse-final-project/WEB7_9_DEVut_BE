@@ -1,8 +1,9 @@
 package devut.buzzerbidder.domain.delayeditem.dto.request;
 
-import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.Category;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.ItemStatus;
+import devut.buzzerbidder.global.exeption.BusinessException;
+import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,5 +21,10 @@ public record DelayedItemModifyRequest(
     String preferredPlace,
     List<String> images
 ) {
+    public void validateBuyNowPrice() {
+        if (buyNowPrice != null && buyNowPrice <= startPrice) {
+            throw new BusinessException(ErrorCode.INVALID_BUY_NOW_PRICE);
+        }
+    }
 
 }

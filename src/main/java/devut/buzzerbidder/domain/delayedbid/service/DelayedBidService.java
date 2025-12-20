@@ -11,7 +11,6 @@ import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
-import devut.buzzerbidder.domain.wallet.entity.Wallet;
 import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
