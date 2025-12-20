@@ -31,7 +31,14 @@ public class LiveBidRedisService {
     // ARGV[2]: newBidderId (새로운 입찰자 ID)
     private static final String LUA_BID_SCRIPT = """
         local maxPrice = redis.call('HGET', KEYS[1], 'maxBidPrice')
+        local currentBidder = redis.call("HGET", KEYS[1], 'currentBidderId')
         local newPrice = tonumber(ARGV[1])
+        local newBidder = ARGV[2]
+       \s
+        -- 본인이 현재 최고 입찰자인지 확인
+        if currentBidder == newBidder then
+            return -1
+        end
 
         -- maxPrice가 없거나 (초기값), 새로운 가격이 현재 최고가보다 클 때만 갱신
         if maxPrice == false or newPrice > tonumber(maxPrice) then
@@ -41,7 +48,7 @@ public class LiveBidRedisService {
         else
             return 0 -- 실패 (현재 최고가보다 낮거나 같음)
         end
-    """;
+   \s""";
 
     // 입찰 가격 갱신
     public Long updateMaxBidPriceAtomic(String redisKey, String newBidPrice, String newBidderId) {

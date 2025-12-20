@@ -94,4 +94,4 @@ cloud:
 
 # 토스 설정
 toss:
-  secret-key: ${TOSS_SECRET_KEY}
+  secret-key: ${TOSS_SECRET_KEY:test-toss-secret-key}
