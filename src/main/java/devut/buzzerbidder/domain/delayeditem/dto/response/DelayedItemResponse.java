@@ -8,6 +8,7 @@ public record DelayedItemResponse(
     String name,
     String image,
     Long currentPrice,
+    Long buyNowPrice,
     LocalDateTime endTime
 ) {
     public DelayedItemResponse(DelayedItem delayedItem) {
@@ -16,6 +17,7 @@ public record DelayedItemResponse(
             delayedItem.getName(),
             delayedItem.getImages().isEmpty() ? null : delayedItem.getImages().getFirst().getImageUrl(),
             delayedItem.getCurrentPrice(),
+            delayedItem.getBuyNowPrice(),
             delayedItem.getEndTime()
         );
     }

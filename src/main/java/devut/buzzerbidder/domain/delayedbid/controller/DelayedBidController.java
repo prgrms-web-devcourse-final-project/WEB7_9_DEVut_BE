@@ -44,6 +44,17 @@ public class DelayedBidController {
         return ApiResponse.ok("입찰 완료", response);
     }
 
+    @PostMapping("/{id}/buy-now")
+    @Operation(summary = "지연 경매 즉시 구매")
+    public ApiResponse<DelayedBidResponse> buyNow(
+        @PathVariable Long id,
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        DelayedBidResponse response = delayedBidService.buyNow(id, userDetails.getUser());
+
+        return ApiResponse.ok("즉시 구매",  response);
+    }
+
     @GetMapping("/{id}/bids")
     @Operation(summary = "지연 경매 입찰 내역 조회")
     public ApiResponse<DelayedBidListResponse> getBidHistory(

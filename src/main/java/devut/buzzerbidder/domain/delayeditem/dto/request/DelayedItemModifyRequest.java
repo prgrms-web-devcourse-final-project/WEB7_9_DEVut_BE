@@ -11,6 +11,7 @@ public record DelayedItemModifyRequest(
     Category category,
     String description,
     Long startPrice,
+    Long buyNowPrice,
     LocalDateTime endTime,
     ItemStatus itemStatus,
     Boolean deliveryInclude,

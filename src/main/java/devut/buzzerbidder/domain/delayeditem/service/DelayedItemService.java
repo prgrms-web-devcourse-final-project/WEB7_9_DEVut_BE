@@ -45,6 +45,8 @@ public class DelayedItemService {
             throw new BusinessException(ErrorCode.INVALID_END_TIME);
         }
 
+        reqBody.validate();
+
         DelayedItem delayedItem = new DelayedItem(reqBody, user);
 
         delayedItemRepository.save(delayedItem);
@@ -164,6 +166,7 @@ public class DelayedItemService {
             delayedItem.getAuctionStatus(),
             delayedItem.getStartPrice(),
             delayedItem.getCurrentPrice(),
+            delayedItem.getBuyNowPrice(),
             delayedItem.getEndTime(),
             delayedItem.getDeliveryInclude(),
             delayedItem.getDirectDealAvailable(),
