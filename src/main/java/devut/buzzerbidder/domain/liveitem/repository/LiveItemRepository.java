@@ -54,5 +54,4 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         WHERE li.id IN :ids
         """)
     List<LiveItem> findLiveItemsWithImages(@Param("ids") List<Long> ids);
-
 }

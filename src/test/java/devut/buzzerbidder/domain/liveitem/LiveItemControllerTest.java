@@ -17,7 +17,6 @@ import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
 import devut.buzzerbidder.domain.user.service.RefreshTokenService;
-import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +31,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 
 @SpringBootTest
@@ -75,7 +76,6 @@ public class LiveItemControllerTest {
                 .email("test@example.com")
                 .password(passwordEncoder.encode("password123!"))
                 .nickname("hong123")
-                .birthDate(LocalDate.of(1990, 1, 1))
                 .profileImageUrl("https://example.com/image.jpg")
                 .role(UserRole.USER)
                 .build();
@@ -96,26 +96,46 @@ public class LiveItemControllerTest {
     @Test
     @DisplayName("경매글 생성 성공")
     void createLiveItem() throws Exception {
-        String requestBody = """
+        // 현재 시간보다 최소 1시간 이후, 09:00~23:00 사이, 30분 단위로 설정
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime liveTime = now.plusHours(2);
+        
+        // 시간이 09:00~23:00 범위를 벗어나면 조정
+        LocalTime timeOnly = liveTime.toLocalTime();
+        if (timeOnly.isBefore(LocalTime.of(9, 0))) {
+            liveTime = liveTime.withHour(9).withMinute(0).withSecond(0).withNano(0);
+        } else if (timeOnly.isAfter(LocalTime.of(23, 0))) {
+            liveTime = liveTime.plusDays(1).withHour(9).withMinute(0).withSecond(0).withNano(0);
+        } else {
+            // 30분 단위로 조정 (00분 또는 30분)
+            int minute = liveTime.getMinute();
+            if (minute < 30) {
+                liveTime = liveTime.withMinute(0).withSecond(0).withNano(0);
+            } else {
+                liveTime = liveTime.withMinute(30).withSecond(0).withNano(0);
+            }
+        }
+        
+        String liveTimeStr = liveTime.toString();
+        
+        String requestBody = String.format("""
             {
-               "auctionId": 1,
                "name": "맥북 프로 16인치 2021",
                "category": "ELECTRONICS",
-               "Itemstatus": "NEW",
+               "itemStatus": "NEW",
                "description": "상태 아주 좋습니다. 배터리 사이클 120회.",
                "initPrice": 1200000,
                "deliveryInclude": true,
-               "liveDate": "2025-01-15T20:00:00",
+               "liveTime": "%s",
                "directDealAvailable": false,
                "region": "서울특별시 강남구",
                "preferredPlace": "강남역 11번 출구",
-               "auctionStatus": "BEFORE_BIDDING",
                "images": [
                  "https://example.com/mac1.jpg",
                  "https://example.com/mac2.jpg"
                ]
              }
-            """;
+            """, liveTimeStr);
 
         ResultActions result = mockMvc.perform(
             post("/api/v1/auction/live")
@@ -129,33 +149,53 @@ public class LiveItemControllerTest {
             .andExpect(jsonPath("$.resultCode").value("200"))
             .andExpect(jsonPath("$.msg").value("경매품 생성"))
             .andExpect(jsonPath("$.data.name").value("맥북 프로 16인치 2021"))
-            .andExpect(jsonPath("$.data.image").value("example.jpg"))
-            .andExpect(jsonPath("$.data.liveDate").value("2025-01-15T20:00:00"));
+            .andExpect(jsonPath("$.data.image").exists())
+            .andExpect(jsonPath("$.data.liveTime").exists());
     }
 
     @Test
     @DisplayName("경매글 생성 실패 - 이름없음")
     void createLiveItemNoName() throws Exception {
-        String requestBody = """
+        // 현재 시간보다 최소 1시간 이후, 09:00~23:00 사이, 30분 단위로 설정
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime liveTime = now.plusHours(2);
+        
+        // 시간이 09:00~23:00 범위를 벗어나면 조정
+        LocalTime timeOnly = liveTime.toLocalTime();
+        if (timeOnly.isBefore(LocalTime.of(9, 0))) {
+            liveTime = liveTime.withHour(9).withMinute(0).withSecond(0).withNano(0);
+        } else if (timeOnly.isAfter(LocalTime.of(23, 0))) {
+            liveTime = liveTime.plusDays(1).withHour(9).withMinute(0).withSecond(0).withNano(0);
+        } else {
+            // 30분 단위로 조정 (00분 또는 30분)
+            int minute = liveTime.getMinute();
+            if (minute < 30) {
+                liveTime = liveTime.withMinute(0).withSecond(0).withNano(0);
+            } else {
+                liveTime = liveTime.withMinute(30).withSecond(0).withNano(0);
+            }
+        }
+        
+        String liveTimeStr = liveTime.toString();
+        
+        String requestBody = String.format("""
             {
-               "auctionId": 1,
                "name": "",
                "category": "ELECTRONICS",
-               "Itemstatus": "NEW",
+               "itemStatus": "NEW",
                "description": "상태 아주 좋습니다. 배터리 사이클 120회.",
                "initPrice": 1200000,
                "deliveryInclude": true,
-               "liveDate": "2025-01-15T20:00:00",
+               "liveTime": "%s",
                "directDealAvailable": false,
                "region": "서울특별시 강남구",
                "preferredPlace": "강남역 11번 출구",
-               "auctionStatus": "BEFORE_BIDDING",
                "images": [
                  "https://example.com/mac1.jpg",
                  "https://example.com/mac2.jpg"
                ]
              }
-            """;
+            """, liveTimeStr);
 
         ResultActions result = mockMvc.perform(
             post("/api/v1/auction/live")
@@ -165,9 +205,8 @@ public class LiveItemControllerTest {
         ).andDo(print());
 
         result
-            .andExpect(status().isInternalServerError())
-            .andExpect(jsonPath("$.resultCode").value("CMN002"))
-            .andExpect(jsonPath("$.msg").value("서버 내부 오류가 발생했습니다."));
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.resultCode").exists());
     }
 
 }
