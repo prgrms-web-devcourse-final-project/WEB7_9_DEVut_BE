@@ -47,19 +47,23 @@ public class DelayedAuctionProcessor {
             return;
         }
 
-        // 4. Deal 생성 및 상태 변경
-        try {
-            delayedDealService.createDealFromAuction(itemId);
-            item.changeAuctionStatus(AuctionStatus.IN_DEAL);
-            log.info("경매 종료 처리 성공 (낙찰): itemId={}", itemId);
-        } catch (BusinessException e) {
-            if (e.getErrorCode() == ErrorCode.NO_BID_EXISTS) {
-                item.changeAuctionStatus(AuctionStatus.FAILED);
-                log.info("경매 종료 처리 성공 (유찰): itemId={}", itemId);
-            } else {
+        // 4. 입찰 여부 확인 및 상태 변경
+        boolean hasBids = delayedDealService.hasBidsForAuction(itemId);
+
+        if (hasBids) {
+            // 입찰이 있으면 Deal 생성
+            try {
+                delayedDealService.createDealFromAuction(itemId);
+                item.changeAuctionStatus(AuctionStatus.IN_DEAL);
+                log.info("경매 종료 처리 성공 (낙찰): itemId={}", itemId);
+            } catch (BusinessException e) {
                 log.error("경매 종료 처리 중 비즈니스 예외: itemId={}, error={}", itemId, e.getErrorCode(), e);
                 throw e;
             }
+        } else {
+            // 입찰이 없으면 유찰 처리
+            item.changeAuctionStatus(AuctionStatus.FAILED);
+            log.info("경매 종료 처리 성공 (유찰): itemId={}", itemId);
         }
     }
 

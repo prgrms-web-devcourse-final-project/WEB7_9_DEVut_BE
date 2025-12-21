@@ -35,6 +35,13 @@ public class DelayedDealService {
             .orElseThrow(() -> new BusinessException(ErrorCode.DEAL_NOT_FOUND));
     }
 
+    // 경매에 입찰이 있는지 확인
+    public boolean hasBidsForAuction(Long delayedItemId) {
+        return delayedBidRepository
+            .findTopByDelayedItemIdOrderByBidAmountDesc(delayedItemId)
+            .isPresent();
+    }
+
     // 경매 종료 후 낙찰 처리
     @Transactional
     public DelayedDeal createDealFromAuction(Long delayedItemId) {
