@@ -201,6 +201,7 @@ public class DelayedBidService {
             .delayedItem(item)
             .bidderUserId(buyer.getId())
             .bidAmount(item.getBuyNowPrice())
+            .bidTime(LocalDateTime.now())
             .build();
         delayedBidRepository.save(buyNowBid);
 

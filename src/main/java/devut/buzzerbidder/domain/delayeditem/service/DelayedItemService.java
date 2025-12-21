@@ -18,6 +18,9 @@ import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.image.ImageService;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -227,10 +230,15 @@ public class DelayedItemService {
 
         List<DelayedItem> items = delayedItemRepository.findDelayedItemsWithImages(ids);
 
-        List<DelayedItemResponse> dtoList =
-            items.stream()
-                .map(DelayedItemResponse::new)
-                .toList();
+        // ID 리스트의 순서대로 정렬 (찜 개수 순서 유지)
+        Map<Long, DelayedItem> itemMap = items.stream()
+            .collect(Collectors.toMap(DelayedItem::getId, item -> item));
+
+        List<DelayedItemResponse> dtoList = ids.stream()
+            .map(itemMap::get)
+            .filter(Objects::nonNull)
+            .map(DelayedItemResponse::new)
+            .toList();
 
         return new DelayedItemListResponse(dtoList, dtoList.size());
     }
@@ -242,7 +250,13 @@ public class DelayedItemService {
 
         List<DelayedItem> items = delayedItemRepository.findDelayedItemsWithImages(ids);
 
-        List<DelayedItemResponse> dtoList = items.stream()
+        // ID 리스트의 순서대로 정렬 (입찰 개수 순서 유지)
+        Map<Long, DelayedItem> itemMap = items.stream()
+            .collect(Collectors.toMap(DelayedItem::getId, item -> item));
+
+        List<DelayedItemResponse> dtoList = ids.stream()
+            .map(itemMap::get)
+            .filter(Objects::nonNull)
             .map(DelayedItemResponse::new)
             .toList();
 
