@@ -20,7 +20,8 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.name,
         MIN(img.imageUrl),
         li.liveTime,
-        li.auctionStatus
+        li.auctionStatus,
+        li.initPrice
     )
     FROM LiveItem li
     LEFT JOIN li.images img
