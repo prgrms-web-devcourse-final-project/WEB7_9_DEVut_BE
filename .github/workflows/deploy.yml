@@ -104,6 +104,8 @@ jobs:
             set -a
             source /home/ssm-user/config/.env
             set +a
+            
+            doppler secrets download --no-file --format=env > /tmp/app1.env
 
             doppler run -- \
               sudo -E docker run -d \
@@ -111,6 +113,8 @@ jobs:
                 --restart unless-stopped \
                 --network common \
                 -p 8080:8080 \
+                --env-file /tmp/app1.env \
                 -e TZ=Asia/Seoul \
                 ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest
+            rm -f /tmp/app1.env
             sudo docker image prune -f
