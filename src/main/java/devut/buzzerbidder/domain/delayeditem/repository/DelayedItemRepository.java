@@ -1,8 +1,10 @@
 package devut.buzzerbidder.domain.delayeditem.repository;
 
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.Category;
 import jakarta.persistence.LockModeType;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -57,4 +59,17 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT di FROM DelayedItem di WHERE di.id = :id")
     Optional<DelayedItem> findByIdWithLock(@Param("id") Long id);
+
+    // 스케쥴러용: 종료 시간이 지난 경매 조회
+    @Query("""
+        SELECT di.id FROM DelayedItem di
+        WHERE di.auctionStatus IN :statuses
+        AND di.endTime < :endTime
+        ORDER BY di.endTime ASC
+        """)
+    List<Long> findIdsByAuctionStatusInAndEndTimeBefore(
+        List<AuctionStatus> statuses,
+        LocalDateTime endTime
+    );
+
 }
