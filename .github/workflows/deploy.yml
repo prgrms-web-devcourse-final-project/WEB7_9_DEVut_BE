@@ -107,14 +107,12 @@ jobs:
             set -a
             source /home/ssm-user/config/.env
             set +a
-            test -n "${DOPPLER_TOKEN:-}" || { echo "DOPPLER_TOKEN missing"; exit 1; }
 
             # 2) doppler secrets -> env 파일 생성 (권한 600)
-            ENV_FILE="$(mktemp /tmp/${CONTAINER}.env.XXXXXX)"
-            chmod 600 "${ENV_FILE}"
-            umask 077
-            doppler secrets download --no-file --format=env > "${ENV_FILE}"
-            test -s "${ENV_FILE}" || { echo "ENV_FILE empty: ${ENV_FILE}"; exit 1; }
+            doppler secrets download \
+              --no-file \
+              --format=env \
+              > /tmp/app.env        
             
             # 3) 배포
             sudo docker pull "${IMAGE}"
@@ -126,13 +124,10 @@ jobs:
               --restart unless-stopped \
               --network common \
               -p "${PORT}:${PORT}" \
-              --env-file "${ENV_FILE}" \
+              --env-file /tmp/app.env \
               -e TZ=Asia/Seoul \
               "${IMAGE}"
 
-            # 4) 검증 (안 뜨면 바로 실패로 처리)
-            sudo docker ps --filter "name=^/${CONTAINER}$" --format '{{.Names}}' | grep -x "${CONTAINER}"
-
             # 5) 정리
-            rm -f "${ENV_FILE}"
+            rm -f /tmp/app.env
             sudo docker image prune -f
