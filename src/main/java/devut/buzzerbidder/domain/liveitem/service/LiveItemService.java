@@ -3,6 +3,7 @@ package devut.buzzerbidder.domain.liveitem.service;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomService;
 import devut.buzzerbidder.domain.likelive.service.LikeLiveService;
+import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
@@ -45,6 +46,7 @@ public class LiveItemService {
     private final ImageService imageService;
     private final RedissonClient redissonClient;
     private final TransactionTemplate transactionTemplate;
+    private final LiveBidRedisService  liveBidRedisService;
 
     public LiveItemResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
 
@@ -300,7 +302,6 @@ public class LiveItemService {
         }
     }
 
-    //TODO: 레디스에서 현재 입찰가 찾아서 추가하는 로직
     @Transactional(readOnly = true)
     public LiveItemDetailResponse getLiveItem(Long id) {
 
@@ -309,7 +310,11 @@ public class LiveItemService {
 
         long likeCount = likeLiveService.countByLiveItemId(id);
 
-        // 현재 입찰가 보내는 로직 추가
+        String redisKey = "liveItem:" + liveItem.getId();
+
+        String currentMaxPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
+        Long currentMaxPrice = (currentMaxPriceStr != null) ? Integer.parseInt(currentMaxPriceStr) : liveItem.getInitPrice();
+
         return new LiveItemDetailResponse(
             liveItem.getId(),
             liveItem.getSellerUserId(),
@@ -326,7 +331,8 @@ public class LiveItemService {
             liveItem.getImages().stream()
                 .map(LiveItemImage::getImageUrl)
                 .toList(),
-            likeCount
+            likeCount,
+            currentMaxPrice
         );
     }
 
@@ -339,9 +345,27 @@ public class LiveItemService {
 
         Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), pageable);
 
-        // 이곳에 레디스 가격 필터링
+        // 2. Redis에서 현재 입찰가 가져오기
+        List<LiveItemResponse> dtoList = page.getContent().stream()
+            .map(item -> {
+                String redisKey = "liveItem:" + item.id();
+                String maxBidPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
 
-        List<LiveItemResponse> dtoList = page.getContent();
+                Long currentMaxBidPrice = (maxBidPriceStr != null)
+                    ? Long.parseLong(maxBidPriceStr)
+                    : item.currentPrice();
+
+                // DTO에 현재 입찰가 세팅
+                return new LiveItemResponse(
+                    item.id(),
+                    item.name(),
+                    item.image(),
+                    item.liveTime(),
+                    item.auctionStatus(),
+                    currentMaxBidPrice
+                );
+            })
+            .toList();
 
         return new LiveItemListResponse(dtoList, page.getTotalElements());
     }
@@ -371,10 +395,25 @@ public class LiveItemService {
         List<LiveItem> items = liveItemRepository.findLiveItemsWithImages(ids);
 
 
-        List<LiveItemResponse> dtoList =
-            items.stream()
-                .map(LiveItemResponse::new)
-                .toList();
+        List<LiveItemResponse> dtoList = items.stream()
+            .map(item -> {
+                String redisKey = "liveItem:" + item.getId();
+                String maxBidPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
+
+                Long currentMaxBidPrice = (maxBidPriceStr != null)
+                    ? Long.parseLong(maxBidPriceStr)
+                    : item.getInitPrice(); // DB 값 fallback
+
+                return new LiveItemResponse(
+                    item.getId(),
+                    item.getName(),
+                    item.getImages().get(0).getImageUrl(),
+                    item.getLiveTime(),
+                    item.getAuctionStatus(),
+                    currentMaxBidPrice
+                );
+            })
+            .toList();
 
         return new LiveItemListResponse(dtoList, dtoList.size());
 

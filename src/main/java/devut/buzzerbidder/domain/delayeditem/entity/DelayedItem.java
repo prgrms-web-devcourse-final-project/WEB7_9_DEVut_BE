@@ -104,7 +104,7 @@ public class DelayedItem extends BaseEntity {
         this.description = request.description();
         this.startPrice = request.startPrice();
         this.currentPrice = request.startPrice();
-        this.auctionStatus = AuctionStatus.IN_PROGRESS;
+        this.auctionStatus = AuctionStatus.BEFORE_BIDDING;
         this.endTime = request.endTime();
         this.itemStatus = request.itemStatus();
         this.deliveryInclude = request.deliveryInclude();
@@ -125,11 +125,10 @@ public class DelayedItem extends BaseEntity {
     }
 
     public enum AuctionStatus {
-        IN_PROGRESS,       // 경매 진행중
+        BEFORE_BIDDING,    // 입찰 전
+        IN_PROGRESS,       // 입찰 중
         ENDED,             // 경매 종료 (낙찰)
         FAILED,            // 유찰 (입찰자 없음)
-        CANCELLED,         // 취소
-        PAYMENT_PENDING,   // 결제 대기
         IN_DEAL,           // 거래 중
         PURCHASE_CONFIRMED // 구매 확정
     }
