@@ -1,14 +1,14 @@
 package devut.buzzerbidder.domain.wallet.service;
 
-import devut.buzzerbidder.domain.wallet.dto.request.WithdrawRequestDto;
-import devut.buzzerbidder.domain.wallet.dto.response.WithdrawResponseDto;
+import devut.buzzerbidder.domain.wallet.dto.request.WithdrawalRequestDto;
+import devut.buzzerbidder.domain.wallet.dto.response.WithdrawalResponseDto;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.entity.Wallet;
-import devut.buzzerbidder.domain.wallet.entity.Withdraw;
+import devut.buzzerbidder.domain.wallet.entity.Withdrawal;
 import devut.buzzerbidder.domain.wallet.enums.WalletTransactionType;
 import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
-import devut.buzzerbidder.domain.wallet.repository.WithdrawRepository;
+import devut.buzzerbidder.domain.wallet.repository.WithdrawalRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ public class WalletService {
 
     private final WalletRepository walletRepository;
     private final WalletHistoryService walletHistoryService;
-    private final WithdrawRepository withdrawRepository;
+    private final WithdrawalRepository withdrawRepository;
     private final UserRepository userRepository;
 
     // 잔액 조회
@@ -86,6 +86,16 @@ public class WalletService {
     // 관리자 차감
     public void deductBizz(User user, Long amount) {
         changeBizz(user, amount, WalletTransactionType.ADMIN_DEDUCT);
+    }
+
+    // 입찰 시 코인 차감
+    public void lockBizzForBid(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.BID_LOCK);
+    }
+
+    // 입찰 실패 시 코인 환불
+    public void refundBidBizz(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.BID_REFUND);
     }
 
     // A유저 -> B유저 송금
@@ -168,20 +178,9 @@ public class WalletService {
         walletHistoryService.recordWalletHistory(user, amount, type, balanceBefore, balanceAfter);
     }
 
-    // 생성된 지갑 없으면 지갑 생성 후 조회(비관적 락)
-    public Wallet getOrCreateWalletWithLock(User user) {
-        return walletRepository.findByUserIdWithLock(user.getId())
-                .orElseGet(() -> walletRepository.save(
-                        Wallet.builder()
-                                .user(user)
-                                .bizz(0L)
-                                .build()
-                ));
-    }
-
     // 보유 잔액 검증 후, 출금 요청
     @Transactional
-    public WithdrawResponseDto withdraw(Long userId, WithdrawRequestDto request) {
+    public WithdrawalResponseDto withdrawal(Long userId, WithdrawalRequestDto request) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -196,14 +195,14 @@ public class WalletService {
 
         updateBizzAndRecordHistory(wallet, user, amount, WalletTransactionType.WITHDRAW);
 
-        Withdraw withdraw = new Withdraw(user,
+        Withdrawal withdrawal = new Withdrawal(user,
                 amount,
                 request.bankName(),
                 request.accountNumber(),
                 request.accountHolder()
         );
-        withdrawRepository.save(withdraw);
+        withdrawRepository.save(withdrawal);
 
-        return WithdrawResponseDto.from(withdraw);
+        return WithdrawalResponseDto.from(withdrawal);
     }
 }

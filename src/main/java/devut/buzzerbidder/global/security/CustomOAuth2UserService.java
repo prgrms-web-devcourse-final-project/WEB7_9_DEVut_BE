@@ -4,6 +4,8 @@ import devut.buzzerbidder.domain.user.entity.Provider;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
+import devut.buzzerbidder.domain.wallet.service.WalletService;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -13,9 +15,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.Map;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,6 +22,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
     private final ProviderRepository providerRepository;
+    private final WalletService walletService;
 
     @Override
     @Transactional
@@ -49,6 +49,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
         if ("naver".equals(registrationId)) {
             return processNaverUser(attributes);
+        }
+        if ("google".equals(registrationId)) {
+            return processGoogleUser(attributes);
         }
         
         throw new OAuth2AuthenticationException("지원하지 않는 OAuth2 제공자입니다: " + registrationId);
@@ -102,6 +105,22 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         
         return processOAuth2User(
                 Provider.ProviderType.NAVER,
+                providerId,
+                email,
+                nickname,
+                profileImageUrl
+        );
+    }
+
+    private User processGoogleUser(Map<String, Object> attributes) {
+        // 구글 응답 구조: {sub: "123456789", email: "...", name: "...", picture: "..."}
+        String providerId = (String) attributes.get("sub");
+        String email = (String) attributes.get("email");
+        String nickname = (String) attributes.get("name");
+        String profileImageUrl = (String) attributes.get("picture");
+        
+        return processOAuth2User(
+                Provider.ProviderType.GOOGLE,
                 providerId,
                 email,
                 nickname,
@@ -163,6 +182,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     log.info("{} Provider 추가 완료: userId={}", providerType, user.getId());
                 }
                 
+                // 지갑이 없으면 생성
+                if (!walletService.hasWallet(user.getId())) {
+                    walletService.createWallet(user);
+                    log.info("지갑 생성 완료: userId={}", user.getId());
+                }
+                
                 return user;
             }
         }
@@ -192,7 +217,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .email(email)
                 .password(null) // OAuth2 사용자는 비밀번호 없음
                 .nickname(finalNickname)
-                .birthDate(LocalDate.of(1990, 1, 1)) // 기본값, 나중에 수정 가능
                 .profileImageUrl(profileImageUrl)
                 .role(User.UserRole.USER)
                 .build();
@@ -206,6 +230,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .user(user)
                 .build();
         providerRepository.save(newProvider);
+        
+        // 지갑 생성
+        walletService.createWallet(user);
+        log.info("신규 사용자 지갑 생성 완료: userId={}", user.getId());
         
         return user;
     }

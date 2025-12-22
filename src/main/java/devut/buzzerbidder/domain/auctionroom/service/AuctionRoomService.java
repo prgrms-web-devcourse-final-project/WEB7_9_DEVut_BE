@@ -15,7 +15,6 @@ public class AuctionRoomService {
 
     private final AuctionRoomRepository auctionRoomRepository;
 
-    @Transactional
     public AuctionRoom assignRoom(LocalDateTime liveTime) {
 
         // 1. OPEN 상태인 방 검색

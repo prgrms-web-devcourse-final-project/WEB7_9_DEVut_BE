@@ -37,8 +37,10 @@ public class ChatMessageService {
         String message = request.content();
         LocalDateTime now = LocalDateTime.now();
 
+
         AuctionChatMessageResponse response = new AuctionChatMessageResponse(
                 tempId,
+                sender.getProfileImageUrl(),
                 sender.getNickname(),
                 message,
                 now

@@ -12,10 +12,15 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
+import org.mockito.Mockito;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
 /**
  * Testcontainers 설정 클래스
@@ -116,5 +121,29 @@ public class TestcontainersConfig {
         LettuceConnectionFactory factory = new LettuceConnectionFactory(redisConfig, clientConfig);
         factory.afterPropertiesSet();
         return factory;
+    }
+
+    /**
+     * 테스트용 RedissonClient Bean
+     * Testcontainers Redis 컨테이너를 사용하여 RedissonClient를 생성합니다.
+     */
+    @Bean
+    @Primary
+    @Lazy
+    RedissonClient testRedissonClient() {
+        Config config = new Config();
+        String address = "redis://" + redis.getHost() + ":" + redis.getMappedPort(6379);
+        config.useSingleServer().setAddress(address);
+        return Redisson.create(config);
+    }
+
+    /**
+     * 테스트용 JavaMailSender Mock Bean
+     * 테스트 환경에서 실제 메일을 보낼 필요가 없으므로 Mock으로 제공합니다.
+     */
+    @Bean
+    @Primary
+    JavaMailSender testJavaMailSender() {
+        return Mockito.mock(JavaMailSender.class);
     }
 }

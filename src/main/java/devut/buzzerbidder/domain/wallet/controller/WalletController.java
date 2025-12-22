@@ -1,7 +1,7 @@
 package devut.buzzerbidder.domain.wallet.controller;
 
-import devut.buzzerbidder.domain.wallet.dto.request.WithdrawRequestDto;
-import devut.buzzerbidder.domain.wallet.dto.response.WithdrawResponseDto;
+import devut.buzzerbidder.domain.wallet.dto.request.WithdrawalRequestDto;
+import devut.buzzerbidder.domain.wallet.dto.response.WithdrawalResponseDto;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
@@ -20,12 +20,12 @@ public class WalletController {
 
     private final WalletService walletService;
 
-    @PostMapping("/withdraw")
-    public ApiResponse<WithdrawResponseDto> withdraw(
+    @PostMapping("/withdrawal")
+    public ApiResponse<WithdrawalResponseDto> withdrawal(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody WithdrawRequestDto request
+            @Valid @RequestBody WithdrawalRequestDto request
     ) {
-        WithdrawResponseDto response = walletService.withdraw(userDetails.getId(), request);
+        WithdrawalResponseDto response = walletService.withdrawal(userDetails.getId(), request);
         return ApiResponse.ok("출금요청이 완료되었습니다.", response);
     }
 }

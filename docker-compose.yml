@@ -23,7 +23,16 @@ services:
     container_name: buzzerbidder-redis
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    command: >
+      sh -c "
+      if [ -n \"$$REDIS_PASSWORD\" ]; then
+        redis-server --appendonly yes --requirepass $$REDIS_PASSWORD
+      else
+        redis-server --appendonly yes
+      fi
+      "
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     volumes:
       - redis-data:/data
     networks:
@@ -34,7 +43,7 @@ services:
       timeout: 3s
       retries: 3
 
-  # MySQL (프로덕션용)
+  # MySQL
   mysql:
     image: mysql:8.0
     container_name: buzzerbidder-mysql
@@ -42,8 +51,8 @@ services:
       - "3306:3306"
     environment:
       MYSQL_DATABASE: buzzerbidder
-      MYSQL_USER: buzzerbidder
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-buzzerbidder}
+      MYSQL_USER: devut
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-buzzbidder123}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       TZ: Asia/Seoul
     volumes:
@@ -57,13 +66,35 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    profiles:
-      - prod
+
+  # Kafka
+  kafka:
+    image: apache/kafka:latest
+    container_name: buzzerbidder-kafka
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # 로그 디렉토리
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    networks:
+      - buzzerbidder-network
 
 volumes:
   h2-data:
   redis-data:
   mysql-data:
+  kafka-data:
 
 networks:
   buzzerbidder-network:
