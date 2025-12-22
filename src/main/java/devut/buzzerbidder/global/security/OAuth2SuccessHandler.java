@@ -8,12 +8,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 @Slf4j
 @Component
@@ -22,6 +25,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private final AuthTokenService authTokenService;
     private final RequestContext requestContext;
+
+    @Value("${frontend.base-url:http://localhost:3000}")
+    private String frontendBaseUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -61,10 +67,32 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         requestContext.setCookie("accessToken", accessToken);
         requestContext.setCookie("refreshToken", refreshToken);
 
-        log.info("OAuth2 로그인 성공, 프론트엔드로 리다이렉트: userId={}", user.getId());
+        // state 파라미터에서 리다이렉트 URL 추출
+        String state = request.getParameter("state");
+        String redirectUrl = frontendBaseUrl + "/"; // 기본 리다이렉트 URL (프로파일별 설정 사용)
 
-        // TODO: 프론트엔드로 리다이렉트 (실제 프론트엔드 URL로 변경 필요)
-        getRedirectStrategy().sendRedirect(request, response, "http://localhost:3000/oauth2/success");
+        if (state != null && !state.isBlank()) {
+            try {
+                String decodedState = new String(Base64.getUrlDecoder().decode(state), StandardCharsets.UTF_8);
+                // state 형식: "prefix#redirectUrl" 또는 "redirectUrl"
+                if (decodedState.contains("#")) {
+                    redirectUrl = decodedState.split("#")[1];
+                } else {
+                    redirectUrl = decodedState;
+                }
+                log.debug("State에서 리다이렉트 URL 추출: {}", redirectUrl);
+            } catch (Exception e) {
+                log.warn("State 파라미터 디코딩 실패, 기본 URL 사용: {}", e.getMessage());
+            }
+        }
+
+        // 리다이렉트 URL에 성공 정보를 쿼리 파라미터로 추가
+        // 토큰은 쿠키에 설정되어 있으므로 URL에는 포함하지 않음 (보안상 이유)
+        String separator = redirectUrl.contains("?") ? "&" : "?";
+        String finalRedirectUrl = redirectUrl + separator + "oauth2=success&userId=" + user.getId();
+
+        log.info("OAuth2 로그인 성공, 프론트엔드로 리다이렉트: userId={}, redirectUrl={}", user.getId(), finalRedirectUrl);
+        getRedirectStrategy().sendRedirect(request, response, finalRedirectUrl);
     }
 }
 

@@ -2,14 +2,7 @@ spring:
   application:
     name: BuzzerBidder
   profiles:
-    active: dev-mysql
-
-# Doppler 설정 (선택적)
-doppler:
-  enabled: ${DOPPLER_ENABLED:true}
-  token: ${DOPPLER_TOKEN:}
-  project: ${DOPPLER_PROJECT:buzzerbidder}
-  config: ${DOPPLER_CONFIG:dev_main}
+    active: dev
 
 # Swagger 공통 설정
 springdoc:

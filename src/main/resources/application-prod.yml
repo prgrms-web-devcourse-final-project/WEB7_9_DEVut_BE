@@ -166,6 +166,17 @@ springdoc:
   swagger-ui:
     enabled: false
 
+  # Doppler 설정 (선택적)
+doppler:
+  enabled: ${DOPPLER_ENABLED:true}
+  token: ${DOPPLER_TOKEN:}
+  project: ${DOPPLER_PROJECT:buzzerbidder}
+  config: ${DOPPLER_CONFIG:prd_main}
+
+# 프론트엔드 설정
+frontend:
+  base-url: https://buzzerbidder.shop
+
 # 토스 설정
 toss:
   secret-key: ${TOSS_SECRET_KEY}

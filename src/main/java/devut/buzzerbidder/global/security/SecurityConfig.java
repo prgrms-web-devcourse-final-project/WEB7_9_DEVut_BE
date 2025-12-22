@@ -1,6 +1,7 @@
 package devut.buzzerbidder.global.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -24,9 +31,38 @@ public class SecurityConfig {
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final ApplicationContext applicationContext;
 
+    @Value("${frontend.base-url:http://localhost:3000}")
+    private String frontendBaseUrl;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        
+        // 프로덕션 환경에서는 www와 non-www 모두 허용
+        List<String> allowedOrigins;
+        if (frontendBaseUrl.contains("buzzerbidder.shop")) {
+            allowedOrigins = Arrays.asList(
+                "https://www.buzzerbidder.shop",
+                "https://buzzerbidder.shop"
+            );
+        } else {
+            allowedOrigins = Arrays.asList(frontendBaseUrl);
+        }
+        
+        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L); // Preflight 요청 캐시 시간 (1시간)
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
@@ -56,7 +92,7 @@ public class SecurityConfig {
         } catch (org.springframework.beans.factory.NoSuchBeanDefinitionException e) {
             // OAuth2 설정이 없으면 OAuth2 로그인을 비활성화 (테스트 환경 등)
         }
-        http.cors(cors -> {});
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
         return http.build();
     }
