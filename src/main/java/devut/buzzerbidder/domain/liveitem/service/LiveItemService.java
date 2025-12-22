@@ -361,7 +361,7 @@ public class LiveItemService {
                     item.name(),
                     item.image(),
                     item.liveTime(),
-                    item.getAuctionStatus(),
+                    item.auctionStatus(),
                     currentMaxBidPrice
                 );
             })
