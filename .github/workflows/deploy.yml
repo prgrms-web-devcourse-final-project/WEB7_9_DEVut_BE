@@ -103,7 +103,7 @@ jobs:
             CONTAINER="app1"
             PORT="8080"
 
-            # 3) 배포
+            # 배포
             sudo docker pull "$IMAGE"
             sudo docker stop "${CONTAINER}" 2>/dev/null || true
             sudo docker rm "${CONTAINER}" 2>/dev/null || true
@@ -118,5 +118,5 @@ jobs:
               "$IMAGE" \
               sh -lc 'doppler run -- java -jar /app/app.jar'
 
-            # 5) 정리
+            # 정리
             sudo docker image prune -f
