@@ -43,7 +43,7 @@ services:
       timeout: 3s
       retries: 3
 
-  # MySQL (프로덕션용)
+  # MySQL
   mysql:
     image: mysql:8.0
     container_name: buzzerbidder-mysql
@@ -51,8 +51,8 @@ services:
       - "3306:3306"
     environment:
       MYSQL_DATABASE: buzzerbidder
-      MYSQL_USER: buzzerbidder
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-buzzerbidder}
+      MYSQL_USER: devut
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-buzzbidder123}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       TZ: Asia/Seoul
     volumes:
@@ -66,8 +66,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    profiles:
-      - prod
 
   # Kafka
   kafka:
