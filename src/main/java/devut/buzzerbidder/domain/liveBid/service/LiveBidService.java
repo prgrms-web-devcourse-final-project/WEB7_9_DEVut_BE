@@ -44,11 +44,27 @@ public class LiveBidService {
 
         // redis 입찰가 갱신 시도
         String redisKey = REDIS_KEY_PREFIX + request.liveItemId();
-        Long result = liveBidRedisService.updateMaxBidPriceAtomic(
+
+        long depositAmount = Math.round(request.bidPrice() * 0.2);
+
+        long sessionTtlSeconds = 60L;
+        long balanceTtlSeconds = 600L;
+
+        Long result = liveBidRedisService.updateMaxBidPriceAtomicWithDeposit(
                 redisKey,
-                String.valueOf(request.bidPrice()),
-                String.valueOf(bidder.getId())
+                bidder.getId(),
+                request.bidPrice(),
+                depositAmount,
+                sessionTtlSeconds,
+                balanceTtlSeconds
         );
+
+        if (result == -2L) {
+            throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
+        }
+        if (result == -3L) {
+            throw new BusinessException(ErrorCode.AUCTION_SESSION_EXPIRED);
+        }
 
         // 입찰 시도 결과에 따른 분기 처리
         return handleBidResult(result, request, bidder, liveItem.getSellerUserId(), redisKey);

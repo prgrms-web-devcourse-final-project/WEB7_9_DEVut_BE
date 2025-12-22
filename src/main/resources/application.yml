@@ -2,7 +2,7 @@ spring:
   application:
     name: BuzzerBidder
   profiles:
-    active: dev
+    active: dev-mysql
 
 # Doppler 설정 (선택적)
 doppler:

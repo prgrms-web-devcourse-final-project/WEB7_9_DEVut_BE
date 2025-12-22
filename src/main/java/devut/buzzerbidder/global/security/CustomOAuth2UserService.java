@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.user.entity.Provider;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
+import devut.buzzerbidder.domain.wallet.service.WalletService;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
     private final ProviderRepository providerRepository;
+    private final WalletService walletService;
 
     @Override
     @Transactional
@@ -180,6 +182,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     log.info("{} Provider 추가 완료: userId={}", providerType, user.getId());
                 }
                 
+                // 지갑이 없으면 생성
+                if (!walletService.hasWallet(user.getId())) {
+                    walletService.createWallet(user);
+                    log.info("지갑 생성 완료: userId={}", user.getId());
+                }
+                
                 return user;
             }
         }
@@ -222,6 +230,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .user(user)
                 .build();
         providerRepository.save(newProvider);
+        
+        // 지갑 생성
+        walletService.createWallet(user);
+        log.info("신규 사용자 지갑 생성 완료: userId={}", user.getId());
         
         return user;
     }

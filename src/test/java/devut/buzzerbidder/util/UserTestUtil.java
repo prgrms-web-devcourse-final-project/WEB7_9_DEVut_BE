@@ -36,6 +36,7 @@ public class UserTestUtil {
 
     /**
      * 회원을 생성하고 User 엔티티를 반환하는 메서드
+     * 기존 사용자가 있으면 삭제 후 새로 생성합니다.
      * 
      * @param email 이메일
      * @param password 비밀번호
@@ -44,6 +45,9 @@ public class UserTestUtil {
      * @return 생성된 User 엔티티
      */
     public User createUser(String email, String password, String nickname, String profileImageUrl) {
+        // 기존 사용자 삭제 (중복 방지)
+        userRepository.findByEmail(email).ifPresent(userRepository::delete);
+
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(password);
 

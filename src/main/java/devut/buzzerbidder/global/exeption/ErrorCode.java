@@ -34,6 +34,9 @@ public enum ErrorCode {
     DEAL_NOT_FOUND("D001", HttpStatus.NOT_FOUND, "존재하지 않는 거래입니다."),
     DEAL_INVALID_TYPE("D002", HttpStatus.BAD_REQUEST, "잘못된 경매 유형입니다."),
     DEAL_DELIVERY_INFO_NOT_FOUND("D003", HttpStatus.NOT_FOUND, "배송 정보가 존재하지 않습니다."),
+    AUCTION_NOT_ENDED("D004", HttpStatus.BAD_REQUEST, "경매가 아직 종료되지 않았습니다."),
+    NO_BID_EXISTS("D005", HttpStatus.BAD_REQUEST, "입찰 내역이 없습니다."),
+    DEAL_INVALID_STATUS("D006", HttpStatus.BAD_REQUEST, "잘못된 거래 상태입니다."),
 
     // ========== Wallet 도메인 에러 ==========
     WALLET_NOT_FOUND("W001", HttpStatus.NOT_FOUND, "지갑이 존재하지 않습니다."),
@@ -60,6 +63,7 @@ public enum ErrorCode {
     FULL_AUCTION_ROOM("AR001", HttpStatus.CONFLICT, "경매방이 가득 찼습니다."),
     AUCTION_ROOM_BUSY("AR002", HttpStatus.CONFLICT, "잠시 후 다시 시도해주세요."),
 
+    AUCTION_SESSION_EXPIRED("AR003", HttpStatus.CONFLICT, "경매 세션이 만료되었습니다. 다시 입장 후 재시도해주세요."),
     // ========== LIVEITEM 도메인 에러 ==========
     CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
     INVALID_LIVETIME("LI002", HttpStatus.BAD_REQUEST,"유효한 경매 시작 시간이 아닙니다."),

@@ -6,6 +6,7 @@ import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidResponse;
 import devut.buzzerbidder.domain.delayedbid.entity.DelayedBidLog;
 import devut.buzzerbidder.domain.delayedbid.repository.DelayedBidRepository;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
@@ -87,11 +88,16 @@ public class DelayedBidService {
 
         delayedBidRepository.save(bidLog);
 
-        // 8. 경매품의 현재가 업데이트
+        // 8. 첫 입찰시 상태 변경
+        if (delayedItem.getAuctionStatus() == AuctionStatus.BEFORE_BIDDING) {
+            delayedItem.changeAuctionStatus(AuctionStatus.IN_PROGRESS);
+        }
+
+        // 9. 경매품의 현재가 업데이트
         delayedItem.updateCurrentPrice(request.bidPrice());
         delayedItemRepository.save(delayedItem);
 
-        // 9. 응답 생성
+        // 10. 응답 생성
         return new DelayedBidResponse(
             bidLog.getId(),
             delayedItem.getId(),

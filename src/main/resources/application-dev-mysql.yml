@@ -1,10 +1,9 @@
 spring:
-  # 프로덕션 데이터베이스 설정 (MySQL)
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/buzzerbidder?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:devut}
+    password: ${DB_PASSWORD:buzzbidder123}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
@@ -12,34 +11,35 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
   
+  # H2 Console 비활성화 (MySQL 사용 시)
+  h2:
+    console:
+      enabled: false
+
   # JPA 설정
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto: update
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
-        format_sql: false
-        use_sql_comments: false
-        jdbc:
-          batch_size: 20
-        order_inserts: true
-        order_updates: true
-  
+        format_sql: true
+        use_sql_comments: true
+
   # Redis 설정
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
-      password: ${REDIS_PASSWORD}
-      timeout: 3000ms
+      host: localhost
+      port: 6379
+      password:
+      timeout: 2000ms
       lettuce:
         pool:
-          max-active: 20
-          max-idle: 10
-          min-idle: 5
-          max-wait: 2000ms
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
   # 이메일 설정
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
@@ -56,6 +56,12 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+  web:
+    error:
+      include-message: always
+      include-stacktrace: on_param
+      include-binding-errors: always
+      include-exception: false
   security:
     oauth2:
       client:
@@ -63,7 +69,7 @@ spring:
           kakao:
             client-id: c136afd324de5358829c83363ee0ba6b
             client-secret: ${KAKAO_CLIENT_SECRET:}
-            redirect-uri: https://api.app1.buzzerbidder.site/login/oauth2/code/kakao
+            redirect-uri: http://localhost:8080/login/oauth2/code/kakao
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
             scope:
@@ -73,7 +79,7 @@ spring:
           naver:
             client-id: n4GkssO1dLxOBT8PQ8Z0
             client-secret: ${NAVER_CLIENT_SECRET:}
-            redirect-uri: https://api.app1.buzzerbidder.site/login/oauth2/code/naver
+            redirect-uri: http://localhost:8080/login/oauth2/code/naver
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
             scope:
@@ -84,7 +90,7 @@ spring:
           google:
             client-id: 516250457314-ilbkvu1ittv47pbugdjk3qusl4kbg47o.apps.googleusercontent.com
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            redirect-uri: https://api.app1.buzzerbidder.site/login/oauth2/code/google
+            redirect-uri: http://localhost:8080/login/oauth2/code/google
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
             scope:
@@ -109,21 +115,20 @@ spring:
             user-name-attribute: sub
 
   kafka:
-    bootstrap-servers: buzzerbidder-kafka:9092
-
-# 서버 설정
-server:
-  port: 8080
-
-# 관리 엔드포인트 설정
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: when-authorized
+    bootstrap-servers: localhost:9094
+    producer:
+      # 메시지 키는 String, 값은 JSON
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: buzzerbidder-group
+      # 처음 접속 시 가장 오래된 메시지부터 읽음
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        # JSON 역직렬화 시 신뢰할 수 있는 패키지 지정
+        spring.json.trusted.packages: "devut.buzzerbidder.*"
 
 # JWT 설정
 custom:
@@ -141,8 +146,8 @@ custom:
     topic:
       live-bid:
         name: live-bid-events
-        partitions: 3  # 처리량 증대를 위해 파티션 개수
-        replicas: 3    # 데이터 보존을 위한 복제본 개수
+        partitions: 1
+        replicas: 1
 
 delivery:
   client-id: ${DELIVERY_CLIENT_ID}
@@ -159,12 +164,12 @@ cloud:
     region:
       static: ${AWS_REGION:ap-northeast-2}
 
-# Swagger 프로덕션 환경 설정 (보안을 위해 비활성화 권장)
+# Swagger 개발 환경 추가 설정
 springdoc:
-  api-docs:
-    enabled: false
   swagger-ui:
-    enabled: false
+    enabled: true
+    display-request-duration: true
+    doc-expansion: list
 
 # 토스 설정
 toss:
