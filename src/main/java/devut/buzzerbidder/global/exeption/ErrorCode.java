@@ -45,6 +45,7 @@ public enum ErrorCode {
     INVALID_WALLET_AMOUNT("W005", HttpStatus.BAD_REQUEST, "충전/차감 금액은 null 또는 0 이하일 수 없습니다."),
     INVALID_TRANSFER("W006", HttpStatus.BAD_REQUEST, "자기 자신에게 지불할 수 없습니다."),
     WALLET_ALREADY_EXISTS("W007", HttpStatus.CONFLICT, "사용자 지갑이 이미 존재합니다."),
+    WITHDRAWAL_NOT_FOUND("W008", HttpStatus.CONFLICT, "출금 내역이 존재하지 않습니다."),
 
     // ========== Payment 도메인 에러 ==========
     PAYMENT_NOT_FOUND("P001", HttpStatus.NOT_FOUND, "결제정보를 찾을 수 없습니다."),
@@ -61,6 +62,7 @@ public enum ErrorCode {
     // ========== AuctionRoom 도메인 에러 ==========
     FULL_AUCTION_ROOM("AR001", HttpStatus.CONFLICT, "경매방이 가득 찼습니다."),
     AUCTION_ROOM_BUSY("AR002", HttpStatus.CONFLICT, "잠시 후 다시 시도해주세요."),
+
     AUCTION_SESSION_EXPIRED("AR003", HttpStatus.CONFLICT, "경매 세션이 만료되었습니다. 다시 입장 후 재시도해주세요."),
     // ========== LIVEITEM 도메인 에러 ==========
     CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
