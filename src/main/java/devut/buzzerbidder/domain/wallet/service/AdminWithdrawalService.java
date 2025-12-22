@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.wallet.dto.AdminWithdrawalItemDto;
 import devut.buzzerbidder.domain.wallet.dto.response.AdminWithdrawalResponseDto;
 import devut.buzzerbidder.domain.wallet.entity.Withdrawal;
 import devut.buzzerbidder.domain.wallet.enums.WithdrawalStatus;
+import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
 import devut.buzzerbidder.domain.wallet.repository.WithdrawalRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -21,6 +23,8 @@ import java.util.List;
 public class AdminWithdrawalService {
 
     private final WithdrawalRepository withdrawalRepository;
+    private final WalletRepository walletRepository;
+    private final WalletService walletService;
 
     public AdminWithdrawalResponseDto getRequestedWithdrawal(Long userId, WithdrawalStatus status, Integer page, Integer size) {
         int lastPage = (page == null || page < 0) ? 0 : page;
@@ -47,19 +51,21 @@ public class AdminWithdrawalService {
         return AdminWithdrawalResponseDto.from(withdrawals, withdrawalPage);
     }
 
+    @Transactional
     public void approve(Long withdrawalId) {
-        Withdrawal withdrawal = withdrawalRepository.findById(withdrawalId)
+        Withdrawal withdrawal = withdrawalRepository.findByIdForUpdate(withdrawalId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.WITHDRAWAL_NOT_FOUND));
 
         withdrawal.approve();
-        withdrawalRepository.save(withdrawal);
     }
 
+    @Transactional
     public void reject(Long withdrawalId, String rejectReason) {
-        Withdrawal withdrawal = withdrawalRepository.findById(withdrawalId)
+        Withdrawal withdrawal = withdrawalRepository.findByIdForUpdate(withdrawalId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.WITHDRAWAL_NOT_FOUND));
 
+
+        walletService.refundBizz(withdrawal.getUser(), withdrawal.getAmount());
         withdrawal.reject(rejectReason);
-        withdrawalRepository.save(withdrawal);
     }
 }
