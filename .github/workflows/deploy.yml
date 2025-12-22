@@ -103,19 +103,8 @@ jobs:
             CONTAINER="app1"
             PORT="8080"
 
-            # 1) doppler token 로드 (EC2 로컬 파일)
-            set -a
-            source /home/ssm-user/config/.env
-            set +a
-
-            # 2) doppler secrets -> env 파일 생성 (권한 600)
-            doppler secrets download \
-              --no-file \
-              --format=env \
-              > /tmp/app.env        
-            
             # 3) 배포
-            sudo docker pull "${IMAGE}"
+            sudo docker pull "$IMAGE"
             sudo docker stop "${CONTAINER}" 2>/dev/null || true
             sudo docker rm "${CONTAINER}" 2>/dev/null || true
 
@@ -124,10 +113,10 @@ jobs:
               --restart unless-stopped \
               --network common \
               -p "${PORT}:${PORT}" \
-              --env-file /tmp/app.env \
+              --env-file /home/ssm-user/config/.env \
               -e TZ=Asia/Seoul \
-              "${IMAGE}"
+              "$IMAGE" \
+              sh -lc 'doppler run -- java -jar /app/app.jar'
 
             # 5) 정리
-            rm -f /tmp/app.env
             sudo docker image prune -f
