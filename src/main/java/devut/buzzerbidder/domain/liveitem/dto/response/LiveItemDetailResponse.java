@@ -20,7 +20,8 @@ public record LiveItemDetailResponse(
     String region,
     String preferredPlace,
     List<String> images,
-    Long likeCount
+    Long likeCount,
+    Long currentPrice
 ) {
 
 }
