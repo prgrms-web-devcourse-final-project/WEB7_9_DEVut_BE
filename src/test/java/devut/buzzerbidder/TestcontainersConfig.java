@@ -18,6 +18,9 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
 import org.mockito.Mockito;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
 /**
  * Testcontainers 설정 클래스
@@ -118,6 +121,20 @@ public class TestcontainersConfig {
         LettuceConnectionFactory factory = new LettuceConnectionFactory(redisConfig, clientConfig);
         factory.afterPropertiesSet();
         return factory;
+    }
+
+    /**
+     * 테스트용 RedissonClient Bean
+     * Testcontainers Redis 컨테이너를 사용하여 RedissonClient를 생성합니다.
+     */
+    @Bean
+    @Primary
+    @Lazy
+    RedissonClient testRedissonClient() {
+        Config config = new Config();
+        String address = "redis://" + redis.getHost() + ":" + redis.getMappedPort(6379);
+        config.useSingleServer().setAddress(address);
+        return Redisson.create(config);
     }
 
     /**

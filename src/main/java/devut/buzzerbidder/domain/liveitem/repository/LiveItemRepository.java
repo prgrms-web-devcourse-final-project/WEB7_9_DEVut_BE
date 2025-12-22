@@ -19,7 +19,8 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.id,
         li.name,
         MIN(img.imageUrl),
-        li.liveTime
+        li.liveTime,
+        li.auctionStatus
     )
     FROM LiveItem li
     LEFT JOIN li.images img
@@ -54,5 +55,4 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         WHERE li.id IN :ids
         """)
     List<LiveItem> findLiveItemsWithImages(@Param("ids") List<Long> ids);
-
 }

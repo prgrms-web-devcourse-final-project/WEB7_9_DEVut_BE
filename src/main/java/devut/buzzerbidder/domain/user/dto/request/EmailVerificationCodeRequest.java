@@ -13,10 +13,10 @@ public record EmailVerificationCodeRequest(
         @Email(message = "올바른 이메일 형식이 아닙니다.")
         String email,
 
-        @Schema(description = "인증 코드", example = "123456")
+        @Schema(description = "인증 코드", example = "A3b$K9")
         @NotBlank(message = "인증 코드는 필수입니다.")
         @Size(min = 6, max = 6, message = "인증 코드는 6자리여야 합니다.")
-        @Pattern(regexp = "^[0-9]{6}$", message = "인증 코드는 6자리 숫자여야 합니다.")
+        @Pattern(regexp = "^[0-9A-Za-z!@#$%^&*]{6}$", message = "인증 코드는 6자리여야 하며, 숫자, 알파벳, 특수문자(!@#$%^&*)만 사용 가능합니다.")
         String code
 ) {
 }

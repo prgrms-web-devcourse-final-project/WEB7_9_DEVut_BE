@@ -113,9 +113,21 @@ spring:
             user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
             user-name-attribute: sub
 
-# 서버 설정
-server:
-  port: 8080
+  kafka:
+    bootstrap-servers: localhost:9094
+    producer:
+      # 메시지 키는 String, 값은 JSON
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: buzzerbidder-group
+      # 처음 접속 시 가장 오래된 메시지부터 읽음
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        # JSON 역직렬화 시 신뢰할 수 있는 패키지 지정
+        spring.json.trusted.packages: "devut.buzzerbidder.*"
 
 # JWT 설정
 custom:
@@ -129,6 +141,12 @@ custom:
     verification:
       expireMinutes: 10  # 인증 코드 유효 시간 (분)
       subject: "[BuzzerBidder] 이메일 인증 코드"
+  kafka:
+    topic:
+      live-bid:
+        name: live-bid-events
+        partitions: 1
+        replicas: 1
 
 delivery:
   client-id: ${DELIVERY_CLIENT_ID:your-client-key}

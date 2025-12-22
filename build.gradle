@@ -44,6 +44,9 @@ dependencies {
     implementation platform('software.amazon.awssdk:bom:2.20.26')
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:auth'
+    implementation 'org.springframework.kafka:spring-kafka'
+    testImplementation 'org.springframework.kafka:spring-kafka-test'
+    testImplementation 'org.testcontainers:kafka'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     runtimeOnly 'com.h2database:h2'
@@ -57,6 +60,7 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:mysql'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.17.0'
 }
 
 tasks.named('test') {

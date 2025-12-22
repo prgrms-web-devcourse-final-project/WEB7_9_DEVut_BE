@@ -105,7 +105,7 @@ jobs:
               --restart unless-stopped \
               --network common \
               -p 8080:8080 \
-              -e DOPPLER_TOKEN=$DOPPLER_TOKEN \
+              --env-file /home/ssm-user/config/.env \
               -e TZ=Asia/Seoul \
               ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest \
               doppler run -- java -jar /app/app.jar && \
