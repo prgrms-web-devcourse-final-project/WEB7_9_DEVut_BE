@@ -178,17 +178,6 @@ public class WalletService {
         walletHistoryService.recordWalletHistory(user, amount, type, balanceBefore, balanceAfter);
     }
 
-    // 생성된 지갑 없으면 지갑 생성 후 조회(비관적 락)
-    public Wallet getOrCreateWalletWithLock(User user) {
-        return walletRepository.findByUserIdWithLock(user.getId())
-                .orElseGet(() -> walletRepository.save(
-                        Wallet.builder()
-                                .user(user)
-                                .bizz(0L)
-                                .build()
-                ));
-    }
-
     // 보유 잔액 검증 후, 출금 요청
     @Transactional
     public WithdrawalResponseDto withdrawal(Long userId, WithdrawalRequestDto request) {

@@ -1,6 +1,7 @@
 package devut.buzzerbidder.domain.deal.service;
 
 import devut.buzzerbidder.domain.deal.entity.LiveDeal;
+import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
 import devut.buzzerbidder.domain.deliveryTracking.service.DeliveryTrackingService;
@@ -29,6 +30,7 @@ public class LiveDealService {
         // TODO: 권한 체크 로직 추가 (currentUser가 해당 deal에 접근할 수 있는지 확인)
         LiveDeal liveDeal = findByIdOrThrow(dealId);
         liveDeal.updateDeliveryInfo(carrierCode, trackingNumber);
+        liveDeal.updateStatus(DealStatus.SHIPPING);
     }
 
     public DeliveryTrackingResponse track(User currentUser, Long dealId) {
