@@ -115,7 +115,8 @@ jobs:
             umask 077
             doppler secrets download --no-file --format=env > "${ENV_FILE}"
             test -s "${ENV_FILE}" || { echo "ENV_FILE empty: ${ENV_FILE}"; exit 1; }
-
+            sed -i -E 's/^([A-Za-z_][A-Za-z0-9_]*)="(.*)"$/\1=\2/' "${ENV_FILE}"
+            
             # 3) 배포
             sudo docker pull "${IMAGE}"
             sudo docker stop "${CONTAINER}" 2>/dev/null || true
