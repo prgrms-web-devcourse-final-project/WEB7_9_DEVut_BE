@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -16,6 +17,7 @@ import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class NotificationMessageBroker implements MessageListener {
@@ -62,7 +64,7 @@ public class NotificationMessageBroker implements MessageListener {
             String json = objectMapper.writeValueAsString(message);
             redisTemplate.convertAndSend(NOTIFICATION_CHANNEL, json);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize notification", e);
+            log.error("알림 직렬화 실패: channel={}, notification={}", channel, notification, e);
         }
     }
 
@@ -79,7 +81,7 @@ public class NotificationMessageBroker implements MessageListener {
                 notificationMessage.getNotification()
             );
         } catch (Exception e) {
-            throw new RuntimeException("Failed to process notification from Redis", e);
+            log.error("Redis 메시지 처리 실패: message={}", new String(message.getBody()), e);
         }
     }
 

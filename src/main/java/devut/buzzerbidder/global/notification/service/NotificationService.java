@@ -23,23 +23,14 @@ public class NotificationService {
     private final ObjectMapper objectMapper;
 
     /**
-     *  개인 알림 발송
-     */
-    @Transactional
-    public Notification createAndSend(long userId, NotificationType type, String message) {
-        return createAndSend(userId, type, message, null, null, null);
-    }
-
-    /**
-     *  개인 알림 발송 (리소스 정보 포함)
-     */
-    @Transactional
-    public Notification createAndSend(long userId, NotificationType type, String message, String resourceType, Long resourceId) {
-        return createAndSend(userId, type, message, resourceType, resourceId, null);
-    }
-
-    /**
-     * 개인 알림 발송 (메타데이터 포함)
+     * 개인 알림 생성 및 발송
+     *
+     * @param userId 사용자 ID
+     * @param type 알림 타입
+     * @param message 알림 메시지
+     * @param resourceType 리소스 타입 (선택, 예: "DELAYED_ITEM")
+     * @param resourceId 리소스 ID (선택)
+     * @param metadata 추가 메타데이터 (선택)
      */
     @Transactional
     public Notification createAndSend(

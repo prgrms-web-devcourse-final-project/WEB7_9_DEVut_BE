@@ -1,6 +1,9 @@
 package devut.buzzerbidder.domain.deal.scheduler;
 
+import devut.buzzerbidder.domain.deal.entity.DelayedDeal;
+import devut.buzzerbidder.domain.deal.event.DelayedAuctionEndedEvent;
 import devut.buzzerbidder.domain.deal.service.DelayedDealService;
+import devut.buzzerbidder.domain.delayedbid.event.DelayedBidOutbidEvent;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
@@ -9,6 +12,7 @@ import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +24,7 @@ public class DelayedAuctionProcessor {
 
     private final DelayedItemRepository delayedItemRepository;
     private final DelayedDealService delayedDealService;
+    private final ApplicationEventPublisher eventPublisher;
 
     // 개별 경매 종료 처리 (별도 트랜잭션)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -53,8 +58,20 @@ public class DelayedAuctionProcessor {
         if (hasBids) {
             // 입찰이 있으면 Deal 생성
             try {
-                delayedDealService.createDealFromAuction(itemId);
+                DelayedDeal deal = delayedDealService.createDealFromAuction(itemId);
+
                 item.changeAuctionStatus(AuctionStatus.IN_DEAL);
+
+                eventPublisher.publishEvent(
+                    new DelayedAuctionEndedEvent(
+                        item.getId(),
+                        item.getName(),
+                        item.getSellerUserId(),
+                        true,
+                        deal.getBuyer().getId(),
+                        deal.getWinningPrice()
+                    )
+                );
                 log.info("경매 종료 처리 성공 (낙찰): itemId={}", itemId);
             } catch (BusinessException e) {
                 log.error("경매 종료 처리 중 비즈니스 예외: itemId={}, error={}", itemId, e.getErrorCode(), e);
@@ -63,6 +80,17 @@ public class DelayedAuctionProcessor {
         } else {
             // 입찰이 없으면 유찰 처리
             item.changeAuctionStatus(AuctionStatus.FAILED);
+
+            eventPublisher.publishEvent(
+                new DelayedAuctionEndedEvent(
+                    item.getId(),
+                    item.getName(),
+                    item.getSellerUserId(),
+                    false,
+                    null,
+                    null
+                )
+            );
             log.info("경매 종료 처리 성공 (유찰): itemId={}", itemId);
         }
     }

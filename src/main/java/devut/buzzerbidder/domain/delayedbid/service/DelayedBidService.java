@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidListResponse;
 import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidRequest;
 import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidResponse;
 import devut.buzzerbidder.domain.delayedbid.entity.DelayedBidLog;
+import devut.buzzerbidder.domain.delayedbid.event.DelayedBidOutbidEvent;
 import devut.buzzerbidder.domain.delayedbid.repository.DelayedBidRepository;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class DelayedBidService {
     private final DelayedItemRepository delayedItemRepository;
     private final UserRepository userRepository;
     private final WalletService walletService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public DelayedBidResponse placeBid(Long delayedItemId, DelayedBidRequest request, User user) {
@@ -59,11 +62,13 @@ public class DelayedBidService {
         }
 
         // 6. 이전 최고가 입찰 확인 및 환불
+        Long previousBidderUserId = null;
         Optional<DelayedBidLog> previousBidOpt = delayedBidRepository
             .findTopByDelayedItemIdOrderByBidAmountDesc(delayedItemId);
 
         if (previousBidOpt.isPresent()) {
             DelayedBidLog previousBid = previousBidOpt.get();
+            previousBidderUserId = previousBid.getBidderUserId();
 
             // 본인이 이미 최고가 입찰자인 경우 재입찰 불가
             if (previousBid.getBidderUserId().equals(user.getId())) {
@@ -96,6 +101,18 @@ public class DelayedBidService {
         // 9. 경매품의 현재가 업데이트
         delayedItem.updateCurrentPrice(request.bidPrice());
         delayedItemRepository.save(delayedItem);
+
+        if (previousBidderUserId != null) {
+            eventPublisher.publishEvent(
+                new DelayedBidOutbidEvent(
+                    delayedItem.getId(),
+                    delayedItem.getName(),
+                    previousBidderUserId,
+                    user.getId(),
+                    request.bidPrice()
+                )
+            );
+        }
 
         // 10. 응답 생성
         return new DelayedBidResponse(
