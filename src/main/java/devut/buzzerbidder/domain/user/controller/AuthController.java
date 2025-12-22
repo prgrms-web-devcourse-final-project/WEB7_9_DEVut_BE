@@ -84,14 +84,14 @@ public class AuthController {
         String accessToken = authTokenService.genAccessToken(user);
         String refreshToken = authTokenService.genRefreshToken(user);
         setTokensInResponse(response.userInfo().id());
-
+        
         // 응답에 토큰 포함
         LoginResponse responseWithTokens = new LoginResponse(
-            response.userInfo(),
-            accessToken,
-            refreshToken
+                response.userInfo(),
+                accessToken,
+                refreshToken
         );
-
+        
         return ApiResponse.ok("로그인에 성공했습니다.", responseWithTokens);
     }
 
@@ -111,9 +111,9 @@ public class AuthController {
 
         // 응답에 토큰 포함
         LoginResponse response = new LoginResponse(
-            UserInfo.from(user),
-            newAccessToken,
-            newRefreshToken
+                UserInfo.from(user),
+                newAccessToken,
+                newRefreshToken
         );
 
         return ApiResponse.ok("AccessToken 재발급에 성공했습니다.", response);

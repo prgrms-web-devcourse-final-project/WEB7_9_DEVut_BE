@@ -57,5 +57,4 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT di FROM DelayedItem di WHERE di.id = :id")
     Optional<DelayedItem> findByIdWithLock(@Param("id") Long id);
-
 }
