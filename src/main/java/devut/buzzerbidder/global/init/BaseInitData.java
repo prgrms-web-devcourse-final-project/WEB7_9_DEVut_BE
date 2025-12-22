@@ -212,6 +212,11 @@ public class BaseInitData {
                 .bizzBalanceBefore(before)
                 .bizzBalanceAfter(after)
                 .build();
+
+        walletRepository.save(wallet);
+        walletHistoryRepository.save(walletHistory);
+    }
+
     public void myItemsInitData() {
         // 이미 데이터가 있으면 스킵
         if (liveItemRepository.count() > 1 || delayedItemRepository.count() > 0) {
@@ -331,9 +336,5 @@ public class BaseInitData {
         // 좋아요 추가
         LikeDelayed likeDelayed = new LikeDelayed(user, likedDelayedItem);
         likeDelayedRepository.save(likeDelayed);
-    }
-
-        walletRepository.save(wallet);
-        walletHistoryRepository.save(walletHistory);
     }
 }
