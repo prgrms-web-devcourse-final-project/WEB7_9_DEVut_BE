@@ -62,6 +62,10 @@ public enum ErrorCode {
     FULL_AUCTION_ROOM("AR001", HttpStatus.CONFLICT, "경매방이 가득 찼습니다."),
     AUCTION_ROOM_BUSY("AR002", HttpStatus.CONFLICT, "잠시 후 다시 시도해주세요."),
     AUCTION_SESSION_EXPIRED("AR003", HttpStatus.CONFLICT, "경매 세션이 만료되었습니다. 다시 입장 후 재시도해주세요."),
+    AUCTION_ROOM_NOT_FOUND("AR004", HttpStatus.NOT_FOUND, "경매방을 찾을 수 없습니다."),
+    AUCTION_NOT_STARTED("AR005", HttpStatus.BAD_REQUEST, "경매 시작 10분 전부터 입장 가능합니다."),
+    AUCTION_NOT_LIVE("AR006", HttpStatus.BAD_REQUEST, "경매가 진행 중이 아닙니다."),
+    AUCTION_STATUS_INVALID("AR007", HttpStatus.BAD_REQUEST, "잘못된 경매 상태입니다."),
     // ========== LIVEITEM 도메인 에러 ==========
     CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
     INVALID_LIVETIME("LI002", HttpStatus.BAD_REQUEST,"유효한 경매 시작 시간이 아닙니다."),
