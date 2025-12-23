@@ -12,6 +12,7 @@ import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingR
 import devut.buzzerbidder.domain.deliveryTracking.service.DeliveryTrackingService;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
+import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.util.Optional;
@@ -29,6 +30,7 @@ public class DelayedDealService {
     private final DelayedBidRepository delayedBidRepository;
     private final UserRepository userRepository;
     private final DeliveryTrackingService deliveryTrackingService;
+    private final WalletService walletService;
 
     public DelayedDeal findByIdOrThrow(Long dealId) {
         return delayedDealRepository.findById(dealId)
@@ -67,6 +69,9 @@ public class DelayedDealService {
         User buyer = userRepository.findById(highestBid.getBidderUserId())
             .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        User seller = userRepository.findById(item.getSellerUserId())
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
         // DelayedDeal 생성
         DelayedDeal deal = DelayedDeal.builder()
             .item(item)
@@ -75,7 +80,15 @@ public class DelayedDealService {
             .status(DealStatus.PENDING)
             .build();
 
-        return delayedDealRepository.save(deal);
+        DelayedDeal savedDeal = delayedDealRepository.save(deal);
+
+        // 판매자에게 정산
+        walletService.settleDealToSeller(seller, highestBid.getBidAmount());
+
+        // 결제 완료 상태로 변경 (낙찰자가 이미 입찰시 결제)
+        savedDeal.updateStatus(DealStatus.PAID);
+
+        return savedDeal;
     }
 
     // 배송 정보 입력
