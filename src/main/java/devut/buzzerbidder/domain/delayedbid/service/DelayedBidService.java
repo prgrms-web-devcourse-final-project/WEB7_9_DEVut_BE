@@ -1,5 +1,6 @@
 package devut.buzzerbidder.domain.delayedbid.service;
 
+import devut.buzzerbidder.domain.deal.service.DelayedDealService;
 import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidListResponse;
 import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidRequest;
 import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidResponse;
@@ -30,6 +31,7 @@ public class DelayedBidService {
 
     private final DelayedBidRepository delayedBidRepository;
     private final DelayedItemRepository delayedItemRepository;
+    private final DelayedDealService delayedDealService;
     private final UserRepository userRepository;
     private final WalletService walletService;
     private final ApplicationEventPublisher eventPublisher;
@@ -168,5 +170,69 @@ public class DelayedBidService {
             .toList();
 
         return new DelayedBidListResponse(bidList, page.getTotalElements());
+    }
+
+    @Transactional
+    public DelayedBidResponse buyNow(Long itemId, User buyer) {
+
+        // 1. 비관적 락으로 경매 조회
+        DelayedItem item = delayedItemRepository.findByIdWithLock(itemId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+
+        // 2. 즉시 구매가 설정 확인
+        if (!item.hasBuyNowPrice()) {
+            throw new BusinessException(ErrorCode.BUY_NOW_NOT_AVAILABLE);
+        }
+
+        // 3. 본인 물품 구매 불가
+        if (item.getSellerUserId().equals(buyer.getId())) {
+            throw new BusinessException(ErrorCode.CANNOT_BID_OWN_ITEM);
+        }
+
+        // 4. 경매 진행 상태 확인 (상품 경매 상태 + 종료 시간 체크)
+        if (!item.canBid()) {
+            throw new BusinessException(ErrorCode.AUCTION_ALREADY_ENDED);
+        }
+
+        // 5. 구매자 코인 확인 및 차감
+        if (!walletService.hasEnoughBizz(buyer, item.getBuyNowPrice())) {
+            throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
+        }
+        walletService.lockBizzForBid(buyer, item.getBuyNowPrice());
+
+        // 6. 기존 최고가 입찰자에게 환불 (있는 경우)
+        DelayedBidLog currentHighestBid = delayedBidRepository
+            .findTopByDelayedItemIdOrderByBidAmountDesc(itemId)
+            .orElse(null);
+
+        if (currentHighestBid != null) {
+            User previousBidder = userRepository.findById(currentHighestBid.getBidderUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+            walletService.refundBidBizz(previousBidder, currentHighestBid.getBidAmount());
+        }
+
+        // 7. 즉시 구매 입찰 기록 생성
+        DelayedBidLog buyNowBid = DelayedBidLog.builder()
+            .delayedItem(item)
+            .bidderUserId(buyer.getId())
+            .bidAmount(item.getBuyNowPrice())
+            .bidTime(LocalDateTime.now())
+            .build();
+        delayedBidRepository.save(buyNowBid);
+
+        // 8. 현재가 업데이트
+        item.updateCurrentPrice(item.getBuyNowPrice());
+
+        // 9. 경매 즉시 종료 및 거래 생성
+        item.changeAuctionStatus(AuctionStatus.IN_DEAL);
+        delayedDealService.createDealFromAuction(itemId);
+
+        return new DelayedBidResponse(
+            buyNowBid.getId(),
+            item.getId(),
+            buyer.getNickname(),
+            item.getBuyNowPrice(),
+            buyNowBid.getCreateDate()
+        );
     }
 }

@@ -97,16 +97,26 @@ jobs:
           working-directory: /
           comment: Deploy
           command: |
-            sudo docker pull ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest && \
-            sudo docker stop app1 2>/dev/null || true && \
-            sudo docker rm app1 2>/dev/null || true && \
+            set -euo pipefail
+
+            IMAGE="ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest"
+            CONTAINER="app1"
+            PORT="8080"
+
+            # 배포
+            sudo docker pull "$IMAGE"
+            sudo docker stop "${CONTAINER}" 2>/dev/null || true
+            sudo docker rm "${CONTAINER}" 2>/dev/null || true
+
             sudo docker run -d \
-              --name app1 \
+              --name "${CONTAINER}" \
               --restart unless-stopped \
               --network common \
-              -p 8080:8080 \
+              -p "${PORT}:${PORT}" \
               --env-file /home/ssm-user/config/.env \
               -e TZ=Asia/Seoul \
-              ghcr.io/${{ needs.buildImageAndPush.outputs.owner_lc }}/${{ needs.buildImageAndPush.outputs.image_name }}:latest \
-              doppler run -- java -jar /app/app.jar && \
+              "$IMAGE" \
+              sh -lc 'doppler run -- java -jar /app/app.jar'
+
+            # 정리
             sudo docker image prune -f

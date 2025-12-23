@@ -8,7 +8,6 @@ import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
-import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

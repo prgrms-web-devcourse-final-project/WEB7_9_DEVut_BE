@@ -45,7 +45,7 @@ public class DelayedDealService {
     // 경매 종료 후 낙찰 처리
     @Transactional
     public DelayedDeal createDealFromAuction(Long delayedItemId) {
-        DelayedItem item = delayedItemRepository.findById(delayedItemId)
+        DelayedItem item = delayedItemRepository.findByIdWithLock(delayedItemId)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
         // 이미 Deal이 생성되었는지 확인
@@ -55,7 +55,7 @@ public class DelayedDealService {
         }
 
         // 경매 종료 확인
-        if (!item.isAuctionEnded()) {
+        if (!item.isAuctionEnded() && item.getAuctionStatus() != AuctionStatus.IN_DEAL) {
             throw new BusinessException(ErrorCode.AUCTION_NOT_ENDED);
         }
 

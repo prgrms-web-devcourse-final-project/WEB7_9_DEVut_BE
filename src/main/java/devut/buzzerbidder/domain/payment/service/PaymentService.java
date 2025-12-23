@@ -92,10 +92,7 @@ public class PaymentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 지갑 없으면 생성, 있으면 조회(비관적 락)
-        Wallet wallet = walletService.getOrCreateWalletWithLock(user);
         walletService.chargeBizz(user, amount);
-        walletRepository.save(wallet);
 
         return PaymentConfirmResponseDto.from(payment);
     }
