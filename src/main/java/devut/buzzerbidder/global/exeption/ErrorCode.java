@@ -79,6 +79,8 @@ public enum ErrorCode {
     BID_PRICE_TOO_LOW("DI006", HttpStatus.BAD_REQUEST, "입찰 금액이 현재가보다 같거나 낮습니다."),
     INSUFFICIENT_COINS("DI007", HttpStatus.BAD_REQUEST, "코인이 부족합니다."),
     ALREADY_HIGHEST_BIDDER("DI008", HttpStatus.BAD_REQUEST, "이미 최고가 입찰자입니다."),
+    INVALID_BUY_NOW_PRICE("DI009", HttpStatus.BAD_REQUEST, "즉시 구매가는 시작가보다 높아야 합니다."),
+    BUY_NOW_NOT_AVAILABLE("DI010",HttpStatus.BAD_REQUEST, "즉시 구매가가 설정되지 않은 상품입니다."),
 
     // ========== LIVEBID 도메인 에러 ==========
     LIVEBID_CANNOT_BID_OWN_ITEM("LB001", HttpStatus.CONFLICT, "본인의 경매품에는 입찰할 수 없습니다."),

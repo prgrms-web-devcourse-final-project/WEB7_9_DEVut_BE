@@ -1,6 +1,7 @@
 package devut.buzzerbidder.domain.delayeditem.dto.response;
 
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import java.time.LocalDateTime;
 
 public record DelayedItemResponse(
@@ -8,7 +9,9 @@ public record DelayedItemResponse(
     String name,
     String image,
     Long currentPrice,
-    LocalDateTime endTime
+    Long buyNowPrice,
+    LocalDateTime endTime,
+    AuctionStatus auctionStatus
 ) {
     public DelayedItemResponse(DelayedItem delayedItem) {
         this(
@@ -16,7 +19,9 @@ public record DelayedItemResponse(
             delayedItem.getName(),
             delayedItem.getImages().isEmpty() ? null : delayedItem.getImages().getFirst().getImageUrl(),
             delayedItem.getCurrentPrice(),
-            delayedItem.getEndTime()
+            delayedItem.getBuyNowPrice(),
+            delayedItem.getEndTime(),
+            delayedItem.getAuctionStatus()
         );
     }
 }

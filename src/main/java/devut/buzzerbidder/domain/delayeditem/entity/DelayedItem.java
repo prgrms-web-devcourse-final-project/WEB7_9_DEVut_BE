@@ -3,6 +3,8 @@ package devut.buzzerbidder.domain.delayeditem.entity;
 import devut.buzzerbidder.domain.delayeditem.dto.request.DelayedItemCreateRequest;
 import devut.buzzerbidder.domain.delayeditem.dto.request.DelayedItemModifyRequest;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.global.exeption.BusinessException;
+import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -60,6 +62,9 @@ public class DelayedItem extends BaseEntity {
     @Column(name = "current_price", nullable = false)
     private Long currentPrice;
 
+    @Column(nullable = true)
+    private Long buyNowPrice;
+
     // 시간 정보
     @Column(name = "end_time", nullable = false)
     @NotNull
@@ -104,6 +109,7 @@ public class DelayedItem extends BaseEntity {
         this.description = request.description();
         this.startPrice = request.startPrice();
         this.currentPrice = request.startPrice();
+        this.buyNowPrice = request.buyNowPrice();
         this.auctionStatus = AuctionStatus.BEFORE_BIDDING;
         this.endTime = request.endTime();
         this.itemStatus = request.itemStatus();
@@ -147,8 +153,19 @@ public class DelayedItem extends BaseEntity {
     }
 
     public boolean canBid() {
-        return auctionStatus == AuctionStatus.IN_PROGRESS
+        return (auctionStatus == AuctionStatus.BEFORE_BIDDING
+            || auctionStatus == AuctionStatus.IN_PROGRESS)
             && !isAuctionEnded();
+    }
+
+    public boolean hasBuyNowPrice() {
+        return buyNowPrice != null && buyNowPrice > 0;
+    }
+
+    public void validateBuyNowPrice() {
+        if (hasBuyNowPrice() && buyNowPrice <= startPrice) {
+            throw new BusinessException(ErrorCode.INVALID_BUY_NOW_PRICE);
+        }
     }
 
     public void modifyDelayedItem(DelayedItemModifyRequest request) {
@@ -156,6 +173,7 @@ public class DelayedItem extends BaseEntity {
         this.category = request.category();
         this.description = request.description();
         this.startPrice = request.startPrice();
+        this.buyNowPrice = request.buyNowPrice();
         this.endTime = request.endTime();
         this.itemStatus = request.itemStatus();
         this.deliveryInclude = request.deliveryInclude();

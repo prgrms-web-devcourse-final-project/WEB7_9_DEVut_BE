@@ -18,6 +18,9 @@ import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.image.ImageService;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -45,16 +48,19 @@ public class DelayedItemService {
             throw new BusinessException(ErrorCode.INVALID_END_TIME);
         }
 
-        DelayedItem delayedItem = new DelayedItem(reqBody, user);
-
-        delayedItemRepository.save(delayedItem);
-
         if (reqBody.images() == null || reqBody.images().isEmpty()) {
             throw new BusinessException(ErrorCode.IMAGE_FILE_EMPTY);
         }
 
+        // buyNowPrice 검증
+        reqBody.validateBuyNowPrice();
+
+        DelayedItem delayedItem = new DelayedItem(reqBody, user);
+
         reqBody.images().forEach(url ->
             delayedItem.addImage(new DelayedItemImage(url, delayedItem)));
+
+        delayedItemRepository.save(delayedItem);
 
         return new DelayedItemResponse(delayedItem);
     }
@@ -81,15 +87,18 @@ public class DelayedItemService {
             throw new BusinessException(ErrorCode.AUCTION_ALREADY_ENDED);
         }
 
-        // 일반 정보 수정
-        delayedItem.modifyDelayedItem(reqBody);
-
         // 종료 시간 검증 - 생성 시간 기준 최소 3일 이후, 최대 10일 이내
         LocalDateTime createDate = delayedItem.getCreateDate();
         if (reqBody.endTime().isBefore(createDate.plusDays(3)) ||
             reqBody.endTime().isAfter(createDate.plusDays(10))) {
             throw new BusinessException(ErrorCode.INVALID_END_TIME);
         }
+
+        // buyNowPrice 검증
+        reqBody.validateBuyNowPrice();
+
+        // 일반 정보 수정
+        delayedItem.modifyDelayedItem(reqBody);
 
         // 새 이미지 URL이 있고, 기존과 다를 때만 교체
         if (reqBody.images() != null) {
@@ -164,6 +173,7 @@ public class DelayedItemService {
             delayedItem.getAuctionStatus(),
             delayedItem.getStartPrice(),
             delayedItem.getCurrentPrice(),
+            delayedItem.getBuyNowPrice(),
             delayedItem.getEndTime(),
             delayedItem.getDeliveryInclude(),
             delayedItem.getDirectDealAvailable(),
@@ -220,10 +230,35 @@ public class DelayedItemService {
 
         List<DelayedItem> items = delayedItemRepository.findDelayedItemsWithImages(ids);
 
-        List<DelayedItemResponse> dtoList =
-            items.stream()
-                .map(DelayedItemResponse::new)
-                .toList();
+        // ID 리스트의 순서대로 정렬 (찜 개수 순서 유지)
+        Map<Long, DelayedItem> itemMap = items.stream()
+            .collect(Collectors.toMap(DelayedItem::getId, item -> item));
+
+        List<DelayedItemResponse> dtoList = ids.stream()
+            .map(itemMap::get)
+            .filter(Objects::nonNull)
+            .map(DelayedItemResponse::new)
+            .toList();
+
+        return new DelayedItemListResponse(dtoList, dtoList.size());
+    }
+
+    @Transactional(readOnly = true)
+    public DelayedItemListResponse getMostBiddedDelayedItems(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Long> ids = delayedItemRepository.findMostBiddedDelayedItems(pageable);
+
+        List<DelayedItem> items = delayedItemRepository.findDelayedItemsWithImages(ids);
+
+        // ID 리스트의 순서대로 정렬 (입찰 개수 순서 유지)
+        Map<Long, DelayedItem> itemMap = items.stream()
+            .collect(Collectors.toMap(DelayedItem::getId, item -> item));
+
+        List<DelayedItemResponse> dtoList = ids.stream()
+            .map(itemMap::get)
+            .filter(Objects::nonNull)
+            .map(DelayedItemResponse::new)
+            .toList();
 
         return new DelayedItemListResponse(dtoList, dtoList.size());
     }
