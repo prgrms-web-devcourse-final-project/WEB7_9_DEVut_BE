@@ -5,15 +5,7 @@ import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -34,6 +26,9 @@ import org.hibernate.annotations.BatchSize;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "live_item", indexes = {
+        @Index(name = "idx_liveitem_status_time", columnList = "auctionStatus, liveTime")
+})
 public class LiveItem extends BaseEntity {
 
     @Column(name = "seller_user_id", nullable = false)
