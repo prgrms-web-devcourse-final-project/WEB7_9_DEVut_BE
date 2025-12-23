@@ -1,7 +1,6 @@
 package devut.buzzerbidder.global.security;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,7 +18,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -31,8 +29,6 @@ public class SecurityConfig {
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final ApplicationContext applicationContext;
 
-    @Value("${frontend.base-url:http://localhost:3000}")
-    private String frontendBaseUrl;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -43,18 +39,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 프로덕션 환경에서는 www와 non-www 모두 허용
-        List<String> allowedOrigins;
-        if (frontendBaseUrl.contains("buzzerbidder.shop")) {
-            allowedOrigins = Arrays.asList(
-                "https://www.buzzerbidder.shop",
-                "https://buzzerbidder.shop"
-            );
-        } else {
-            allowedOrigins = Arrays.asList(frontendBaseUrl);
-        }
-
-        configuration.setAllowedOrigins(allowedOrigins);
+        // 모든 주소에서 접근 가능하도록 설정
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
