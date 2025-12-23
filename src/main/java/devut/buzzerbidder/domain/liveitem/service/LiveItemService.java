@@ -362,8 +362,7 @@ public class LiveItemService {
                             item.name(),
                             item.image(),
                             item.liveTime(),
-                            item.auctionStatus(),
-                            currentMaxBidPrice
+                            item.auctionStatus(), currentMaxBidPrice
                     );
                 })
                 .toList();
