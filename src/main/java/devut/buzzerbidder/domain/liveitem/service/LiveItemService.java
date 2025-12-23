@@ -258,7 +258,7 @@ public class LiveItemService {
 
             // S3에서 삭제
             if (!toDelete.isEmpty()) {
-                //imageService.deleteFiles(toDelete);
+                imageService.deleteFiles(toDelete);
             }
 
         } catch (InterruptedException e) {
@@ -325,7 +325,7 @@ public class LiveItemService {
 
             // 트랜잭션 성공 후에만 S3 파일 삭제 (데이터 일관성)
             if (!imagesToDelete.isEmpty()) {
-                //imageService.deleteFiles(imagesToDelete);
+                imageService.deleteFiles(imagesToDelete);
             }
 
         } catch (InterruptedException e) {
