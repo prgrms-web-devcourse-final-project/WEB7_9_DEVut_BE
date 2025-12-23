@@ -1,6 +1,6 @@
 package devut.buzzerbidder.domain.liveitem.dto.response;
 
-public record ItemCreateResponse(
+public record ItemDto(
     Long id,
     String name,
     String image

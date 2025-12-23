@@ -7,6 +7,7 @@ import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemCreateResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemDetailResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemListResponse;
+import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemModifyResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.service.LiveItemService;
 import devut.buzzerbidder.global.response.ApiResponse;
@@ -51,13 +52,13 @@ public class LiveItemController {
 
     @PutMapping("/{id}")
     @Operation(summary = "경매품 정보 수정")
-    public ApiResponse<LiveItemResponse> modifyLiveItem(
+    public ApiResponse<LiveItemModifyResponse> modifyLiveItem(
         @PathVariable Long id,
         @RequestBody LiveItemModifyRequest reqBody,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
-        LiveItemResponse response =liveItemService.modifyLiveItem(id, reqBody, userDetails.getUser());
+        LiveItemModifyResponse response = liveItemService.modifyLiveItem(id, reqBody, userDetails.getUser());
 
         return ApiResponse.ok("%d번 경매품 수정".formatted(id), response);
     }

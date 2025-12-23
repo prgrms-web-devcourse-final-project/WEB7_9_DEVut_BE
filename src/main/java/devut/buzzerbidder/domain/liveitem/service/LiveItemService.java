@@ -7,12 +7,13 @@ import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
-import devut.buzzerbidder.domain.liveitem.dto.response.ItemCreateResponse;
+import devut.buzzerbidder.domain.liveitem.dto.response.ItemDto;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemCreateResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemDetailResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemListResponse;
+import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemModifyResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
-import devut.buzzerbidder.domain.liveitem.dto.response.RoomCreateResponse;
+import devut.buzzerbidder.domain.liveitem.dto.response.RoomDto;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
@@ -25,7 +26,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,6 @@ import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -102,13 +101,13 @@ public class LiveItemService {
                     liveItem.addImage(new LiveItemImage(url, liveItem))
                 );
 
-                ItemCreateResponse itemDto =  new ItemCreateResponse(
+                ItemDto itemDto =  new ItemDto(
                     liveItem.getId(),
                     liveItem.getName(),
-                    reqBody.images().get(0)
+                    liveItem.getImages().get(0).getImageUrl()
                 );
 
-                RoomCreateResponse roomDto = new RoomCreateResponse(
+                RoomDto roomDto = new RoomDto(
                     auctionRoom.getId(),
                     auctionRoom.getRoomIndex(),
                     auctionRoom.getLiveTime()
@@ -128,7 +127,7 @@ public class LiveItemService {
         }
     }
 
-    public LiveItemResponse modifyLiveItem(Long id, LiveItemModifyRequest reqBody, User user) {
+    public LiveItemModifyResponse modifyLiveItem(Long id, LiveItemModifyRequest reqBody, User user) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
@@ -168,7 +167,7 @@ public class LiveItemService {
         RLock multiLock = redissonClient.getMultiLock(locks);
 
         boolean acquired = false;
-        LiveItemResponse response;
+        LiveItemModifyResponse response;
 
         try {
             // 모든 락을 한 번에 시도
@@ -176,12 +175,12 @@ public class LiveItemService {
             if (!acquired)
                 throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
 
-            LiveItem currentliveItem = liveItemRepository.findLiveItemWithImagesById(id)
+            LiveItem currentLiveItem = liveItemRepository.findLiveItemWithImagesById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
 
             // 기존 이미지와 바뀔 이미지 세팅
-            List<String> oldImageUrls = currentliveItem.getImages().stream()
+            List<String> oldImageUrls = currentLiveItem.getImages().stream()
                 .map(LiveItemImage::getImageUrl)
                 .toList();
             List<String> newImageUrls = reqBody.images();
@@ -195,7 +194,7 @@ public class LiveItemService {
             response = transactionTemplate.execute(status -> {
 
                 // 일반정보 수정
-                currentliveItem.modifyLiveItem(reqBody);
+                currentLiveItem.modifyLiveItem(reqBody);
 
                 // 경매시간 변경 시
                 if (liveTimeChanged) {
@@ -220,22 +219,36 @@ public class LiveItemService {
                     }
 
                     // 경매방 재할당
-                    AuctionRoom oldRoom = currentliveItem.getAuctionRoom();
-                    oldRoom.removeItem(currentliveItem);
+                    AuctionRoom oldRoom = currentLiveItem.getAuctionRoom();
+                    oldRoom.removeItem(currentLiveItem);
 
                     AuctionRoom newRoom = auctionRoomService.assignRoom(reqBody.startAt(), reqBody.roomIndex());
-                    currentliveItem.changeAuctionRoom(newRoom);
+                    currentLiveItem.changeAuctionRoom(newRoom);
 
-                    newRoom.addItem(currentliveItem);
+                    newRoom.addItem(currentLiveItem);
                 }
 
                 // DB 이미지 목록 갱신
-                currentliveItem.deleteImageUrls();
+                currentLiveItem.deleteImageUrls();
                 newImageUrls.forEach(url ->
-                    currentliveItem.addImage(new LiveItemImage(url, currentliveItem)));
+                    currentLiveItem.addImage(new LiveItemImage(url, currentLiveItem)));
 
-                liveItemRepository.save(currentliveItem);
-                return new LiveItemResponse(currentliveItem);
+                liveItemRepository.save(currentLiveItem);
+
+                ItemDto itemDto =  new ItemDto(
+                    currentLiveItem.getId(),
+                    currentLiveItem.getName(),
+                    currentLiveItem.getImages().get(0).getImageUrl()
+                );
+
+                AuctionRoom roomToRes = currentLiveItem.getAuctionRoom();
+                RoomDto roomDto = new RoomDto(
+                    roomToRes.getId(),
+                    roomToRes.getRoomIndex(),
+                    roomToRes.getLiveTime()
+                );
+
+                return new LiveItemModifyResponse(itemDto, roomDto);
 
             });
 
