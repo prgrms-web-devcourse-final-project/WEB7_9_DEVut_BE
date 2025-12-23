@@ -1,4 +1,4 @@
-package devut.buzzerbidder.global.notification;
+package devut.buzzerbidder.domain.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -9,12 +9,12 @@ import static org.mockito.Mockito.verify;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
-import devut.buzzerbidder.global.notification.dto.NotificationDto;
-import devut.buzzerbidder.global.notification.entity.Notification;
-import devut.buzzerbidder.global.notification.enums.NotificationType;
-import devut.buzzerbidder.global.notification.repository.NotificationRepository;
-import devut.buzzerbidder.global.notification.service.NotificationMessageBroker;
-import devut.buzzerbidder.global.notification.service.NotificationService;
+import devut.buzzerbidder.domain.notification.dto.NotificationDto;
+import devut.buzzerbidder.domain.notification.entity.Notification;
+import devut.buzzerbidder.domain.notification.enums.NotificationType;
+import devut.buzzerbidder.domain.notification.repository.NotificationRepository;
+import devut.buzzerbidder.domain.notification.service.NotificationMessageBroker;
+import devut.buzzerbidder.domain.notification.service.NotificationService;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

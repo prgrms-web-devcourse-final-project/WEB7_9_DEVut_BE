@@ -1,9 +1,9 @@
-package devut.buzzerbidder.global.notification.controller;
+package devut.buzzerbidder.domain.notification.controller;
 
 import devut.buzzerbidder.domain.user.entity.User;
-import devut.buzzerbidder.global.notification.dto.NotificationDto;
-import devut.buzzerbidder.global.notification.dto.NotificationListResponse;
-import devut.buzzerbidder.global.notification.service.NotificationService;
+import devut.buzzerbidder.domain.notification.dto.NotificationDto;
+import devut.buzzerbidder.domain.notification.dto.NotificationListResponse;
+import devut.buzzerbidder.domain.notification.service.NotificationService;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
 import devut.buzzerbidder.global.response.ApiResponse;
 import java.util.List;

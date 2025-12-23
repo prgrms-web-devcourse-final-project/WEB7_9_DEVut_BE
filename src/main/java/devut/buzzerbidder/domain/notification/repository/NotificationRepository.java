@@ -1,6 +1,6 @@
-package devut.buzzerbidder.global.notification.repository;
+package devut.buzzerbidder.domain.notification.repository;
 
-import devut.buzzerbidder.global.notification.entity.Notification;
+import devut.buzzerbidder.domain.notification.entity.Notification;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 

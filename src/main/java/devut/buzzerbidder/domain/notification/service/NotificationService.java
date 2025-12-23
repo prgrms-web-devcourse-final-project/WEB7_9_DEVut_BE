@@ -1,12 +1,12 @@
-package devut.buzzerbidder.global.notification.service;
+package devut.buzzerbidder.domain.notification.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
-import devut.buzzerbidder.global.notification.dto.NotificationDto;
-import devut.buzzerbidder.global.notification.entity.Notification;
-import devut.buzzerbidder.global.notification.enums.NotificationType;
-import devut.buzzerbidder.global.notification.repository.NotificationRepository;
+import devut.buzzerbidder.domain.notification.dto.NotificationDto;
+import devut.buzzerbidder.domain.notification.entity.Notification;
+import devut.buzzerbidder.domain.notification.enums.NotificationType;
+import devut.buzzerbidder.domain.notification.repository.NotificationRepository;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

@@ -1,8 +1,8 @@
-package devut.buzzerbidder.global.notification.listener;
+package devut.buzzerbidder.domain.notification.listener;
 
 import devut.buzzerbidder.domain.deal.event.DelayedAuctionEndedEvent;
-import devut.buzzerbidder.global.notification.enums.NotificationType;
-import devut.buzzerbidder.global.notification.service.NotificationService;
+import devut.buzzerbidder.domain.notification.enums.NotificationType;
+import devut.buzzerbidder.domain.notification.service.NotificationService;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

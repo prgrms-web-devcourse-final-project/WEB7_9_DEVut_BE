@@ -1,8 +1,8 @@
-package devut.buzzerbidder.global.notification.service;
+package devut.buzzerbidder.domain.notification.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import devut.buzzerbidder.global.notification.dto.NotificationDto;
+import devut.buzzerbidder.domain.notification.dto.NotificationDto;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
 import lombok.AllArgsConstructor;

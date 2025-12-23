@@ -1,9 +1,9 @@
-package devut.buzzerbidder.global.notification.dto;
+package devut.buzzerbidder.domain.notification.dto;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import devut.buzzerbidder.global.notification.entity.Notification;
-import devut.buzzerbidder.global.notification.enums.NotificationType;
+import devut.buzzerbidder.domain.notification.entity.Notification;
+import devut.buzzerbidder.domain.notification.enums.NotificationType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.Map;

@@ -1,17 +1,13 @@
-package devut.buzzerbidder.global.notification.entity;
+package devut.buzzerbidder.domain.notification.entity;
 
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
-import devut.buzzerbidder.global.notification.enums.NotificationType;
+import devut.buzzerbidder.domain.notification.enums.NotificationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;

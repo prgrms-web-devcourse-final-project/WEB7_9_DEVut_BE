@@ -1,4 +1,4 @@
-package devut.buzzerbidder.global.notification.enums;
+package devut.buzzerbidder.domain.notification.enums;
 
 public enum NotificationType {
     DELAYED_BID_OUTBID,             // 지연 경매 내 입찰가가 밀림

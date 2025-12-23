@@ -1,4 +1,4 @@
-package devut.buzzerbidder.global.notification.service;
+package devut.buzzerbidder.domain.notification.service;
 
 import java.io.IOException;
 import java.util.ArrayList;
