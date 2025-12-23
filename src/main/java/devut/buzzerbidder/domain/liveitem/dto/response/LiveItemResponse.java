@@ -8,7 +8,7 @@ public record LiveItemResponse(
     Long id,
     String name,
     String image,
-    LocalDateTime liveTime,
+    LocalDateTime startAt,
     AuctionStatus auctionStatus,
     Long currentPrice
 ) {
@@ -16,7 +16,7 @@ public record LiveItemResponse(
         this(
             liveItem.getId(),
             liveItem.getName(),
-            liveItem.getImages().get(0).getImageUrl(),
+            liveItem.getThumbnail(),
             liveItem.getLiveTime(),
             liveItem.getAuctionStatus(),
             liveItem.getInitPrice()

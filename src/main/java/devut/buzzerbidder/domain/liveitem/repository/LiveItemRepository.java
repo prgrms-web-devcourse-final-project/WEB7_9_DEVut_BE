@@ -20,16 +20,14 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
     SELECT new devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse(
         li.id,
         li.name,
-        MIN(img.imageUrl),
+        li.thumbnail,
         li.liveTime,
         li.auctionStatus,
         li.initPrice
     )
     FROM LiveItem li
-    LEFT JOIN li.images img
     WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
       AND (:category IS NULL OR li.category = :category)
-    GROUP BY li.id, li.name, li.liveTime
 """)
     Page<LiveItemResponse> searchLiveItems(
         @Param("name") String name,
@@ -45,12 +43,20 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
     );
 
     @Query("""
-        SELECT li.id FROM LiveItem li
-        LEFT JOIN LikeLive ll ON ll.liveItem = li
-        GROUP BY li.id
-        ORDER BY COUNT(ll.id) DESC
-        """)
-    List<Long> findHotLiveItems(Pageable pageable);
+    SELECT new devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse(
+        li.id,
+        li.name,
+        li.thumbnail,
+        li.liveTime,
+        li.auctionStatus,
+        li.initPrice
+    )
+    FROM LiveItem li
+    LEFT JOIN LikeLive ll ON ll.liveItem = li
+    GROUP BY li.id, li.name, li.thumbnail, li.liveTime, li.auctionStatus, li.initPrice
+    ORDER BY COUNT(ll.id) DESC, li.id DESC
+""")
+    List<LiveItemResponse> findHotLiveItems(Pageable pageable);
 
     @Query("""
         SELECT DISTINCT li FROM LiveItem li
