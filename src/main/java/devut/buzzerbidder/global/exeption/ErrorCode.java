@@ -73,6 +73,7 @@ public enum ErrorCode {
     INVALID_LIVETIME("LI002", HttpStatus.BAD_REQUEST,"유효한 경매 시작 시간이 아닙니다."),
     EDIT_UNAVAILABLE("LI003", HttpStatus.BAD_REQUEST,"1시간안에 시작하는 경매는 수정 및 삭제가 불가능합니다."),
     LIVEITEM_NOT_FOUND("LI004", HttpStatus.NOT_FOUND, "라이브 경매품을 찾을 수 없습니다."),
+    AUCTION_ENDED("LI005", HttpStatus.CONFLICT, "경매가 이미 종료된 라이브 상품입니다."),
 
     // ========== DelayedItem 도메인 에러 ==========
     INVALID_END_TIME("DI001", HttpStatus.BAD_REQUEST, "종료 시간은 최소 3일 이후, 최대 10일 이내여야 합니다."),
@@ -91,6 +92,7 @@ public enum ErrorCode {
     LIVEBID_NOT_IN_PROGRESS("LB002", HttpStatus.CONFLICT, "경매 진행중이 아닙니다."),
     LIVEBID_ALREADY_HIGHEST_BIDDER("LB003", HttpStatus.CONFLICT, "현재 최고 입찰자입니다. 다른 입찰 후에 다시 시도해주세요."),
     UNEXPECTED_REDIS_SCRIPT_RETURN("LB004", HttpStatus.INTERNAL_SERVER_ERROR, "Redis 스크립트 반환 방식이 예상과 다릅니다."),
+    LIVEBID_INITIALIZATION_FAILED("LB005", HttpStatus.INTERNAL_SERVER_ERROR, "경매 아이템 정보 캐싱 실패."),
 
     // ========== Notification 도메인 에러 ==========
     NOTIFICATION_NOT_FOUND("NO001", HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),

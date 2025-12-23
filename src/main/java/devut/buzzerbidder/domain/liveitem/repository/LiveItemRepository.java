@@ -3,6 +3,8 @@ package devut.buzzerbidder.domain.liveitem.repository;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.Category;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -56,4 +58,21 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         WHERE li.id IN :ids
         """)
     List<LiveItem> findLiveItemsWithImages(@Param("ids") List<Long> ids);
+
+    @Query("SELECT li.id " +
+            " FROM LiveItem li " +
+            "WHERE li.auctionStatus = :status " +
+            "  AND li.liveTime <= :time")
+    List<Long> findIdsToStart(
+            @Param("time") LocalDateTime time,
+            @Param("status") LiveItem.AuctionStatus status
+    );
+
+    @Query("SELECT li FROM LiveItem li " +
+            "WHERE li.auctionStatus = :status " +
+            "AND li.liveTime <= :thresholdTime")
+    List<LiveItem> findItemsToEnd(
+            @Param("status") LiveItem.AuctionStatus status,
+            @Param("thresholdTime") LocalDateTime thresholdTime
+    );
 }

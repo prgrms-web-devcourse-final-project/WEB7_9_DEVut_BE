@@ -30,6 +30,7 @@ public class LiveBidRedisService {
     // KEYS[1]: redisKey
     // ARGV[1]: newBidPrice (새로운 입찰 가격)
     // ARGV[2]: newBidderId (새로운 입찰자 ID)
+    // ARGV[3]:
 
     /**
     *  1: 성공(가격 갱신 + deposit 차감 + 이전 최고입찰자 환불)
