@@ -225,6 +225,10 @@ public class LiveItemService {
                     AuctionRoom newRoom = auctionRoomService.assignRoom(reqBody.startAt(), reqBody.roomIndex());
                     currentLiveItem.changeAuctionRoom(newRoom);
 
+                    if(oldRoom.getLiveItems().isEmpty()){
+                        auctionRoomService.deleteAuctionRoom(oldRoom);
+                    }
+
                     newRoom.addItem(currentLiveItem);
                 }
 
@@ -254,7 +258,7 @@ public class LiveItemService {
 
             // S3에서 삭제
             if (!toDelete.isEmpty()) {
-                imageService.deleteFiles(toDelete);
+                //imageService.deleteFiles(toDelete);
             }
 
         } catch (InterruptedException e) {
@@ -311,6 +315,9 @@ public class LiveItemService {
                 // 방에서 제거
                 AuctionRoom auctionRoom = currentItem.getAuctionRoom();
                 auctionRoom.removeItem(currentItem);
+                if(auctionRoom.getLiveItems().isEmpty()){
+                    auctionRoomService.deleteAuctionRoom(auctionRoom);
+                }
 
                 // DB에서 삭제 (OrphanRemoval 설정에 따라 이미지도 함께 삭제됨)
                 liveItemRepository.delete(currentItem);
@@ -318,7 +325,7 @@ public class LiveItemService {
 
             // 트랜잭션 성공 후에만 S3 파일 삭제 (데이터 일관성)
             if (!imagesToDelete.isEmpty()) {
-                imageService.deleteFiles(imagesToDelete);
+                //imageService.deleteFiles(imagesToDelete);
             }
 
         } catch (InterruptedException e) {

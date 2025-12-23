@@ -101,4 +101,7 @@ public class AuctionRoomService {
         }
     }
 
+    public void deleteAuctionRoom(AuctionRoom auctionRoom) {
+        auctionRoomRepository.delete(auctionRoom);
+    }
 }
