@@ -15,8 +15,6 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
 @Slf4j
 @Component
@@ -47,7 +45,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         
         if (user == null) {
             log.error("OAuth2 인증 성공했으나 User 정보를 찾을 수 없습니다.");
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "인증 처리 중 오류가 발생했습니다.");
+            // 실패해도 프론트엔드로 리다이렉트
+            getRedirectStrategy().sendRedirect(request, response, frontendBaseUrl + "/oauth2/success");
             return;
         }
 
@@ -67,30 +66,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         requestContext.setCookie("accessToken", accessToken);
         requestContext.setCookie("refreshToken", refreshToken);
 
-        // state 파라미터에서 리다이렉트 URL 추출
-        String state = request.getParameter("state");
-        String redirectUrl = frontendBaseUrl + "/"; // 기본 리다이렉트 URL (프로파일별 설정 사용)
-
-        if (state != null && !state.isBlank()) {
-            try {
-                String decodedState = new String(Base64.getUrlDecoder().decode(state), StandardCharsets.UTF_8);
-                // state 형식: "prefix#redirectUrl" 또는 "redirectUrl"
-                if (decodedState.contains("#")) {
-                    redirectUrl = decodedState.split("#")[1];
-                } else {
-                    redirectUrl = decodedState;
-                }
-                log.debug("State에서 리다이렉트 URL 추출: {}", redirectUrl);
-            } catch (Exception e) {
-                log.warn("State 파라미터 디코딩 실패, 기본 URL 사용: {}", e.getMessage());
-            }
-        }
-
-        String separator = redirectUrl.contains("?") ? "&" : "?";
-        String finalRedirectUrl = redirectUrl + separator + "oauth2=success&userId=" + user.getId();
-
-        log.info("OAuth2 로그인 성공, 프론트엔드로 리다이렉트: userId={}, redirectUrl={}", user.getId(), finalRedirectUrl);
-        getRedirectStrategy().sendRedirect(request, response, finalRedirectUrl);
+        // 프론트엔드로 리다이렉트
+        String redirectUrl = frontendBaseUrl + "/oauth2/success";
+        log.info("OAuth2 로그인 성공, 프론트엔드로 리다이렉트: userId={}, redirectUrl={}", user.getId(), redirectUrl);
+        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 }
 

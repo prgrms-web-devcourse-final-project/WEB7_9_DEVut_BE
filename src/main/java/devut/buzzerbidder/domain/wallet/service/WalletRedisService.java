@@ -1,6 +1,9 @@
 package devut.buzzerbidder.domain.wallet.service;
 
+import devut.buzzerbidder.global.exeption.BusinessException;
+import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
@@ -11,6 +14,7 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WalletRedisService {
 
     private final StringRedisTemplate stringRedisTemplate;
@@ -138,7 +142,8 @@ public class WalletRedisService {
                 STREAM_MAXLEN.toString()
         );
         if (result.size() != 3) {
-            throw new IllegalStateException("Redis change 스크립트 반환 형식이 예상과 다릅니다. userId=" + userId + ", result=" + result);
+            log.error("Redis change 스크립트 반환 형식이 예상과 다릅니다. userId={}, result={}", userId, result);
+            throw new BusinessException(ErrorCode.UNEXPECTED_REDIS_SCRIPT_RETURN);
         }
 
         Long before = result.get(0);
@@ -181,7 +186,8 @@ public class WalletRedisService {
                 traceId == null ? "" : traceId
         );
         if (result.size() != 4) {
-            throw new IllegalStateException("Redis flush 스크립트 반환 형식이 예상과 다릅니다. userId=" + userId + ", result: " + result);
+            log.error("Redis flush 스크립트 반환 형식이 예상과 다릅니다. userId={}, result={}", userId, result);
+            throw new BusinessException(ErrorCode.UNEXPECTED_REDIS_SCRIPT_RETURN);
         }
 
 

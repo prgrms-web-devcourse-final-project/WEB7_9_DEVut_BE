@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
@@ -40,7 +41,7 @@ public class LiveItemController {
     @PostMapping
     @Operation(summary = "경매품 생성")
     public ApiResponse<LiveItemCreateResponse> createLiveItem(
-        @RequestBody LiveItemCreateRequest reqBody,
+        @Valid @RequestBody LiveItemCreateRequest reqBody,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ){
 

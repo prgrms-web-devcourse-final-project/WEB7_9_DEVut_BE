@@ -148,8 +148,8 @@ custom:
         replicas: 1
 
 delivery:
-  client-id: ${DELIVERY_CLIENT_ID}
-  client-secret: ${DELIVERY_CLIENT_SECRET}
+  client-id: ${DELIVERY_CLIENT_ID:your-client-key}
+  client-secret: ${DELIVERY_CLIENT_SECRET:your-secret-key}
 
 # AWS S3 설정
 cloud:
