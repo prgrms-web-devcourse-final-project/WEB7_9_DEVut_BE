@@ -2,15 +2,20 @@ package devut.buzzerbidder.domain.auctionroom.service;
 
 import static reactor.netty.http.HttpConnectionLiveness.log;
 
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomDto;
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomListResponse;
+import devut.buzzerbidder.domain.auctionroom.dto.response.LiveItemDto;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.AuctionStatus;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.RoomStatus;
 import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
+import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -21,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuctionRoomService {
 
     private final AuctionRoomRepository auctionRoomRepository;
+    private final LiveBidRedisService liveBidRedisService;
 
     public AuctionRoom assignRoom(LocalDateTime liveTime, long roomIndex) {
 
@@ -103,5 +109,45 @@ public class AuctionRoomService {
 
     public void deleteAuctionRoom(AuctionRoom auctionRoom) {
         auctionRoomRepository.delete(auctionRoom);
+    }
+
+    @Transactional(readOnly = true)
+    public AuctionRoomListResponse getAuctionRooms(LocalDateTime targetTime) {
+
+        List<AuctionRoom> rooms = auctionRoomRepository.findRoomsWithItemsByLiveTime(targetTime);
+
+        List<AuctionRoomDto> response = rooms.stream()
+            .map(room -> {
+                List<LiveItemDto> items = room.getLiveItems().stream()
+                    .map(item -> {
+
+                        String redisKey = "liveItem:" + item.getId();
+                        String maxBidPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
+
+                        Long currentMaxBidPrice = (maxBidPriceStr != null)
+                            ? Long.parseLong(maxBidPriceStr)
+                            : item.getInitPrice();
+
+                        return new LiveItemDto(
+                            item.getId(),
+                            item.getName(),              // title로 내려줄 값
+                            currentMaxBidPrice,         // amount로 내려줄 값(원하면 currentPrice 등으로 교체)
+                            item.getThumbnail()          // thumbnail 컬럼
+                        );
+                    })
+                    .toList();
+
+                return new AuctionRoomDto(
+                    room.getId(),
+                    room.getRoomIndex(),
+                    room.getAuctionStatus(),                // AuctionStatus enum
+                    (long) items.size(),
+                    items
+                );
+            })
+            .toList();
+
+        return new AuctionRoomListResponse(targetTime, response);
+
     }
 }

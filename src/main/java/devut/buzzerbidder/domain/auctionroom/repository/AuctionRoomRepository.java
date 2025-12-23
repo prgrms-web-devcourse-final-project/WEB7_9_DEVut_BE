@@ -27,4 +27,14 @@ public interface AuctionRoomRepository extends JpaRepository<AuctionRoom, Long> 
         order by r.roomIndex asc
     """)
     List<AuctionRoom> findAllByLiveTime(LocalDateTime liveTime);
+
+    @Query("""
+        select distinct r
+        from AuctionRoom r
+        left join fetch r.liveItems i
+        where r.liveTime = :targetTime
+        order by r.roomIndex asc, i.id asc
+    """)
+    List<AuctionRoom> findRoomsWithItemsByLiveTime(@Param("targetTime") LocalDateTime targetTime);
+
 }
