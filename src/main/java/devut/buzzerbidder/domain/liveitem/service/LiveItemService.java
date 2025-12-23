@@ -261,7 +261,7 @@ public class LiveItemService {
 
             // S3에서 삭제
             if (!toDelete.isEmpty()) {
-                imageService.deleteFiles(toDelete);
+                //imageService.deleteFiles(toDelete);
             }
 
         } catch (InterruptedException e) {
