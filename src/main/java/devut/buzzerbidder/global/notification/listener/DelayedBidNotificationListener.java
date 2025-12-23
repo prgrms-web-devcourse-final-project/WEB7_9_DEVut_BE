@@ -1,6 +1,7 @@
 package devut.buzzerbidder.global.notification.listener;
 
 import devut.buzzerbidder.domain.delayedbid.event.DelayedBidOutbidEvent;
+import devut.buzzerbidder.domain.delayedbid.event.DelayedBuyNowEvent;
 import devut.buzzerbidder.global.notification.enums.NotificationType;
 import devut.buzzerbidder.global.notification.service.NotificationService;
 import java.util.Map;
@@ -16,7 +17,7 @@ public class DelayedBidNotificationListener {
     private final NotificationService notificationService;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handle(DelayedBidOutbidEvent event) {
+    public void handleOutbid(DelayedBidOutbidEvent event) {
 
         String message = "%s 상품 상위 입찰이 들어왔습니다."
             .formatted(event.delayedItemName());
@@ -32,5 +33,38 @@ public class DelayedBidNotificationListener {
                 "newBidderUserId", event.newBidderUserId()
             )
         );
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleBuyNow(DelayedBuyNowEvent event) {
+
+        // 1. 판매자 알림
+        notificationService.createAndSend(
+            event.sellerUserId(),
+            NotificationType.DELAYED_BUY_NOW_SOLD,
+            "%s 상품이 즉시 구매로 판매되었습니다."
+                .formatted(event.delayedItemName()),
+            "DELAYED_ITEM",
+            event.delayedItemId(),
+            Map.of(
+                "buyNowPrice", event.buyNowPrice(),
+                "buyUserId", event.buyUserId()
+            )
+        );
+
+        // 2. 기존 최고 입찰자 알림 (있을 때만)
+        if (event.previousHighestBidderUserId() != null) {
+            notificationService.createAndSend(
+                event.previousHighestBidderUserId(),
+                NotificationType.DELAYED_CANCELLED_BY_BUY_NOW,
+                "%s 상품이 즉시 구매로 종료되었습니다."
+                    .formatted(event.delayedItemName()),
+                "DELAYED_ITEM",
+                event.delayedItemId(),
+                Map.of(
+                    "buyNowPrice", event.buyNowPrice()
+                )
+            );
+        }
     }
 }

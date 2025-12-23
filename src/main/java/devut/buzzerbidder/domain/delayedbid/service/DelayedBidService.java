@@ -6,6 +6,7 @@ import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidRequest;
 import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidResponse;
 import devut.buzzerbidder.domain.delayedbid.entity.DelayedBidLog;
 import devut.buzzerbidder.domain.delayedbid.event.DelayedBidOutbidEvent;
+import devut.buzzerbidder.domain.delayedbid.event.DelayedBuyNowEvent;
 import devut.buzzerbidder.domain.delayedbid.repository.DelayedBidRepository;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
@@ -226,6 +227,17 @@ public class DelayedBidService {
         // 9. 경매 즉시 종료 및 거래 생성
         item.changeAuctionStatus(AuctionStatus.IN_DEAL);
         delayedDealService.createDealFromAuction(itemId);
+
+        eventPublisher.publishEvent(
+            new DelayedBuyNowEvent(
+                item.getId(),
+                item.getName(),
+                buyer.getId(),
+                item.getSellerUserId(),
+                currentHighestBid != null ? currentHighestBid.getBidderUserId() : null,
+                item.getBuyNowPrice()
+            )
+        );
 
         return new DelayedBidResponse(
             buyNowBid.getId(),
