@@ -166,6 +166,10 @@ springdoc:
   swagger-ui:
     enabled: false
 
+# 프론트엔드 설정
+frontend:
+  base-url: https://buzzerbidder.shop
+
 # 토스 설정
 toss:
   secret-key: ${TOSS_SECRET_KEY}
