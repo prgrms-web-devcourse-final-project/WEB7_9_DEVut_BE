@@ -86,8 +86,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             }
         }
 
-        // 리다이렉트 URL에 성공 정보를 쿼리 파라미터로 추가
-        // 토큰은 쿠키에 설정되어 있으므로 URL에는 포함하지 않음 (보안상 이유)
         String separator = redirectUrl.contains("?") ? "&" : "?";
         String finalRedirectUrl = redirectUrl + separator + "oauth2=success&userId=" + user.getId();
 

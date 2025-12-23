@@ -17,7 +17,6 @@ public class WebConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                // 프로덕션 환경에서는 www와 non-www 모두 허용
                 String[] allowedOrigins;
                 if (frontendBaseUrl.contains("buzzerbidder.shop")) {
                     allowedOrigins = new String[]{
@@ -32,8 +31,7 @@ public class WebConfig {
                     .allowedOrigins(allowedOrigins)
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                     .allowedHeaders("*")
-                    .allowCredentials(true)
-                    .maxAge(3600); // Preflight 요청 캐시 시간 (1시간)
+                    .allowCredentials(true);
             }
         };
     }
