@@ -6,7 +6,10 @@ import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.AuctionStatus;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.RoomStatus;
 import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
+import devut.buzzerbidder.global.exeption.BusinessException;
+import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,21 +22,50 @@ public class AuctionRoomService {
 
     private final AuctionRoomRepository auctionRoomRepository;
 
-    public AuctionRoom assignRoom(LocalDateTime liveTime) {
+    public AuctionRoom assignRoom(LocalDateTime liveTime, long roomIndex) {
 
-        // 1. OPEN 상태인 방 검색
-        Optional<AuctionRoom> roomOpt = auctionRoomRepository
-            .findFirstByLiveTimeAndRoomStatus(liveTime, RoomStatus.OPEN);
+        List<AuctionRoom> rooms = auctionRoomRepository.findAllByLiveTime(liveTime);
 
-        if (roomOpt.isPresent()) {
-            return roomOpt.get();
+        AuctionRoom targetRoom = null;
+        boolean hasOpenRoom = false;
+
+        // 순회하면서 OPEN 있는지 검사 + roomIndex로 방찾기
+        for (AuctionRoom room : rooms) {
+
+            if (room.getRoomStatus() == RoomStatus.OPEN) {
+                hasOpenRoom = true;
+            }
+
+            if (room.getRoomIndex() == (roomIndex)) {
+                targetRoom = room;
+            }
         }
 
-        // 2. 없으면 새 방 생성
-        AuctionRoom newRoom = new AuctionRoom(liveTime);
+        // roomIndex 해당 경매방을 할당 가능한지 확인
+        if (targetRoom != null) {
+
+            if(targetRoom.getRoomStatus() == RoomStatus.OPEN) {
+                return targetRoom;
+            }
+
+            if(targetRoom.getRoomStatus() == RoomStatus.FULL) {
+                throw new BusinessException(ErrorCode.FULL_AUCTION_ROOM);
+            }
+        }
+
+        // 해당 시간 경매방이 5개이상 + OPEN 상태인 방이 없음
+        if (rooms.size() >= 5 && !hasOpenRoom) {
+            throw new BusinessException(ErrorCode.AUCTION_ROOM_ASSIGN_UNAVAILABLE);
+        }
+
+        // 없으면 새 경매방 생성
+        AuctionRoom newRoom = new AuctionRoom(liveTime, roomIndex);
+
         auctionRoomRepository.save(newRoom);
         return newRoom;
+
     }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processScheduledToLive(Long roomId) {
         AuctionRoom room = auctionRoomRepository.findById(roomId)
@@ -69,4 +101,7 @@ public class AuctionRoomService {
         }
     }
 
+    public void deleteAuctionRoom(AuctionRoom auctionRoom) {
+        auctionRoomRepository.delete(auctionRoom);
+    }
 }

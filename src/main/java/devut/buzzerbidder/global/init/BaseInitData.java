@@ -144,7 +144,7 @@ public class BaseInitData {
 
         liveItem.addImage(new LiveItemImage("example.com",liveItem));
 
-        AuctionRoom newRoom = new AuctionRoom(liveItem.getLiveTime());
+        AuctionRoom newRoom = new AuctionRoom(liveItem.getLiveTime(), 1L);
         auctionRoomRepository.save(newRoom);
 
         liveItemRepository.save(liveItem);
@@ -245,7 +245,7 @@ public class BaseInitData {
 
         myLiveItem.addImage(new LiveItemImage("https://example.com/my-live-item.jpg", myLiveItem));
 
-        AuctionRoom myRoom = new AuctionRoom(myLiveItem.getLiveTime());
+        AuctionRoom myRoom = new AuctionRoom(myLiveItem.getLiveTime(), 1L);
         auctionRoomRepository.save(myRoom);
         liveItemRepository.save(myLiveItem);
         myRoom.addItem(myLiveItem);
@@ -302,7 +302,7 @@ public class BaseInitData {
 
         likedLiveItem.addImage(new LiveItemImage("https://example.com/liked-live-item.jpg", likedLiveItem));
 
-        AuctionRoom likedRoom = new AuctionRoom(likedLiveItem.getLiveTime());
+        AuctionRoom likedRoom = new AuctionRoom(likedLiveItem.getLiveTime(),1L);
         auctionRoomRepository.save(likedRoom);
         liveItemRepository.save(likedLiveItem);
         likedRoom.addItem(likedLiveItem);

@@ -30,19 +30,18 @@ public record LiveItemCreateRequest(
     
     @NotNull(message = "배송비 포함 여부는 필수입니다.")
     Boolean deliveryInclude,
-    
-    @NotNull(message = "경매 시간은 필수입니다.")
-    LocalDateTime liveTime,
-    
-    @NotNull(message = "직거래 가능여부는 필수입니다.")
+    LocalDateTime startAt,
     Boolean directDealAvailable,
     
     String region,
     
     String preferredPlace,
-    
+  
     @NotNull(message = "이미지는 필수입니다.")
-    List<String> images
+    List<String> images,
+  
+    @NotNull(message = "roomIndex 필수입니다.")
+    Long roomIndex
     ) {
 
 }
