@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.liveitem.dto.request.AuctionStatusRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
+import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemCreateResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemDetailResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemListResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
@@ -37,12 +38,12 @@ public class LiveItemController {
 
     @PostMapping
     @Operation(summary = "경매품 생성")
-    public ApiResponse<LiveItemResponse> createLiveItem(
+    public ApiResponse<LiveItemCreateResponse> createLiveItem(
         @RequestBody LiveItemCreateRequest reqBody,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ){
 
-        LiveItemResponse response = liveItemService.writeLiveItem(reqBody, userDetails.getUser());
+        LiveItemCreateResponse response = liveItemService.writeLiveItem(reqBody, userDetails.getUser());
 
         return ApiResponse.ok("경매품 생성",response);
 

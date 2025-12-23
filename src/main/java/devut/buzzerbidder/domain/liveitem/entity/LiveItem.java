@@ -135,7 +135,7 @@ public class LiveItem extends BaseEntity {
         this.deliveryInclude = request.deliveryInclude();
         this.itemStatus = request.itemStatus();
         this.auctionStatus = AuctionStatus.BEFORE_BIDDING;
-        this.liveTime = request.liveTime();
+        this.liveTime = request.startAt();
         this.directDealAvailable = request.directDealAvailable();
         this.region = request.region();
         this.preferredPlace = request.preferredPlace();
@@ -150,7 +150,7 @@ public class LiveItem extends BaseEntity {
         this.initPrice = request.initPrice();
         this.deliveryInclude = request.deliveryInclude();
         this.itemStatus = request.itemStatus();
-        this.liveTime = request.liveTime();
+        this.liveTime = request.startAt();
         this.directDealAvailable = request.directDealAvailable();
         this.region = request.region();
         this.preferredPlace = request.preferredPlace();

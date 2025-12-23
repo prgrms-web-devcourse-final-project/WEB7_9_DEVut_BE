@@ -13,11 +13,12 @@ public record LiveItemCreateRequest(
     String description,
     Long initPrice,
     Boolean deliveryInclude,
-    LocalDateTime liveTime,
+    LocalDateTime startAt,
     Boolean directDealAvailable,
     String region,
     String preferredPlace,
-    List<String> images
+    List<String> images,
+    Long roomIndex
     ) {
 
 }

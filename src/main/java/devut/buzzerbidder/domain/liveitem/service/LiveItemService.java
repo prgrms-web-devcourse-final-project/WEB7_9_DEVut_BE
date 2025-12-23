@@ -7,9 +7,12 @@ import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
+import devut.buzzerbidder.domain.liveitem.dto.response.ItemCreateResponse;
+import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemCreateResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemDetailResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemListResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
+import devut.buzzerbidder.domain.liveitem.dto.response.RoomCreateResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
@@ -48,16 +51,16 @@ public class LiveItemService {
     private final TransactionTemplate transactionTemplate;
     private final LiveBidRedisService  liveBidRedisService;
 
-    public LiveItemResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
+    public LiveItemCreateResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
 
         LocalDateTime now = LocalDateTime.now();
 
         // 1. 현재 시간과 liveTime 차이 확인
-        if (reqBody.liveTime().isBefore(now.plusHours(1))) {
+        if (reqBody.startAt().isBefore(now.plusHours(1))) {
             throw new BusinessException(ErrorCode.CLOSE_LIVETIME);
         }
 
-        LocalTime liveTimeOnly = reqBody.liveTime().toLocalTime();
+        LocalTime liveTimeOnly = reqBody.startAt().toLocalTime();
         // 2. 허용 시간 범위 체크 (09:00 ~ 23:00)
         if (liveTimeOnly.isBefore(LocalTime.of(9, 0)) || liveTimeOnly.isAfter(LocalTime.of(23, 0))) {
             throw new BusinessException(ErrorCode.INVALID_LIVETIME);
@@ -75,12 +78,12 @@ public class LiveItemService {
             throw new BusinessException(ErrorCode.IMAGE_FILE_EMPTY);
         }
 
-        String lockKey = "lock:auction-room:" + reqBody.liveTime().truncatedTo(ChronoUnit.MINUTES);
+        String lockKey = "lock:auction-room:" + reqBody.startAt().truncatedTo(ChronoUnit.MINUTES);
         RLock lock = redissonClient.getLock(lockKey);
         boolean acquired = false;
 
         try {
-            // 락 획득 (최대 3초 대기, TTL 15초)
+            // 락 획득 (최대 3초 대기)
             acquired = lock.tryLock(3, TimeUnit.SECONDS);
             if (!acquired) {
                 throw new BusinessException(ErrorCode.AUCTION_ROOM_BUSY);
@@ -89,7 +92,7 @@ public class LiveItemService {
             return transactionTemplate.execute(status -> {
 
                 // 경매 시간 기반 방 할당
-                AuctionRoom auctionRoom = auctionRoomService.assignRoom(reqBody.liveTime());
+                AuctionRoom auctionRoom = auctionRoomService.assignRoom(reqBody.startAt(), reqBody.roomIndex());
 
                 LiveItem liveItem = new LiveItem(reqBody, user);
                 liveItemRepository.save(liveItem);
@@ -99,7 +102,20 @@ public class LiveItemService {
                     liveItem.addImage(new LiveItemImage(url, liveItem))
                 );
 
-                return new LiveItemResponse(liveItem);
+                ItemCreateResponse itemDto =  new ItemCreateResponse(
+                    liveItem.getId(),
+                    liveItem.getName(),
+                    reqBody.images().get(0)
+                );
+
+                RoomCreateResponse roomDto = new RoomCreateResponse(
+                    auctionRoom.getId(),
+                    auctionRoom.getRoomIndex(),
+                    auctionRoom.getLiveTime()
+                );
+
+                return new LiveItemCreateResponse(itemDto, roomDto);
+
             });
 
         } catch (InterruptedException e) {
@@ -135,7 +151,7 @@ public class LiveItemService {
 
         // 시간정보 획득
         LocalDateTime oldLiveTime = liveItem.getLiveTime();
-        LocalDateTime newLiveTime = reqBody.liveTime();
+        LocalDateTime newLiveTime = reqBody.startAt();
         boolean liveTimeChanged = !oldLiveTime.equals(newLiveTime);
 
         // 락 키 결정, 수정은 경매 시간이 바뀔 경우 양쪽 락을 획득해야함
@@ -185,11 +201,11 @@ public class LiveItemService {
                 if (liveTimeChanged) {
 
                     // 1. 1시간 안에 시작하는지 확인
-                    if (reqBody.liveTime().isBefore(now.plusHours(1))) {
+                    if (reqBody.startAt().isBefore(now.plusHours(1))) {
                         throw new BusinessException(ErrorCode.INVALID_LIVETIME);
                     }
 
-                    LocalTime liveTimeOnly = reqBody.liveTime().toLocalTime();
+                    LocalTime liveTimeOnly = reqBody.startAt().toLocalTime();
                     // 2. 허용 시간 범위 체크 (09:00 ~ 23:00)
                     if (liveTimeOnly.isBefore(LocalTime.of(9, 0)) || liveTimeOnly.isAfter(
                         LocalTime.of(23, 0))) {
@@ -207,7 +223,7 @@ public class LiveItemService {
                     AuctionRoom oldRoom = currentliveItem.getAuctionRoom();
                     oldRoom.removeItem(currentliveItem);
 
-                    AuctionRoom newRoom = auctionRoomService.assignRoom(reqBody.liveTime());
+                    AuctionRoom newRoom = auctionRoomService.assignRoom(reqBody.startAt(), reqBody.roomIndex());
                     currentliveItem.changeAuctionRoom(newRoom);
 
                     newRoom.addItem(currentliveItem);
