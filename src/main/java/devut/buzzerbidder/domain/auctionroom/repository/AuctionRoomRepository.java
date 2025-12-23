@@ -3,6 +3,7 @@ package devut.buzzerbidder.domain.auctionroom.repository;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.AuctionStatus;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.RoomStatus;
+import devut.buzzerbidder.domain.auctionroom.entity.RoomCountByStartAtRow;
 import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,4 +38,16 @@ public interface AuctionRoomRepository extends JpaRepository<AuctionRoom, Long> 
     """)
     List<AuctionRoom> findRoomsWithItemsByLiveTime(@Param("targetTime") LocalDateTime targetTime);
 
+    @Query("""
+        select r.liveTime as startAt, count(r.id) as roomCount
+        from AuctionRoom r
+        where r.liveTime >= :fromAt
+          and r.liveTime < :toAt
+        group by r.liveTime
+        order by r.liveTime
+    """)
+    List<RoomCountByStartAtRow> countRoomsGroupedByStartAt(
+        @Param("fromAt") LocalDateTime fromAt,
+        @Param("toAt") LocalDateTime toAt
+    );
 }

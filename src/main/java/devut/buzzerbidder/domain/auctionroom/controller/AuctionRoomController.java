@@ -1,6 +1,7 @@
 package devut.buzzerbidder.domain.auctionroom.controller;
 
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomListResponse;
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionScheduleResponse;
 import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomService;
 import devut.buzzerbidder.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/auction/auction-rooms")
+@RequestMapping("/api/v1/auction/rooms")
 @Tag(name = "AuctionRoom", description = "경매방 API")
 public class AuctionRoomController {
 
@@ -34,6 +35,19 @@ public class AuctionRoomController {
             auctionRoomService.getAuctionRooms(targetTime);
 
         return ApiResponse.ok("경매방 다건 조회", response);
+    }
+
+    @GetMapping("/schedule")
+    @Operation(summary = "경매방 스케줄 조회")
+    public ApiResponse<AuctionScheduleResponse> getAuctionSchedule(
+        @RequestParam LocalDate fromDate,
+        @RequestParam LocalDate toDate
+    ) {
+
+        AuctionScheduleResponse response =
+            auctionRoomService.getAuctionSchedule(fromDate,toDate);
+
+        return ApiResponse.ok("경매방 스케줄 조회", response);
     }
 
 

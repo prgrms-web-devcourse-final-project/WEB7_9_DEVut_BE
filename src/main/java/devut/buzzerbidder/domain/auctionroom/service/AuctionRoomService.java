@@ -2,18 +2,25 @@ package devut.buzzerbidder.domain.auctionroom.service;
 
 import static reactor.netty.http.HttpConnectionLiveness.log;
 
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionDaysDto;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomDto;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomListResponse;
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomSlotDto;
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionScheduleResponse;
 import devut.buzzerbidder.domain.auctionroom.dto.response.LiveItemDto;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.AuctionStatus;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.RoomStatus;
+import devut.buzzerbidder.domain.auctionroom.entity.RoomCountByStartAtRow;
 import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -148,6 +155,44 @@ public class AuctionRoomService {
             .toList();
 
         return new AuctionRoomListResponse(targetTime, response);
+
+    }
+
+    public AuctionScheduleResponse getAuctionSchedule(LocalDate fromDate, LocalDate toDate) {
+
+        final int slotMinutes = 30;
+        final int startHour = 9;
+        final int endHour = 21;
+
+        LocalDateTime fromAt = fromDate.atStartOfDay();
+        LocalDateTime toAt = toDate.plusDays(1).atStartOfDay();
+
+        List<RoomCountByStartAtRow> rows =
+            auctionRoomRepository.countRoomsGroupedByStartAt(fromAt, toAt);
+
+        Map<LocalDate, List<AuctionRoomSlotDto>> slotsByDate = new LinkedHashMap<>();
+
+        for (RoomCountByStartAtRow row : rows) {
+            LocalDateTime startAt = row.getStartAt();
+            LocalDate date = startAt.toLocalDate();
+
+            slotsByDate.computeIfAbsent(date, d -> new ArrayList<>())
+                .add(new AuctionRoomSlotDto(startAt, row.getRoomCount().intValue()));
+        }
+
+        // days 리스트로 변환 (정렬 유지)
+        List<AuctionDaysDto> days = slotsByDate.entrySet().stream()
+            .map(e -> new AuctionDaysDto(e.getKey(), e.getValue()))
+            .toList();
+
+        return new AuctionScheduleResponse(
+            fromDate,
+            toDate,
+            slotMinutes,
+            startHour,
+            endHour,
+            days
+        );
 
     }
 }
