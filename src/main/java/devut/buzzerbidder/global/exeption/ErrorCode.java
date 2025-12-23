@@ -90,6 +90,7 @@ public enum ErrorCode {
     LIVEBID_CANNOT_BID_OWN_ITEM("LB001", HttpStatus.CONFLICT, "본인의 경매품에는 입찰할 수 없습니다."),
     LIVEBID_NOT_IN_PROGRESS("LB002", HttpStatus.CONFLICT, "경매 진행중이 아닙니다."),
     LIVEBID_ALREADY_HIGHEST_BIDDER("LB003", HttpStatus.CONFLICT, "현재 최고 입찰자입니다. 다른 입찰 후에 다시 시도해주세요."),
+    UNEXPECTED_REDIS_SCRIPT_RETURN("LB004", HttpStatus.INTERNAL_SERVER_ERROR, "Redis 스크립트 반환 방식이 예상과 다릅니다."),
 
     // ========== Notification 도메인 에러 ==========
     NOTIFICATION_NOT_FOUND("NO001", HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),

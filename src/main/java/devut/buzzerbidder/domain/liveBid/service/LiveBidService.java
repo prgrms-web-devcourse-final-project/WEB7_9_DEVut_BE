@@ -1,22 +1,17 @@
 package devut.buzzerbidder.domain.liveBid.service;
 
-import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.liveBid.dto.LiveBidEvent;
 import devut.buzzerbidder.domain.liveBid.dto.request.LiveBidRequest;
 import devut.buzzerbidder.domain.liveBid.dto.response.LiveBidResponse;
-import devut.buzzerbidder.domain.liveBid.entity.LiveBidLog;
-import devut.buzzerbidder.domain.liveBid.repository.LiveBidRepository;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
-import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +21,6 @@ import java.util.Map;
 @Slf4j
 public class LiveBidService {
 
-    private final UserRepository userRepository;
-    private final LiveBidRepository liveBidRepository;
     private final LiveItemRepository liveItemRepository;
     private final LiveBidRedisService liveBidRedisService;
     private final LiveBidWebSocketService liveBidWebSocketService;
@@ -42,14 +35,14 @@ public class LiveBidService {
 
         validateBidRequest(liveItem, bidder);
 
-        // redis 입찰가 갱신 시도
         String redisKey = REDIS_KEY_PREFIX + request.liveItemId();
 
-        long depositAmount = Math.round(request.bidPrice() * 0.2);
+        long depositAmount = (long) Math.ceil(request.bidPrice() * 0.2);
 
         long sessionTtlSeconds = 60L;
         long balanceTtlSeconds = 600L;
 
+        // redis 입찰가 갱신 시도
         Long result = liveBidRedisService.updateMaxBidPriceAtomicWithDeposit(
                 redisKey,
                 bidder.getId(),
