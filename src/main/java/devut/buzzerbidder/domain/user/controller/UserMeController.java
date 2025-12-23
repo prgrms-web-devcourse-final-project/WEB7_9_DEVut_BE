@@ -72,7 +72,7 @@ public class UserMeController {
         else if(auctionType.equals(AuctionType.DELAYED))
             trackInfo = delayedDealService.track(currentUser, dealId);
 
-        return trackInfo != null ? ApiResponse.ok("배송조회 성공", trackInfo) : ApiResponse.error(ErrorCode.DEAL_DELIVERY_INFO_NOT_FOUND, null);
+        return trackInfo != null ? ApiResponse.ok("배송조회 성공", trackInfo) : ApiResponse.error(ErrorCode.DEAL_DELIVERY_INFO_NOT_FOUND, (DeliveryTrackingResponse) null);
     }
 
     @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 정보를 조회합니다.")
