@@ -23,6 +23,12 @@ public class RequestContext {
 
     @Value("${cookie.domain:#{null}}")
     private String cookieDomain;
+    
+    @Value("${cookie.secure:true}")
+    private boolean cookieSecure;
+    
+    @Value("${cookie.same-site:Lax}")
+    private String cookieSameSite;
 
     public void setHeader(String name, String value) {
         response.setHeader(name, value);
@@ -68,11 +74,18 @@ public class RequestContext {
             cookie.setDomain(domain);
         }
         
-        cookie.setSecure(true);
-        cookie.setAttribute("SameSite", "Strict");
-
-        // 값이 없다면 해당 쿠키변수를 삭제하라는 뜻
-        if (value.isBlank()) {
+        // Secure 설정: 개발 환경에서는 false, 프로덕션에서는 true
+        cookie.setSecure(cookieSecure);
+        
+        // SameSite 설정: OAuth2 리디렉션을 위해 Lax 또는 None 사용
+        // Strict는 크로스 사이트 리디렉션에서 쿠키가 전달되지 않음
+        cookie.setAttribute("SameSite", cookieSameSite);
+        
+        // 쿠키 만료 시간 설정 (기본값: 7일)
+        if (!value.isBlank()) {
+            cookie.setMaxAge(60 * 60 * 24 * 7); // 7일
+        } else {
+            // 값이 없다면 해당 쿠키변수를 삭제하라는 뜻
             cookie.setMaxAge(0);
         }
 
