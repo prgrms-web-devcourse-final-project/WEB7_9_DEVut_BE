@@ -1,8 +1,30 @@
 package devut.buzzerbidder.domain.deal.repository;
 
 import devut.buzzerbidder.domain.deal.entity.LiveDeal;
+import devut.buzzerbidder.domain.user.entity.User;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface LiveDealRepository extends JpaRepository<LiveDeal, Long> {
 
+    @Query("""
+        SELECT ld FROM LiveDeal ld
+        JOIN FETCH ld.item li
+        JOIN FETCH li.images
+        JOIN FETCH ld.buyer
+        WHERE ld.buyer = :buyer
+        ORDER BY ld.createDate DESC
+        """)
+    List<LiveDeal> findByBuyerWithItemAndImages(@Param("buyer") User buyer);
+
+    @Query("""
+        SELECT ld FROM LiveDeal ld
+        JOIN FETCH ld.item li
+        JOIN FETCH li.images
+        JOIN FETCH ld.buyer
+        WHERE ld.id = :dealId
+        """)
+    java.util.Optional<LiveDeal> findByIdWithItemAndImages(@Param("dealId") Long dealId);
 }
