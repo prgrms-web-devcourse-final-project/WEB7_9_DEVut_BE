@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private final AuthTokenService authTokenService;
     private final RequestContext requestContext;
+    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
     @Value("${frontend.base-url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -53,6 +55,22 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         log.info("OAuth2 사용자 인증 완료: userId={}, email={}", user.getId(), user.getEmail());
 
+        // JWT 토큰 생성
+        String accessToken = authTokenService.genAccessToken(user);
+        String refreshToken = authTokenService.genRefreshToken(user);
+
+        log.debug("JWT 토큰 생성 완료");
+
+        // 쿠키에 토큰 설정 (리다이렉트 후에도 유지됨)
+        requestContext.setCookie("accessToken", accessToken);
+        requestContext.setCookie("refreshToken", refreshToken);
+
+        // OAuth2 인증 과정에서 사용한 임시 쿠키 삭제 (stateless 유지)
+        httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
+
+        // SecurityContext 제거 (stateless 유지)
+        SecurityContextHolder.clearContext();
+        
         // 세션 무효화 (stateless 유지)
         // JSESSIONID 쿠키 제거는 SessionCookieRemovalFilter에서 처리됨
         HttpSession session = request.getSession(false);
@@ -61,21 +79,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             session.invalidate();
         }
 
-        // JWT 토큰 생성
-        String accessToken = authTokenService.genAccessToken(user);
-        String refreshToken = authTokenService.genRefreshToken(user);
-
-        log.debug("JWT 토큰 생성 완료");
-
-        // 헤더에 토큰 설정
-        requestContext.setHeader("Authorization", "Bearer " + accessToken);
-        requestContext.setHeader("Refresh-Token", refreshToken);
-
-        // 쿠키에 토큰 설정
-        requestContext.setCookie("accessToken", accessToken);
-        requestContext.setCookie("refreshToken", refreshToken);
-
-        // 프론트엔드로 리다이렉트
+        // 프론트엔드로 리다이렉트 (쿠키에 토큰이 포함되어 있음)
         String redirectUrl = frontendBaseUrl + "/oauth2/success";
         log.info("OAuth2 로그인 성공, 프론트엔드로 리다이렉트: userId={}, redirectUrl={}", user.getId(), redirectUrl);
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
