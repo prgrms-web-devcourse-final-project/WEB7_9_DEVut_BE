@@ -32,7 +32,7 @@ public class NotificationService {
      * @param resourceId 리소스 ID (선택)
      * @param metadata 추가 메타데이터 (선택)
      */
-    @Transactional
+    @Transactional(readOnly = false)
     public Notification createAndSend(
         long userId,
         NotificationType type,
@@ -72,7 +72,7 @@ public class NotificationService {
     /**
      * 여러 사용자에게 동시 알림 발송
      */
-    @Transactional
+    @Transactional(readOnly = false)
     public List<Notification> createAndSendToMultiple(
         List<Long> userIds,
         NotificationType type,
@@ -129,7 +129,7 @@ public class NotificationService {
      * 사용자의 읽지 않은 알림 조회
      */
     public List<NotificationDto> getUnreadNotifications(Long userId) {
-        return repository.findByUserIdAndCheckFalseOrderByCreateDateDesc(userId)
+        return repository.findByUserIdAndIsCheckedFalseOrderByCreateDateDesc(userId)
             .stream()
             .map(NotificationDto::from)
             .toList();
@@ -139,13 +139,13 @@ public class NotificationService {
      * 읽지 않은 알림 개수 조회
      */
     public Long getUnreadCount(Long userId) {
-        return repository.countByUserIdAndCheckFalse(userId);
+        return repository.countByUserIdAndIsCheckedFalse(userId);
     }
 
     /**
      * 알림 읽음 처리
      */
-    @Transactional
+    @Transactional(readOnly = false)
     public void markAsRead(Long notificationId, Long userId) {
         Notification notification = repository.findById(notificationId)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND));
@@ -154,14 +154,14 @@ public class NotificationService {
             throw new BusinessException(ErrorCode.NOTIFICATION_FORBIDDEN);
         }
 
-        notification.markAsCheck();
+        notification.markAsChecked();
         repository.save(notification);
     }
 
     /**
      * 알림 삭제
      */
-    @Transactional
+    @Transactional(readOnly = false)
     public void deleteNotification(Long notificationId, Long userId) {
         Notification notification = repository.findById(notificationId)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND));
