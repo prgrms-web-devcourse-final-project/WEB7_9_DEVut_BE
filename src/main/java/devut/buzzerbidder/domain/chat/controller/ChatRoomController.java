@@ -6,6 +6,7 @@ import devut.buzzerbidder.domain.chat.service.ChatRoomService;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
 import devut.buzzerbidder.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,12 +15,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/chatrooms")
+@Tag(name = "ChatRoom", description = "채팅방 API")
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
     private final RequestContext requestContext;
 
     @PutMapping("/{auctionId}/enter")
+    @Operation(summary = "경매방 채팅 입장", description = "특정 경매방의 채팅방에 입장합니다.")
     public ApiResponse<AuctionChatEnterResponse> enterAuctionChat(
             @PathVariable Long auctionId) {
 
@@ -38,6 +41,7 @@ public class ChatRoomController {
     }
 
     @DeleteMapping("/auction/{auctionId}/exit")
+    @Operation(summary = "경매방 채팅 퇴장", description = "특정 경매방의 채팅방에서 퇴장합니다.")
     public ApiResponse<Void> exitAuctionChat(
             @PathVariable Long auctionId
     ) {

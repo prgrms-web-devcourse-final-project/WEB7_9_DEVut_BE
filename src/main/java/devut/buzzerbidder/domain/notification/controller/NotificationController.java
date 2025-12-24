@@ -6,6 +6,8 @@ import devut.buzzerbidder.domain.notification.dto.NotificationListResponse;
 import devut.buzzerbidder.domain.notification.service.NotificationService;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
 import devut.buzzerbidder.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,12 +20,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/notifications")
+@Tag(name = "Notification", description = "알림 API")
 public class NotificationController {
 
     private final NotificationService notificationService;
     private final RequestContext requestContext;
 
     @GetMapping
+    @Operation(summary = "알림 목록 조회", description = "현재 사용자의 모든 알림 목록을 조회합니다.")
     public ApiResponse<NotificationListResponse> getNotifications() {
         User user = requestContext.getCurrentUser();
         List<NotificationDto> notifications = notificationService.getNotifications(user.getId());
@@ -36,6 +40,7 @@ public class NotificationController {
     }
 
     @GetMapping("/unread")
+    @Operation(summary = "읽지 않은 알림 조회", description = "현재 사용자의 읽지 않은 알림 목록을 조회합니다.")
     public ApiResponse<NotificationListResponse> getUnreadNotifications() {
         User user = requestContext.getCurrentUser();
         List<NotificationDto> notifications = notificationService.getUnreadNotifications(user.getId());
@@ -48,6 +53,7 @@ public class NotificationController {
     }
 
     @GetMapping("/unread/count")
+    @Operation(summary = "읽지 않은 알림 개수 조회", description = "현재 사용자의 읽지 않은 알림 개수를 조회합니다.")
     public ApiResponse<Long> getUnreadCount() {
         User user = requestContext.getCurrentUser();
         Long count = notificationService.getUnreadCount(user.getId());
@@ -56,6 +62,7 @@ public class NotificationController {
     }
 
     @PatchMapping("/{id}/read")
+    @Operation(summary = "알림 읽음 처리", description = "특정 알림을 읽음 처리합니다.")
     public ApiResponse<Void> markAsRead(@PathVariable Long id) {
         User user = requestContext.getCurrentUser();
         notificationService.markAsRead(id, user.getId());
@@ -64,6 +71,7 @@ public class NotificationController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "알림 삭제", description = "특정 알림을 삭제합니다.")
     public ApiResponse<Void> deleteNotification(@PathVariable Long id) {
         User user = requestContext.getCurrentUser();
         notificationService.deleteNotification(id, user.getId());

@@ -106,6 +106,10 @@ public class LiveItem extends BaseEntity {
     @Column(name = "preferred_place", length = 100)
     private String preferredPlace;
 
+    // 대표이미지URL
+    @Column(name = "thumbnail", length = 512)
+    private String thumbnail;
+
     @BatchSize(size = 50)
     @OneToMany(mappedBy = "liveItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -135,6 +139,7 @@ public class LiveItem extends BaseEntity {
         this.region = request.region();
         this.preferredPlace = request.preferredPlace();
         this.images = new ArrayList<>();
+        this.thumbnail = request.images().getFirst();
     }
 
 
@@ -149,6 +154,7 @@ public class LiveItem extends BaseEntity {
         this.directDealAvailable = request.directDealAvailable();
         this.region = request.region();
         this.preferredPlace = request.preferredPlace();
+        this.thumbnail = request.images().getFirst();
     }
 
     public void changeAuctionStatus(AuctionStatus auctionStatus) {

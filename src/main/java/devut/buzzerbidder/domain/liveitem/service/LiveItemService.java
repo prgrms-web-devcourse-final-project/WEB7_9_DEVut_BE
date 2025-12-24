@@ -261,7 +261,7 @@ public class LiveItemService {
 
             // S3에서 삭제
             if (!toDelete.isEmpty()) {
-                imageService.deleteFiles(toDelete);
+                //imageService.deleteFiles(toDelete);
             }
 
         } catch (InterruptedException e) {
@@ -399,7 +399,7 @@ public class LiveItemService {
                             item.id(),
                             item.name(),
                             item.image(),
-                            item.liveTime(),
+                            item.startAt(),
                             item.auctionStatus(),
                             currentMaxBidPrice
                     );
@@ -429,26 +429,23 @@ public class LiveItemService {
     public LiveItemListResponse getHotLiveItems(int limit) {
 
         Pageable pageable = PageRequest.of(0, limit);
-        List<Long> ids = liveItemRepository.findHotLiveItems(pageable);
+        List<LiveItemResponse> beforeBidPrice = liveItemRepository.findHotLiveItems(pageable);
 
-        List<LiveItem> items = liveItemRepository.findLiveItemsWithImages(ids);
-
-
-        List<LiveItemResponse> dtoList = items.stream()
+        List<LiveItemResponse> dtoList = beforeBidPrice.stream()
                 .map(item -> {
-                    String redisKey = "liveItem:" + item.getId();
+                    String redisKey = "liveItem:" + item.id();
                     String maxBidPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
 
                     Long currentMaxBidPrice = (maxBidPriceStr != null)
                             ? Long.parseLong(maxBidPriceStr)
-                            : item.getInitPrice(); // DB 값 fallback
+                            : item.currentPrice(); // DB 값 fallback
 
                     return new LiveItemResponse(
-                            item.getId(),
-                            item.getName(),
-                            item.getImages().get(0).getImageUrl(),
-                            item.getLiveTime(),
-                            item.getAuctionStatus(),
+                            item.id(),
+                            item.name(),
+                            item.image(),
+                            item.startAt(),
+                            item.auctionStatus(),
                             currentMaxBidPrice
                     );
                 })

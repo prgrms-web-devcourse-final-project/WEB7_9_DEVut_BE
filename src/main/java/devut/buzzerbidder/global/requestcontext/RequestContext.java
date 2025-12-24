@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,9 @@ import org.springframework.stereotype.Component;
 public class RequestContext {
     private final HttpServletRequest request;
     private final HttpServletResponse response;
+
+    @Value("${cookie.domain:#{null}}")
+    private String cookieDomain;
 
     public void setHeader(String name, String value) {
         response.setHeader(name, value);
@@ -51,7 +55,19 @@ public class RequestContext {
         Cookie cookie = new Cookie(name, value);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
-        cookie.setDomain("localhost");
+        
+        // 도메인 설정: 환경 변수가 있으면 사용, 없으면 요청의 서버명 사용
+        // localhost인 경우에는 도메인을 설정하지 않음 (브라우저가 자동으로 처리)
+        String domain = cookieDomain != null && !cookieDomain.isBlank() 
+            ? cookieDomain 
+            : (request.getServerName() != null && !request.getServerName().equals("localhost") 
+                ? request.getServerName() 
+                : null);
+        
+        if (domain != null && !domain.isBlank()) {
+            cookie.setDomain(domain);
+        }
+        
         cookie.setSecure(true);
         cookie.setAttribute("SameSite", "Strict");
 
