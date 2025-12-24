@@ -100,11 +100,12 @@ public class UserMeController {
     @GetMapping("/items")
     public ApiResponse<MyItemListResponse> getMyItems(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "15") int size
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String type
     ) {
         Pageable pageable = PageRequest.of(page - 1, size);
         User currentUser = requestContext.getCurrentUser();
-        MyItemListResponse response = userService.getMyItems(currentUser, pageable);
+        MyItemListResponse response = userService.getMyItems(currentUser, pageable, type);
         return ApiResponse.ok("물품 목록 조회 성공", response);
     }
 
@@ -112,19 +113,25 @@ public class UserMeController {
     @GetMapping("/likes")
     public ApiResponse<MyItemListResponse> getMyLikedItems(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "15") int size
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String type
     ) {
         Pageable pageable = PageRequest.of(page - 1, size);
         User currentUser = requestContext.getCurrentUser();
-        MyItemListResponse response = userService.getMyLikedItems(currentUser, pageable);
+        MyItemListResponse response = userService.getMyLikedItems(currentUser, pageable, type);
         return ApiResponse.ok("물품 목록 조회 성공", response);
     }
 
     @Operation(summary = "거래 내역 목록 조회", description = "현재 로그인한 사용자의 거래 내역 목록을 조회합니다.")
     @GetMapping("/deals")
-    public ApiResponse<UserDealListResponse> getMyDeals() {
+    public ApiResponse<UserDealListResponse> getMyDeals(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String type
+    ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
         User currentUser = requestContext.getCurrentUser();
-        UserDealListResponse response = userDealService.getUserDeals(currentUser);
+        UserDealListResponse response = userDealService.getUserDeals(currentUser, pageable, type);
         return ApiResponse.ok("경매 거래 내역 목록 조회 성공", response);
     }
 

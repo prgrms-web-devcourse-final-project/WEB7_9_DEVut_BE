@@ -27,4 +27,13 @@ public interface LiveDealRepository extends JpaRepository<LiveDeal, Long> {
         WHERE ld.id = :dealId
         """)
     java.util.Optional<LiveDeal> findByIdWithItemAndImages(@Param("dealId") Long dealId);
+
+    @Query("""
+        SELECT DISTINCT ld FROM LiveDeal ld
+        JOIN FETCH ld.item li
+        JOIN FETCH li.images
+        JOIN FETCH ld.buyer
+        WHERE ld.id IN :ids
+        """)
+    List<LiveDeal> findByIdsWithItemAndImages(@Param("ids") List<Long> ids);
 }

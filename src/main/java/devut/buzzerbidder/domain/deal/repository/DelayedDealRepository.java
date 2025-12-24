@@ -32,4 +32,13 @@ public interface DelayedDealRepository extends JpaRepository<DelayedDeal, Long> 
         WHERE dd.id = :dealId
         """)
     java.util.Optional<DelayedDeal> findByIdWithItemAndImages(@Param("dealId") Long dealId);
+
+    @Query("""
+        SELECT DISTINCT dd FROM DelayedDeal dd
+        JOIN FETCH dd.item di
+        JOIN FETCH di.images
+        JOIN FETCH dd.buyer
+        WHERE dd.id IN :ids
+        """)
+    List<DelayedDeal> findByIdsWithItemAndImages(@Param("ids") List<Long> ids);
 }
