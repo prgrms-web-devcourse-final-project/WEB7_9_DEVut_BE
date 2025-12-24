@@ -40,14 +40,10 @@ public class AuctionRoomService {
         List<AuctionRoom> rooms = auctionRoomRepository.findAllByLiveTime(liveTime);
 
         AuctionRoom targetRoom = null;
-        boolean hasOpenRoom = false;
+
 
         // 순회하면서 OPEN 있는지 검사 + roomIndex로 방찾기
         for (AuctionRoom room : rooms) {
-
-            if (room.getRoomStatus() == RoomStatus.OPEN) {
-                hasOpenRoom = true;
-            }
 
             if (room.getRoomIndex() == (roomIndex)) {
                 targetRoom = room;
@@ -66,8 +62,8 @@ public class AuctionRoomService {
             }
         }
 
-        // 해당 시간 경매방이 5개이상 + OPEN 상태인 방이 없음
-        if (rooms.size() >= 5 && !hasOpenRoom) {
+        // 해당 시간 경매방이 5개이상
+        if (rooms.size() >= 5) {
             throw new BusinessException(ErrorCode.AUCTION_ROOM_ASSIGN_UNAVAILABLE);
         }
 
