@@ -59,6 +59,13 @@ public class DelayedBidService {
             throw new BusinessException(ErrorCode.BID_PRICE_TOO_LOW);
         }
 
+        // 4-1. 즉시 구매가 이상 입찰시 즉시 구매 처리
+        if (delayedItem.hasBuyNowPrice()
+            && request.bidPrice() >= delayedItem.getBuyNowPrice()) {
+
+            return buyNow(delayedItemId, user);
+        }
+
         // 5. 코인 잔액 확인
         if (!walletService.hasEnoughBizz(user, request.bidPrice())) {
             throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);

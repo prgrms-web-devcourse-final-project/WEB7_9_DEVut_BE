@@ -9,7 +9,8 @@ public enum WalletTransactionType {
     CHARGE(true),              // 충전
     REFUND(true),              // 취소/실패 환불
     BID_REFUND(true),          // 입찰 실패 시 환불
-    RECEIVE_FROM_USER(true),   // 다른 유저에게서 받음
+    RECEIVE_FROM_USER(true),   // 다른 유저에게서 받음,
+    DEAL_SETTLEMENT(true),     // 경매/즉시구매 판매자 정산
     ADMIN_GRANT(true),         // 관리자 지급
 
     // 감소 계열
