@@ -25,7 +25,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private final AuthTokenService authTokenService;
     private final RequestContext requestContext;
-    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
     @Value("${frontend.base-url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -62,17 +61,17 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         log.debug("JWT 토큰 생성 완료");
 
         // 쿠키에 토큰 설정 (리다이렉트 후에도 유지됨)
+        log.info("쿠키 설정 시작: accessToken 길이={}, refreshToken 길이={}",
+                accessToken != null ? accessToken.length() : 0,
+                refreshToken != null ? refreshToken.length() : 0);
         requestContext.setCookie("accessToken", accessToken);
         requestContext.setCookie("refreshToken", refreshToken);
+        log.info("쿠키 설정 완료: requestURI={}, serverName={}",
+                request.getRequestURI(), request.getServerName());
 
-        // OAuth2 인증 과정에서 사용한 임시 쿠키 삭제 (stateless 유지)
-        httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
-
-        // SecurityContext 제거 (stateless 유지)
         SecurityContextHolder.clearContext();
         
         // 세션 무효화 (stateless 유지)
-        // JSESSIONID 쿠키 제거는 SessionCookieRemovalFilter에서 처리됨
         HttpSession session = request.getSession(false);
         if (session != null) {
             log.debug("OAuth2 로그인 중 생성된 세션 무효화");

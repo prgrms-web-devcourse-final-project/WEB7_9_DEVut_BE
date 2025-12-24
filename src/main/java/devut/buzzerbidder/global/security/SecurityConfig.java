@@ -27,9 +27,7 @@ public class SecurityConfig {
     private final CustomAuthenticationFilter customAuthenticationFilter;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
-    private final SessionCookieRemovalFilter sessionCookieRemovalFilter;
     private final ApplicationContext applicationContext;
-    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
 
     @Bean
@@ -64,7 +62,6 @@ public class SecurityConfig {
                 .anyRequest().permitAll() // 임시로 모든 요청 허용
             )
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-            .addFilterAfter(sessionCookieRemovalFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         try {
@@ -73,10 +70,6 @@ public class SecurityConfig {
             if (clientRegistrationRepository != null) {
                 // OAuth2 로그인 설정: 세션 대신 쿠키를 사용하여 STATELESS 환경 유지
                 http.oauth2Login(oauth2 -> oauth2
-                    .authorizationEndpoint(authorization -> authorization
-                        // 인증 요청 정보를 세션 대신 쿠키에 저장
-                        .authorizationRequestRepository(httpCookieOAuth2AuthorizationRequestRepository)
-                    )
                     .userInfoEndpoint(userInfo -> userInfo
                         .userService(customOAuth2UserService)
                     )
