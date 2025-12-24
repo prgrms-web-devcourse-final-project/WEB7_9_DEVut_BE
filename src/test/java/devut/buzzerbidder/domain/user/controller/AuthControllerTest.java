@@ -414,6 +414,39 @@ class AuthControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @DisplayName("로그아웃 API 성공")
+    void signOut_Success() throws Exception {
+        // given
+        User user = userRepository.save(createUser("test@example.com", "hong123"));
+        String accessToken = authTokenService.genAccessToken(user);
+        String refreshToken = authTokenService.genRefreshToken(user);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/users/signout")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", refreshToken)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("로그아웃에 성공했습니다."))
+                .andExpect(cookie().exists("accessToken"))
+                .andExpect(cookie().exists("refreshToken"));
+
+        // Redis에서 refresh token이 삭제되었는지 확인
+        // refreshTokenService.getRefreshToken()이 없다면 직접 확인 불가능하지만,
+        // deleteRefreshToken이 호출되었는지는 서비스 로직에서 확인 가능
+    }
+
+    @Test
+    @DisplayName("로그아웃 API 실패 - 인증 없음")
+    void signOut_Fail_Unauthorized() throws Exception {
+        // when & then
+        mockMvc.perform(post("/api/v1/users/signout"))
+                .andDo(print())
+                .andExpect(status().isUnauthorized());
+    }
+
     /**
      * 테스트용 이메일 인증 완료 처리
      * 회원가입 테스트에서 이메일 인증이 완료된 상태로 만들어줍니다.
