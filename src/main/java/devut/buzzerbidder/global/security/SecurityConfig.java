@@ -13,8 +13,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.context.NullSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -31,6 +29,7 @@ public class SecurityConfig {
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final SessionCookieRemovalFilter sessionCookieRemovalFilter;
     private final ApplicationContext applicationContext;
+    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
 
 
     @Bean
@@ -58,35 +57,34 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(sessionManagement  -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
                 .anyRequest().permitAll() // 임시로 모든 요청 허용
             )
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-            .addFilterBefore(sessionCookieRemovalFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(sessionCookieRemovalFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // OAuth2 ClientRegistrationRepository가 있을 때만 OAuth2 로그인 활성화
         try {
             ClientRegistrationRepository clientRegistrationRepository =
                 applicationContext.getBean(ClientRegistrationRepository.class);
             if (clientRegistrationRepository != null) {
-                // OAuth2 로그인 시 세션을 사용하지 않도록 설정
-                SecurityContextRepository securityContextRepository = new NullSecurityContextRepository();
+                // OAuth2 로그인 설정: 세션 대신 쿠키를 사용하여 STATELESS 환경 유지
                 http.oauth2Login(oauth2 -> oauth2
+                    .authorizationEndpoint(authorization -> authorization
+                        // 인증 요청 정보를 세션 대신 쿠키에 저장
+                        .authorizationRequestRepository(httpCookieOAuth2AuthorizationRequestRepository)
+                    )
                     .userInfoEndpoint(userInfo -> userInfo
                         .userService(customOAuth2UserService)
                     )
                     .successHandler(oAuth2SuccessHandler)
-                    // OAuth2 로그인 플로우에서도 세션을 사용하지 않도록 명시
-                    .securityContextRepository(securityContextRepository)
                 );
             }
         } catch (org.springframework.beans.factory.NoSuchBeanDefinitionException e) {
-            // OAuth2 설정이 없으면 OAuth2 로그인을 비활성화 (테스트 환경 등)
         }
-        http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
         return http.build();
     }
