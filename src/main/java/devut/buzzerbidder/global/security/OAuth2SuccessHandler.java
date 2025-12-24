@@ -1,8 +1,7 @@
 package devut.buzzerbidder.global.security;
 
 import devut.buzzerbidder.domain.user.entity.User;
-import devut.buzzerbidder.domain.user.service.AuthTokenService;
-import devut.buzzerbidder.global.requestcontext.RequestContext;
+import devut.buzzerbidder.domain.user.service.OAuth2TempTokenService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,8 +22,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private final AuthTokenService authTokenService;
-    private final RequestContext requestContext;
+    private final OAuth2TempTokenService oAuth2TempTokenService;
 
     @Value("${frontend.base-url:http://localhost:3000}")
     private String frontendBaseUrl;
@@ -54,20 +52,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         log.info("OAuth2 사용자 인증 완료: userId={}, email={}", user.getId(), user.getEmail());
 
-        // JWT 토큰 생성
-        String accessToken = authTokenService.genAccessToken(user);
-        String refreshToken = authTokenService.genRefreshToken(user);
-
-        log.debug("JWT 토큰 생성 완료");
-
-        // 쿠키에 토큰 설정 (리다이렉트 후에도 유지됨)
-        log.info("쿠키 설정 시작: accessToken 길이={}, refreshToken 길이={}",
-                accessToken != null ? accessToken.length() : 0,
-                refreshToken != null ? refreshToken.length() : 0);
-        requestContext.setCookie("accessToken", accessToken);
-        requestContext.setCookie("refreshToken", refreshToken);
-        log.info("쿠키 설정 완료: requestURI={}, serverName={}",
-                request.getRequestURI(), request.getServerName());
+        // 임시 토큰 생성 (배포 환경에서 다른 도메인 간 쿠키 공유 문제 해결)
+        String tempToken = oAuth2TempTokenService.generateTempToken(user.getId());
+        log.info("OAuth2 임시 토큰 생성 완료: userId={}, tempToken={}", user.getId(), tempToken);
 
         SecurityContextHolder.clearContext();
         
@@ -78,8 +65,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             session.invalidate();
         }
 
-        // 프론트엔드로 리다이렉트 (쿠키에 토큰이 포함되어 있음)
-        String redirectUrl = frontendBaseUrl + "/oauth2/success";
+        // 프론트엔드로 리다이렉트 (임시 토큰을 URL 파라미터로 전달)
+        String redirectUrl = frontendBaseUrl + "/oauth2/success?tempToken=" + tempToken;
         log.info("OAuth2 로그인 성공, 프론트엔드로 리다이렉트: userId={}, redirectUrl={}", user.getId(), redirectUrl);
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
