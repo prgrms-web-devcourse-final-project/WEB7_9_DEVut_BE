@@ -13,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.NullSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -27,6 +29,7 @@ public class SecurityConfig {
     private final CustomAuthenticationFilter customAuthenticationFilter;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final SessionCookieRemovalFilter sessionCookieRemovalFilter;
     private final ApplicationContext applicationContext;
 
 
@@ -61,6 +64,7 @@ public class SecurityConfig {
                 .anyRequest().permitAll() // 임시로 모든 요청 허용
             )
             .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+            .addFilterBefore(sessionCookieRemovalFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         // OAuth2 ClientRegistrationRepository가 있을 때만 OAuth2 로그인 활성화
@@ -68,11 +72,15 @@ public class SecurityConfig {
             ClientRegistrationRepository clientRegistrationRepository =
                 applicationContext.getBean(ClientRegistrationRepository.class);
             if (clientRegistrationRepository != null) {
+                // OAuth2 로그인 시 세션을 사용하지 않도록 설정
+                SecurityContextRepository securityContextRepository = new NullSecurityContextRepository();
                 http.oauth2Login(oauth2 -> oauth2
                     .userInfoEndpoint(userInfo -> userInfo
                         .userService(customOAuth2UserService)
                     )
                     .successHandler(oAuth2SuccessHandler)
+                    // OAuth2 로그인 플로우에서도 세션을 사용하지 않도록 명시
+                    .securityContextRepository(securityContextRepository)
                 );
             }
         } catch (org.springframework.beans.factory.NoSuchBeanDefinitionException e) {

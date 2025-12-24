@@ -4,8 +4,10 @@ import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +53,20 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
 
         log.info("OAuth2 사용자 인증 완료: userId={}, email={}", user.getId(), user.getEmail());
+
+        // 세션 무효화 및 JSESSIONID 쿠키 제거 (stateless 유지)
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            log.debug("OAuth2 로그인 중 생성된 세션 무효화");
+            session.invalidate();
+        }
+
+        // JSESSIONID 쿠키 제거
+        Cookie jsessionCookie = new Cookie("JSESSIONID", null);
+        jsessionCookie.setPath("/");
+        jsessionCookie.setMaxAge(0);
+        jsessionCookie.setHttpOnly(true);
+        response.addCookie(jsessionCookie);
 
         // JWT 토큰 생성
         String accessToken = authTokenService.genAccessToken(user);
