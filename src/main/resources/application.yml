@@ -65,16 +65,17 @@ toss:
   secret-key: ${TOSS_SECRET_KEY}
 
 ---
+
 # 모니터링 설정
 management:
   endpoints:
     web:
       exposure:
         include: health,prometheus
-
   metrics:
     tags:
       application: buzzerbidder
+      env: ${spring.profiles.active}
     distribution:
       percentiles-histogram:
         http.server.requests: true
