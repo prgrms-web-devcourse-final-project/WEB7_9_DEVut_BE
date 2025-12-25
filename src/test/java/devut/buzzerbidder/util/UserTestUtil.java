@@ -1,10 +1,10 @@
 package devut.buzzerbidder.util;
 
+import devut.buzzerbidder.domain.user.entity.Provider;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
-import devut.buzzerbidder.domain.wallet.entity.Wallet;
-import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
@@ -18,17 +18,20 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class UserTestUtil {
 
     private final UserRepository userRepository;
+    private final ProviderRepository providerRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenService authTokenService;
     private final WalletService walletService;
 
     public UserTestUtil(
             UserRepository userRepository,
+            ProviderRepository providerRepository,
             PasswordEncoder passwordEncoder,
             AuthTokenService authTokenService,
             WalletService walletService
     ) {
         this.userRepository = userRepository;
+        this.providerRepository = providerRepository;
         this.passwordEncoder = passwordEncoder;
         this.authTokenService = authTokenService;
         this.walletService = walletService;
@@ -36,6 +39,8 @@ public class UserTestUtil {
 
     /**
      * 회원을 생성하고 User 엔티티를 반환하는 메서드
+     * 기존 사용자가 있으면 삭제 후 새로 생성합니다.
+     * 지갑과 EMAIL Provider도 함께 생성합니다.
      * 
      * @param email 이메일
      * @param password 비밀번호
@@ -44,6 +49,9 @@ public class UserTestUtil {
      * @return 생성된 User 엔티티
      */
     public User createUser(String email, String password, String nickname, String profileImageUrl) {
+        // 기존 사용자 삭제 (중복 방지)
+        userRepository.findByEmail(email).ifPresent(userRepository::delete);
+
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(password);
 
@@ -57,6 +65,16 @@ public class UserTestUtil {
                 .build();
 
         User savedUser = userRepository.save(user);
+        
+        // EMAIL Provider 생성
+        Provider provider = Provider.builder()
+                .providerType(Provider.ProviderType.EMAIL)
+                .providerId(savedUser.getEmail())
+                .user(savedUser)
+                .build();
+        providerRepository.save(provider);
+        
+        // 지갑 생성
         walletService.createWallet(savedUser);
 
         return savedUser;

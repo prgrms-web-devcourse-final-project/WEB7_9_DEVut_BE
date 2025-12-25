@@ -34,13 +34,13 @@ spring:
   data:
     redis:
       timeout: 1000ms
-  
-  # 메일 설정 (테스트 환경용)
+
+  # 이메일 설정 (테스트 환경용 더미 값)
   mail:
-    host: localhost
+    host: smtp.test.com
     port: 587
     username: test@test.com
-    password: test
+    password: test-password
     properties:
       mail:
         smtp:
@@ -48,21 +48,19 @@ spring:
           starttls:
             enable: false
 
-# 로깅 설정 - Hibernate 스키마 관리 경고 메시지 숨기기
-logging:
-  level:
-    org.hibernate.tool.schema.spi.ExceptionHandlerLoggedImpl: ERROR
-    org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase: ERROR
-
-  # Redis 설정 (Testcontainers가 동적으로 설정합니다)
-  data:
-    redis:
-      timeout: 1000ms
-
   # OAuth2 자동 설정 비활성화 (테스트 환경에서는 OAuth2를 사용하지 않음)
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientWebSecurityAutoConfiguration
+
+# 로깅 설정 - Hibernate 스키마 관리 경고 메시지 숨기기
+logging:
+  level:
+    org.hibernate.tool.schema: WARN  # 스키마 관리 관련 경고 억제
+    org.hibernate.tool.schema.spi.ExceptionHandlerLoggedImpl: ERROR
+    org.hibernate.tool.schema.internal.exec.GenerationTargetToDatabase: ERROR
+    org.hibernate.tool.schema.internal: WARN  # 스키마 내부 경고 억제
+    org.hibernate.engine.jdbc.env.internal: WARN  # JDBC 환경 관련 경고 억제
 
 # 서버 설정
 server:
@@ -78,9 +76,6 @@ custom:
     secretPattern: test-secret-key-for-jwt-token-generation-minimum-256-bits-long-for-security
     expireSeconds: 1800  # 30분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)
-  email:
-    verification:
-      subject: "테스트 이메일 인증 코드"
 # AWS S3 설정 (테스트 환경용 더미 값)
 cloud:
   aws:
@@ -94,4 +89,4 @@ cloud:
 
 # 토스 설정
 toss:
-  secret-key: ${TOSS_SECRET_KEY}
+  secret-key: test-secret-key

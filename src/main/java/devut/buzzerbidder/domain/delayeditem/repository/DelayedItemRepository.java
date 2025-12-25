@@ -1,8 +1,10 @@
 package devut.buzzerbidder.domain.delayeditem.repository;
 
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.Category;
 import jakarta.persistence.LockModeType;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -40,11 +42,20 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
     @Query("""
         SELECT di.id FROM DelayedItem di
         LEFT JOIN LikeDelayed ld ON ld.delayedItem = di
-        WHERE di.auctionStatus = 'IN_PROGRESS'
+        WHERE di.auctionStatus IN ('BEFORE_BIDDING', 'IN_PROGRESS')
         GROUP BY di.id
         ORDER BY COUNT(ld.id) DESC
         """)
     List<Long> findHotDelayedItems(Pageable pageable);
+
+    @Query("""
+        SELECT di.id FROM DelayedItem di
+        LEFT JOIN DelayedBidLog db ON db.delayedItem = di
+        WHERE di.auctionStatus = 'IN_PROGRESS'
+        GROUP BY di.id
+        ORDER BY COUNT(db.id) DESC
+        """)
+    List<Long> findMostBiddedDelayedItems(Pageable pageable);
 
     @Query("""
         SELECT DISTINCT di FROM DelayedItem di
@@ -57,5 +68,17 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT di FROM DelayedItem di WHERE di.id = :id")
     Optional<DelayedItem> findByIdWithLock(@Param("id") Long id);
+
+    // 스케쥴러용: 종료 시간이 지난 경매 조회
+    @Query("""
+        SELECT di.id FROM DelayedItem di
+        WHERE di.auctionStatus IN :statuses
+        AND di.endTime < :endTime
+        ORDER BY di.endTime ASC
+        """)
+    List<Long> findIdsByAuctionStatusInAndEndTimeBefore(
+        List<AuctionStatus> statuses,
+        LocalDateTime endTime
+    );
 
 }

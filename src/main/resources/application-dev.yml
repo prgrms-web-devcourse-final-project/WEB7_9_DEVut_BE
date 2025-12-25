@@ -14,7 +14,6 @@ spring:
       settings:
         web-allow-others: true
         trace: false
-  
   # JPA 설정
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
@@ -136,6 +135,9 @@ custom:
     expireSeconds: 1800  # 30분 (초)
     shortExpireSeconds: 600  # 10분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)
+  # OAuth2 임시 토큰 설정
+  oauth2:
+    tempTokenExpireSeconds: 300  # 5분 (초)
   # 이메일 인증 설정
   email:
     verification:
@@ -149,8 +151,8 @@ custom:
         replicas: 1
 
 delivery:
-  client-id: ${DELIVERY_CLIENT_ID}
-  client-secret: ${DELIVERY_CLIENT_SECRET}
+  client-id: ${DELIVERY_CLIENT_ID:your-client-key}
+  client-secret: ${DELIVERY_CLIENT_SECRET:your-secret-key}
 
 # AWS S3 설정
 cloud:
@@ -169,6 +171,17 @@ springdoc:
     enabled: true
     display-request-duration: true
     doc-expansion: list
+
+  # Doppler 설정 (선택적)
+doppler:
+  enabled: ${DOPPLER_ENABLED:true}
+  token: ${DOPPLER_TOKEN:}
+  project: ${DOPPLER_PROJECT:buzzerbidder}
+  config: ${DOPPLER_CONFIG:dev_main}
+
+# 프론트엔드 설정
+frontend:
+  base-url: http://localhost:3000
 
 # 토스 설정
 toss:

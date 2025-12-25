@@ -11,6 +11,7 @@ import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -36,7 +37,7 @@ public class DelayedItemController {
     @PostMapping
     @Operation(summary = "지연 경매 생성")
     public ApiResponse<DelayedItemResponse> createDelayedItem(
-        @RequestBody DelayedItemCreateRequest reqbody,
+        @Valid @RequestBody DelayedItemCreateRequest reqbody,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         DelayedItemResponse response = delayedItemService.writeDelayedItem(reqbody, userDetails.getUser());
@@ -48,7 +49,7 @@ public class DelayedItemController {
     @Operation(summary = "지연 경매 정보 수정")
     public ApiResponse<DelayedItemResponse> modifyDelayedItem(
         @PathVariable Long id,
-        @RequestBody DelayedItemModifyRequest reqBody,
+        @Valid @RequestBody DelayedItemModifyRequest reqBody,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         DelayedItemResponse response = delayedItemService.modifyDelayedItem(id, reqBody, userDetails.getUser());
@@ -94,10 +95,20 @@ public class DelayedItemController {
     @GetMapping("/hot")
     @Operation(summary = "인기 지연 경매 조회")
     public ApiResponse<DelayedItemListResponse> getHotDelayedItems(
-        @RequestParam(defaultValue = "3") int limit
+        @RequestParam(defaultValue = "4") int limit
     ) {
         DelayedItemListResponse response = delayedItemService.getHotDelayedItems(limit);
 
         return ApiResponse.ok("인기 지연 경매 조회", response);
+    }
+
+    @GetMapping("/most-bidded")
+    @Operation(summary = "입찰 경쟁 지연 경매 조회")
+    public ApiResponse<DelayedItemListResponse> getMostBiddedDelayedItems(
+        @RequestParam(defaultValue = "4") int limit
+    ) {
+        DelayedItemListResponse response = delayedItemService.getMostBiddedDelayedItems(limit);
+
+        return ApiResponse.ok("입찰 경쟁 지연 경매 조회", response);
     }
 }

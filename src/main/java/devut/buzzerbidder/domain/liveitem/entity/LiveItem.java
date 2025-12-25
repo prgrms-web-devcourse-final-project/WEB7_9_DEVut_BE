@@ -5,15 +5,7 @@ import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -34,6 +26,9 @@ import org.hibernate.annotations.BatchSize;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "live_item", indexes = {
+        @Index(name = "idx_liveitem_status_time", columnList = "auctionStatus, liveTime")
+})
 public class LiveItem extends BaseEntity {
 
     @Column(name = "seller_user_id", nullable = false)
@@ -111,6 +106,10 @@ public class LiveItem extends BaseEntity {
     @Column(name = "preferred_place", length = 100)
     private String preferredPlace;
 
+    // 대표이미지URL
+    @Column(name = "thumbnail", length = 512)
+    private String thumbnail;
+
     @BatchSize(size = 50)
     @OneToMany(mappedBy = "liveItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -135,11 +134,12 @@ public class LiveItem extends BaseEntity {
         this.deliveryInclude = request.deliveryInclude();
         this.itemStatus = request.itemStatus();
         this.auctionStatus = AuctionStatus.BEFORE_BIDDING;
-        this.liveTime = request.liveTime();
+        this.liveTime = request.startAt();
         this.directDealAvailable = request.directDealAvailable();
         this.region = request.region();
         this.preferredPlace = request.preferredPlace();
         this.images = new ArrayList<>();
+        this.thumbnail = request.images().getFirst();
     }
 
 
@@ -150,10 +150,11 @@ public class LiveItem extends BaseEntity {
         this.initPrice = request.initPrice();
         this.deliveryInclude = request.deliveryInclude();
         this.itemStatus = request.itemStatus();
-        this.liveTime = request.liveTime();
+        this.liveTime = request.startAt();
         this.directDealAvailable = request.directDealAvailable();
         this.region = request.region();
         this.preferredPlace = request.preferredPlace();
+        this.thumbnail = request.images().getFirst();
     }
 
     public void changeAuctionStatus(AuctionStatus auctionStatus) {
@@ -170,5 +171,6 @@ public class LiveItem extends BaseEntity {
             auctionRoom.getLiveItems().add(this);
         }
     }
+
 
 }

@@ -8,6 +8,7 @@ import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,7 +33,7 @@ public class DelayedBidController {
     @Operation(summary = "지연 경매 입찰하기")
     public ApiResponse<DelayedBidResponse> placeBid(
         @PathVariable Long id,
-        @RequestBody DelayedBidRequest request,
+        @Valid @RequestBody DelayedBidRequest request,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         DelayedBidResponse response = delayedBidService.placeBid(
@@ -42,6 +43,17 @@ public class DelayedBidController {
         );
 
         return ApiResponse.ok("입찰 완료", response);
+    }
+
+    @PostMapping("/{id}/buy-now")
+    @Operation(summary = "지연 경매 즉시 구매")
+    public ApiResponse<DelayedBidResponse> buyNow(
+        @PathVariable Long id,
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        DelayedBidResponse response = delayedBidService.buyNow(id, userDetails.getUser());
+
+        return ApiResponse.ok("즉시 구매",  response);
     }
 
     @GetMapping("/{id}/bids")

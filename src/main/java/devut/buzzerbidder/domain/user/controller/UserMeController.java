@@ -1,10 +1,12 @@
 package devut.buzzerbidder.domain.user.controller;
 
 import devut.buzzerbidder.domain.deal.enums.AuctionType;
+import devut.buzzerbidder.domain.deal.service.DelayedDealService;
 import devut.buzzerbidder.domain.deal.service.LiveDealService;
 import devut.buzzerbidder.domain.deliveryTracking.dto.request.DeliveryRequest;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
 import devut.buzzerbidder.domain.user.dto.request.UserUpdateRequest;
+import devut.buzzerbidder.domain.user.dto.response.MyItemListResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserProfileResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserUpdateResponse;
 import devut.buzzerbidder.domain.user.entity.User;
@@ -17,6 +19,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,6 +31,7 @@ public class UserMeController {
 
     private final RequestContext requestContext;
     private final LiveDealService liveDealService;
+    private final DelayedDealService delayedDealService;
     private final UserService userService;
 
     @PatchMapping("/deals/{type}/{dealId}/delivery")
@@ -45,7 +50,8 @@ public class UserMeController {
 
         if(auctionType.equals(AuctionType.LIVE))
             liveDealService.patchDeliveryInfo(currentUser, dealId, request.carrierCode(), request.trackingNumber());
-//        TODO: else if ~ 지연경매 코드
+        else if(auctionType.equals(AuctionType.DELAYED))
+            delayedDealService.patchDeliveryInfo(currentUser, dealId, request.carrierCode(), request.trackingNumber());
 
         return ApiResponse.ok("배송 정보가 입력되었습니다.", null);
     }
@@ -63,9 +69,10 @@ public class UserMeController {
         DeliveryTrackingResponse trackInfo = null;
         if(auctionType.equals(AuctionType.LIVE))
             trackInfo = liveDealService.track(currentUser, dealId);
-//        TODO: else if ~ 지연경매 코드
+        else if(auctionType.equals(AuctionType.DELAYED))
+            trackInfo = delayedDealService.track(currentUser, dealId);
 
-        return trackInfo != null ? ApiResponse.ok("배송조회 성공", trackInfo) : ApiResponse.error(ErrorCode.DEAL_DELIVERY_INFO_NOT_FOUND, null);
+        return trackInfo != null ? ApiResponse.ok("배송조회 성공", trackInfo) : ApiResponse.error(ErrorCode.DEAL_DELIVERY_INFO_NOT_FOUND, (DeliveryTrackingResponse) null);
     }
 
     @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 정보를 조회합니다.")
@@ -83,5 +90,29 @@ public class UserMeController {
         User currentUser = requestContext.getCurrentUser();
         UserUpdateResponse response = userService.updateMyProfile(currentUser, request);
         return ApiResponse.ok("회원정보 수정 성공", response);
+    }
+
+    @Operation(summary = "내가 등록한 물품 조회", description = "현재 로그인한 사용자가 등록한 물품 목록을 조회합니다.")
+    @GetMapping("/items")
+    public ApiResponse<MyItemListResponse> getMyItems(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size
+    ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        User currentUser = requestContext.getCurrentUser();
+        MyItemListResponse response = userService.getMyItems(currentUser, pageable);
+        return ApiResponse.ok("물품 목록 조회 성공", response);
+    }
+
+    @Operation(summary = "내가 찜한 물품 조회", description = "현재 로그인한 사용자가 찜한 물품 목록을 조회합니다.")
+    @GetMapping("/likes")
+    public ApiResponse<MyItemListResponse> getMyLikedItems(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size
+    ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        User currentUser = requestContext.getCurrentUser();
+        MyItemListResponse response = userService.getMyLikedItems(currentUser, pageable);
+        return ApiResponse.ok("물품 목록 조회 성공", response);
     }
 }

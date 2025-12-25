@@ -98,6 +98,11 @@ public class WalletService {
         changeBizz(user, amount, WalletTransactionType.BID_REFUND);
     }
 
+    // 경매/즉시구매 거래 완료시 판매자 정산
+    public void settleDealToSeller(User seller, Long amount) {
+        changeBizz(seller, amount, WalletTransactionType.DEAL_SETTLEMENT);
+    }
+
     // A유저 -> B유저 송금
     public void transferBizz(User fromUser, User toUser, Long amount) {
         if (fromUser == null || toUser == null) {
@@ -176,17 +181,6 @@ public class WalletService {
 
         Long balanceAfter = wallet.getBizz();
         walletHistoryService.recordWalletHistory(user, amount, type, balanceBefore, balanceAfter);
-    }
-
-    // 생성된 지갑 없으면 지갑 생성 후 조회(비관적 락)
-    public Wallet getOrCreateWalletWithLock(User user) {
-        return walletRepository.findByUserIdWithLock(user.getId())
-                .orElseGet(() -> walletRepository.save(
-                        Wallet.builder()
-                                .user(user)
-                                .bizz(0L)
-                                .build()
-                ));
     }
 
     // 보유 잔액 검증 후, 출금 요청

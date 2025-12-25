@@ -38,6 +38,9 @@ public class Withdrawal extends BaseEntity {
     @Column(length = 255)
     private String msg;
 
+    @Column(length = 255)
+    private String rejectReason;
+
     private LocalDateTime processedAt;
 
     public Withdrawal(User user, Long amount, String bankName, String accountNumber, String accountHolder) {
@@ -55,9 +58,10 @@ public class Withdrawal extends BaseEntity {
         this.msg = "출금 승인 완료";
     }
 
-    public void fail() {
-        this.status = WithdrawalStatus.FAILED;
+    public void reject(String rejectReason) {
+        this.status = WithdrawalStatus.REJECTED;
         this.processedAt = LocalDateTime.now();
-        this.msg = "출금 실패";
+        this.msg = "출금 승인 실패";
+        this.rejectReason = rejectReason;
     }
 }

@@ -15,6 +15,7 @@ public record DelayedItemDetailResponse(
     AuctionStatus auctionStatus,
     Long startPrice,
     Long currentPrice,
+    Long buyNowPrice,
     LocalDateTime endTime,
     Boolean deliveryInclude,
     Boolean directDealAvailable,

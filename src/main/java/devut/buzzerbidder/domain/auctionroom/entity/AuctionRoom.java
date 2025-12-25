@@ -24,16 +24,29 @@ public class AuctionRoom extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private RoomStatus roomStatus;
 
+    @Enumerated(EnumType.STRING)
+    private AuctionStatus auctionStatus;
+
+    private long roomIndex;
+
     public enum RoomStatus {
         OPEN, FULL
+    }
+
+    public enum AuctionStatus {
+        SCHEDULED,
+        LIVE,
+        ENDED
     }
 
     @OneToMany(mappedBy = "auctionRoom")
     private List<LiveItem> liveItems = new ArrayList<>();
 
-    public AuctionRoom(LocalDateTime liveTime) {
+    public AuctionRoom(LocalDateTime liveTime, Long roomIndex) {
         this.liveTime = liveTime;
         this.roomStatus = RoomStatus.OPEN;
+        this.auctionStatus = AuctionStatus.SCHEDULED;
+        this.roomIndex = roomIndex;
     }
 
     public boolean isFull() {
@@ -68,5 +81,19 @@ public class AuctionRoom extends BaseEntity {
         } else {
             this.roomStatus = RoomStatus.OPEN;
         }
+    }
+
+    public void startLive() {
+        if (this.auctionStatus != AuctionStatus.SCHEDULED) {
+            throw new BusinessException(ErrorCode.AUCTION_STATUS_INVALID);
+        }
+        this.auctionStatus = AuctionStatus.LIVE;
+    }
+
+    public void endLive() {
+        if (this.auctionStatus != AuctionStatus.LIVE) {
+            throw new BusinessException(ErrorCode.AUCTION_STATUS_INVALID);
+        }
+        this.auctionStatus = AuctionStatus.ENDED;
     }
 }

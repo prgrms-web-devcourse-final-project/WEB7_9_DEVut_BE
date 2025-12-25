@@ -4,12 +4,15 @@ import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailVerificationCodeRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailVerificationRequest;
+import devut.buzzerbidder.domain.user.dto.request.OAuth2TempTokenRequest;
 import devut.buzzerbidder.domain.user.dto.response.EmailVerificationResponse;
 import devut.buzzerbidder.domain.user.dto.response.LoginResponse;
+import devut.buzzerbidder.domain.user.dto.response.UserInfo;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
 import devut.buzzerbidder.domain.user.service.EmailService;
 import devut.buzzerbidder.domain.user.service.EmailVerificationService;
+import devut.buzzerbidder.domain.user.service.OAuth2TempTokenService;
 import devut.buzzerbidder.domain.user.service.RefreshTokenService;
 import devut.buzzerbidder.domain.user.service.UserService;
 import devut.buzzerbidder.global.exeption.BusinessException;
@@ -38,25 +41,26 @@ public class AuthController {
     private final RequestContext requestContext;
     private final EmailService emailService;
     private final EmailVerificationService emailVerificationService;
+    private final OAuth2TempTokenService oAuth2TempTokenService;
 
     @Operation(summary = "이메일 인증 코드 발송", description = "회원가입을 위한 이메일 인증 코드를 발송합니다.")
     @PostMapping("/email/verification")
     public ApiResponse<EmailVerificationResponse> sendVerificationCode(
-            @Valid @RequestBody EmailVerificationRequest request) {
+        @Valid @RequestBody EmailVerificationRequest request) {
         String code = emailVerificationService.generateAndSaveVerificationCode(request.email());
         emailService.sendVerificationCode(request.email(), code);
-        
+
         Long remainingSeconds = emailVerificationService.getRemainingSeconds(request.email());
         LocalDateTime expiresAt = emailVerificationService.getExpiresAt(request.email());
         EmailVerificationResponse response = new EmailVerificationResponse(remainingSeconds, expiresAt);
-        
+
         return ApiResponse.ok("이메일 인증 코드가 발송되었습니다.", response);
     }
 
     @Operation(summary = "이메일 인증 코드 검증", description = "발송된 이메일 인증 코드를 검증합니다.")
     @PostMapping("/email/verification/verify")
     public ApiResponse<Void> verifyCode(
-            @Valid @RequestBody EmailVerificationCodeRequest request) {
+        @Valid @RequestBody EmailVerificationCodeRequest request) {
         boolean isValid = emailVerificationService.verifyCode(request.email(), request.code());
         if (!isValid) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
@@ -67,7 +71,7 @@ public class AuthController {
     @Operation(summary = "회원가입", description = "이메일을 사용한 회원가입을 진행합니다.")
     @PostMapping("/signup")
     public ApiResponse<Void> signUp(
-            @Valid @RequestBody EmailSignUpRequest request) {
+        @Valid @RequestBody EmailSignUpRequest request) {
         userService.signUp(request);
         return ApiResponse.ok("회원가입에 성공했습니다.");
     }
@@ -75,28 +79,76 @@ public class AuthController {
     @Operation(summary = "로그인", description = "이메일과 비밀번호를 사용한 로그인을 진행합니다. 성공 시 JWT 토큰이 헤더와 쿠키에 설정됩니다.")
     @PostMapping("/signin")
     public ApiResponse<LoginResponse> login(
-            @Valid @RequestBody EmailLoginRequest request) {
+        @Valid @RequestBody EmailLoginRequest request) {
         LoginResponse response = userService.login(request);
-        
+
         // 토큰 생성 및 헤더/쿠키에 설정
+        User user = userService.findById(response.userInfo().id());
+        String accessToken = authTokenService.genAccessToken(user);
+        String refreshToken = authTokenService.genRefreshToken(user);
         setTokensInResponse(response.userInfo().id());
         
-        return ApiResponse.ok("로그인에 성공했습니다.", response);
+        // 응답에 토큰 포함
+        LoginResponse responseWithTokens = new LoginResponse(
+                response.userInfo(),
+                accessToken,
+                refreshToken
+        );
+        
+        return ApiResponse.ok("로그인에 성공했습니다.", responseWithTokens);
     }
 
 
     @Operation(summary = "AccessToken 재발급", description = "Refresh Token을 사용하여 Access Token을 재발급합니다.")
     @PostMapping("/refresh")
-    public ApiResponse<Void> refresh() {
+    public ApiResponse<LoginResponse> refresh() {
         String refreshToken = requestContext.getCookieValue("refreshToken", "");
 
         // AuthTokenService에서 검증 및 User 조회
         User user = authTokenService.validateAndGetUserByRefreshToken(refreshToken);
 
         // 새로운 토큰 생성 및 설정
+        String newAccessToken = authTokenService.genAccessToken(user);
+        String newRefreshToken = authTokenService.genRefreshToken(user);
         setTokensInResponse(user.getId());
 
-        return ApiResponse.ok("AccessToken 재발급에 성공했습니다.");
+        // 응답에 토큰 포함
+        LoginResponse response = new LoginResponse(
+                UserInfo.from(user),
+                newAccessToken,
+                newRefreshToken
+        );
+
+        return ApiResponse.ok("AccessToken 재발급에 성공했습니다.", response);
+    }
+
+    @Operation(summary = "OAuth2 임시 토큰 검증", description = "OAuth2 소셜 로그인 성공 후 발급된 임시 토큰을 검증하고 실제 로그인 토큰을 반환합니다.")
+    @PostMapping("/oauth/signin")
+    public ApiResponse<LoginResponse> verifyOAuth2TempToken(
+        @Valid @RequestBody OAuth2TempTokenRequest request) {
+        // 임시 토큰 검증 및 사용자 ID 조회
+        Long userId = oAuth2TempTokenService.validateAndGetUserId(request.tempToken());
+        
+        if (userId == null) {
+            throw new BusinessException(ErrorCode.USER_TOKEN_INVALID);
+        }
+
+        // User 조회
+        User user = userService.findById(userId);
+
+        // 실제 토큰 생성 및 헤더/쿠키에 설정
+        String accessToken = authTokenService.genAccessToken(user);
+        String refreshToken = authTokenService.genRefreshToken(user);
+        setTokensInResponse(userId);
+
+        // 응답에 토큰 포함
+        LoginResponse response = new LoginResponse(
+                UserInfo.from(user),
+                accessToken,
+                refreshToken
+        );
+
+        return ApiResponse.ok("OAuth2 로그인에 성공했습니다.", response);
     }
 
     @Operation(summary = "로그아웃", description = "로그아웃을 진행합니다. Refresh Token이 Redis에서 삭제되고 쿠키가 제거됩니다.")
@@ -114,19 +166,19 @@ public class AuthController {
 
         return ApiResponse.ok("로그아웃에 성공했습니다.");
     }
-    
+
     private void setTokensInResponse(Long userId) {
         // User 조회
         User user = userService.findById(userId);
-        
+
         // 토큰 생성
         String accessToken = authTokenService.genAccessToken(user);
         String refreshToken = authTokenService.genRefreshToken(user);
-        
+
         // 헤더에 토큰 설정
         requestContext.setHeader("Authorization", "Bearer " + accessToken);
         requestContext.setHeader("Refresh-Token", refreshToken);
-        
+
         // 쿠키에 토큰 설정
         requestContext.setCookie("accessToken", accessToken);
         requestContext.setCookie("refreshToken", refreshToken);

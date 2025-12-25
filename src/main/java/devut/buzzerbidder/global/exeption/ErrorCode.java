@@ -34,6 +34,9 @@ public enum ErrorCode {
     DEAL_NOT_FOUND("D001", HttpStatus.NOT_FOUND, "존재하지 않는 거래입니다."),
     DEAL_INVALID_TYPE("D002", HttpStatus.BAD_REQUEST, "잘못된 경매 유형입니다."),
     DEAL_DELIVERY_INFO_NOT_FOUND("D003", HttpStatus.NOT_FOUND, "배송 정보가 존재하지 않습니다."),
+    AUCTION_NOT_ENDED("D004", HttpStatus.BAD_REQUEST, "경매가 아직 종료되지 않았습니다."),
+    NO_BID_EXISTS("D005", HttpStatus.BAD_REQUEST, "입찰 내역이 없습니다."),
+    DEAL_INVALID_STATUS("D006", HttpStatus.BAD_REQUEST, "잘못된 거래 상태입니다."),
 
     // ========== Wallet 도메인 에러 ==========
     WALLET_NOT_FOUND("W001", HttpStatus.NOT_FOUND, "지갑이 존재하지 않습니다."),
@@ -42,6 +45,7 @@ public enum ErrorCode {
     INVALID_WALLET_AMOUNT("W005", HttpStatus.BAD_REQUEST, "충전/차감 금액은 null 또는 0 이하일 수 없습니다."),
     INVALID_TRANSFER("W006", HttpStatus.BAD_REQUEST, "자기 자신에게 지불할 수 없습니다."),
     WALLET_ALREADY_EXISTS("W007", HttpStatus.CONFLICT, "사용자 지갑이 이미 존재합니다."),
+    WITHDRAWAL_NOT_FOUND("W008", HttpStatus.CONFLICT, "출금 내역이 존재하지 않습니다."),
 
     // ========== Payment 도메인 에러 ==========
     PAYMENT_NOT_FOUND("P001", HttpStatus.NOT_FOUND, "결제정보를 찾을 수 없습니다."),
@@ -58,11 +62,21 @@ public enum ErrorCode {
     // ========== AuctionRoom 도메인 에러 ==========
     FULL_AUCTION_ROOM("AR001", HttpStatus.CONFLICT, "경매방이 가득 찼습니다."),
     AUCTION_ROOM_BUSY("AR002", HttpStatus.CONFLICT, "잠시 후 다시 시도해주세요."),
+
+    AUCTION_SESSION_EXPIRED("AR003", HttpStatus.CONFLICT, "경매 세션이 만료되었습니다. 다시 입장 후 재시도해주세요."),
+    AUCTION_ROOM_NOT_FOUND("AR004", HttpStatus.NOT_FOUND, "경매방을 찾을 수 없습니다."),
+    AUCTION_NOT_STARTED("AR005", HttpStatus.BAD_REQUEST, "경매 시작 10분 전부터 입장 가능합니다."),
+    AUCTION_NOT_LIVE("AR006", HttpStatus.BAD_REQUEST, "경매가 진행 중이 아닙니다."),
+    AUCTION_STATUS_INVALID("AR007", HttpStatus.BAD_REQUEST, "잘못된 경매 상태입니다."),
+    AUCTION_ROOM_ASSIGN_UNAVAILABLE("AR008", HttpStatus.CONFLICT, "할당 가능한 경매방이 없습니다."),
+
+
     // ========== LIVEITEM 도메인 에러 ==========
     CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
     INVALID_LIVETIME("LI002", HttpStatus.BAD_REQUEST,"유효한 경매 시작 시간이 아닙니다."),
     EDIT_UNAVAILABLE("LI003", HttpStatus.BAD_REQUEST,"1시간안에 시작하는 경매는 수정 및 삭제가 불가능합니다."),
     LIVEITEM_NOT_FOUND("LI004", HttpStatus.NOT_FOUND, "라이브 경매품을 찾을 수 없습니다."),
+    AUCTION_ENDED("LI005", HttpStatus.CONFLICT, "경매가 이미 종료된 라이브 상품입니다."),
 
     // ========== DelayedItem 도메인 에러 ==========
     INVALID_END_TIME("DI001", HttpStatus.BAD_REQUEST, "종료 시간은 최소 3일 이후, 최대 10일 이내여야 합니다."),
@@ -73,11 +87,15 @@ public enum ErrorCode {
     BID_PRICE_TOO_LOW("DI006", HttpStatus.BAD_REQUEST, "입찰 금액이 현재가보다 같거나 낮습니다."),
     INSUFFICIENT_COINS("DI007", HttpStatus.BAD_REQUEST, "코인이 부족합니다."),
     ALREADY_HIGHEST_BIDDER("DI008", HttpStatus.BAD_REQUEST, "이미 최고가 입찰자입니다."),
+    INVALID_BUY_NOW_PRICE("DI009", HttpStatus.BAD_REQUEST, "즉시 구매가는 시작가보다 높아야 합니다."),
+    BUY_NOW_NOT_AVAILABLE("DI010",HttpStatus.BAD_REQUEST, "즉시 구매가가 설정되지 않은 상품입니다."),
 
     // ========== LIVEBID 도메인 에러 ==========
     LIVEBID_CANNOT_BID_OWN_ITEM("LB001", HttpStatus.CONFLICT, "본인의 경매품에는 입찰할 수 없습니다."),
     LIVEBID_NOT_IN_PROGRESS("LB002", HttpStatus.CONFLICT, "경매 진행중이 아닙니다."),
     LIVEBID_ALREADY_HIGHEST_BIDDER("LB003", HttpStatus.CONFLICT, "현재 최고 입찰자입니다. 다른 입찰 후에 다시 시도해주세요."),
+    UNEXPECTED_REDIS_SCRIPT_RETURN("LB004", HttpStatus.INTERNAL_SERVER_ERROR, "Redis 스크립트 반환 방식이 예상과 다릅니다."),
+    LIVEBID_INITIALIZATION_FAILED("LB005", HttpStatus.INTERNAL_SERVER_ERROR, "경매 아이템 정보 캐싱 실패."),
 
     // ========== Notification 도메인 에러 ==========
     NOTIFICATION_NOT_FOUND("NO001", HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),

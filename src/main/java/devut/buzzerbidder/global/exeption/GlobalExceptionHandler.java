@@ -1,10 +1,13 @@
 package devut.buzzerbidder.global.exeption;
 
 import devut.buzzerbidder.global.response.ApiResponse;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -62,6 +65,28 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, ErrorCode.VALIDATION_FAILED.getStatus());
     }
 
+    // 엔티티 레벨 유효성 검사 실패 (400 Bad Request)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleConstraintViolation(
+            ConstraintViolationException ex) {
+        // 필드별로 에러 메시지를 Map으로 수집
+        Map<String, String> errors = new HashMap<>();
+        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+            String propertyPath = violation.getPropertyPath().toString();
+            String fieldName = propertyPath.substring(propertyPath.lastIndexOf('.') + 1);
+            String errorMessage = violation.getMessage();
+
+            // 동일한 필드에 여러 에러가 있을 경우 ", "로 연결
+            errors.merge(fieldName, errorMessage, (existing, newMsg) -> existing + ", " + newMsg);
+        }
+
+        log.warn("Constraint violation: {}", errors);
+
+        ApiResponse<Map<String, String>> response = ApiResponse.error(
+                ErrorCode.VALIDATION_FAILED, errors);
+        return new ResponseEntity<>(response, ErrorCode.VALIDATION_FAILED.getStatus());
+    }
+
     // 잘못된 요청 형식
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
@@ -69,6 +94,20 @@ public class GlobalExceptionHandler {
 
         ApiResponse<Void> response = ApiResponse.error(ErrorCode.BAD_REQUEST_FORMAT);
         return new ResponseEntity<>(response, ErrorCode.BAD_REQUEST_FORMAT.getStatus());
+    }
+
+    // 필수 요청 파라미터 누락 (400 Bad Request)
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingServletRequestParameter(
+            MissingServletRequestParameterException ex) {
+        String parameterName = ex.getParameterName();
+        log.warn("Missing required request parameter: {}", parameterName);
+
+        ApiResponse<Void> response = ApiResponse.error(
+                ErrorCode.MISSING_REQUEST_PARAMETER,
+                "필수 요청 파라미터 '" + parameterName + "'가 누락되었습니다."
+        );
+        return new ResponseEntity<>(response, ErrorCode.MISSING_REQUEST_PARAMETER.getStatus());
     }
 
     // NoSuchElementException 처리

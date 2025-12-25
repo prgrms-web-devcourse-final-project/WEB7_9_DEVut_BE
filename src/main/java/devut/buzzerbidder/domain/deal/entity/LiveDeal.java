@@ -39,4 +39,8 @@ public class LiveDeal extends BaseEntity {
         this.carrier = Carrier.fromCode(carrierCode);
         this.trackingNumber = trackingNumber;
     }
+
+    public void updateStatus(DealStatus status) {
+        this.status = status;
+    }
 }
