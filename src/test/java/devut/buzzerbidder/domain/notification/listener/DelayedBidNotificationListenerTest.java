@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 
 import devut.buzzerbidder.domain.delayedbid.event.DelayedBidOutbidEvent;
 import devut.buzzerbidder.domain.delayedbid.event.DelayedBuyNowEvent;
+import devut.buzzerbidder.domain.delayedbid.event.DelayedFirstBidEvent;
 import devut.buzzerbidder.domain.notification.enums.NotificationType;
 import devut.buzzerbidder.domain.notification.service.NotificationService;
 import java.util.Map;
@@ -28,11 +29,45 @@ public class DelayedBidNotificationListenerTest {
     @InjectMocks
     private DelayedBidNotificationListener listener;
 
+    // ========== 첫 입찰 알림 테스트 ==========
+
+    @Test
+    @DisplayName("t1: 첫 입찰시 판매자에게 알림 전송")
+    void t1() {
+        // given
+        Long delayedItemId = 1L;
+        String itemName = "테스트 상품";
+        Long sellerId = 10L;
+        Long bidderId = 20L;
+        Long bidAmount = 50000L;
+
+        DelayedFirstBidEvent event = new DelayedFirstBidEvent(
+            delayedItemId,
+            itemName,
+            sellerId,
+            bidderId,
+            bidAmount
+        );
+
+        // when
+        listener.handleFirstBid(event);
+
+        // then
+        verify(notificationService).createAndSend(
+            eq(sellerId),
+            eq(NotificationType.DELAYED_FIRST_BID),
+            contains("첫 입찰"),
+            eq("DELAYED_ITEM"),
+            eq(delayedItemId),
+            any(Map.class)
+        );
+    }
+
     // ========== 입찰가 밀림 테스트 ==========
 
     @Test
-    @DisplayName("t1: 입찰가 밀렸을 때 이전 입찰자에게 알림 전송")
-    void t1() {
+    @DisplayName("t2: 입찰가 밀렸을 때 이전 입찰자에게 알림 전송")
+    void t2() {
         // given
         Long delayedItemId = 1L;
         String itemName = "테스트 상품";
@@ -65,8 +100,8 @@ public class DelayedBidNotificationListenerTest {
     // ========== 즉시 구매 테스트 ==========
 
     @Test
-    @DisplayName("t2: 즉시 구매시 판매자에게 알림 전송")
-    void t2() {
+    @DisplayName("t3: 즉시 구매시 판매자에게 알림 전송")
+    void t3() {
         // given
         Long delayedItemId = 1L;
         String itemName = "테스트 상품";
@@ -99,8 +134,8 @@ public class DelayedBidNotificationListenerTest {
     }
 
     @Test
-    @DisplayName("t3: 즉시 구매시 기존 최고 입찰자에게 알림 전송")
-    void t3() {
+    @DisplayName("t4: 즉시 구매시 기존 최고 입찰자에게 알림 전송")
+    void t4() {
         // given
         Long delayedItemId = 1L;
         String itemName = "테스트 상품";
@@ -133,8 +168,8 @@ public class DelayedBidNotificationListenerTest {
     }
 
     @Test
-    @DisplayName("t4: 즉시 구매시 판매자와 기존 최고 입찰자 모두에게 알림 전송")
-    void t4() {
+    @DisplayName("t5: 즉시 구매시 판매자와 기존 최고 입찰자 모두에게 알림 전송")
+    void t5() {
         // given
         DelayedBuyNowEvent event = new DelayedBuyNowEvent(
             1L, "상품", 30L, 10L, 20L, 100000L
@@ -150,8 +185,8 @@ public class DelayedBidNotificationListenerTest {
     }
 
     @Test
-    @DisplayName("t5: 기존 최고 입찰자가 없을 때 판매자에게만 알림 전송")
-    void t5() {
+    @DisplayName("t6: 기존 최고 입찰자가 없을 때 판매자에게만 알림 전송")
+    void t6() {
         // given
         DelayedBuyNowEvent event = new DelayedBuyNowEvent(
             1L, "상품", 30L, 10L, null, 100000L

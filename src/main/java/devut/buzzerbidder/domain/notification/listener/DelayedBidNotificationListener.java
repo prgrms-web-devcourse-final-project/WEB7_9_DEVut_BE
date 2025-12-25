@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.notification.listener;
 
 import devut.buzzerbidder.domain.delayedbid.event.DelayedBidOutbidEvent;
 import devut.buzzerbidder.domain.delayedbid.event.DelayedBuyNowEvent;
+import devut.buzzerbidder.domain.delayedbid.event.DelayedFirstBidEvent;
 import devut.buzzerbidder.domain.notification.enums.NotificationType;
 import devut.buzzerbidder.domain.notification.service.NotificationService;
 import java.util.Map;
@@ -20,7 +21,27 @@ public class DelayedBidNotificationListener {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleOutbid(DelayedBidOutbidEvent event) {
+    public void handleFirstBid(DelayedFirstBidEvent event) {
+
+        String message = "'%s' 상품에 첫 입찰(₩%,d)이 들어왔습니다!"
+            .formatted(event.delayedItemName(), event.firstBidAmount());
+
+        notificationService.createAndSend(
+            event.sellerUserId(),
+            NotificationType.DELAYED_FIRST_BID,
+            message,
+            "DELAYED_ITEM",
+            event.delayedItemId(),
+            Map.of(
+                "firstBidderUserId", event.firstBidderUserId(),
+                "firstBidAmount", event.firstBidAmount()
+            )
+        );
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleOutbid(DelayedBidOutbidEvent event)  {
 
         String message = "'%s' 상품 상위 입찰이 들어왔습니다."
             .formatted(event.delayedItemName());

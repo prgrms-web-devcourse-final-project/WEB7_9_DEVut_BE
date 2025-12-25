@@ -1,6 +1,7 @@
 package devut.buzzerbidder.domain.notification.enums;
 
 public enum NotificationType {
+    DELAYED_FIRST_BID,              // 지연 경매 첫 입찰 알림
     DELAYED_BID_OUTBID,             // 지연 경매 내 입찰가가 밀림
     DELAYED_SUCCESS_BIDDER,         // 지연 경매 입찰자에게 낙찰 알림
     DELAYED_SUCCESS_SELLER,         // 지연 경매 판매자에게 낙찰 알림
