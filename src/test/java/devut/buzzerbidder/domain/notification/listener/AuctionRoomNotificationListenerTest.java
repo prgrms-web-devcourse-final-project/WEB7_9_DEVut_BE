@@ -69,8 +69,8 @@ public class AuctionRoomNotificationListenerTest {
         listener.handleAuctionRoomStarted(event);
 
         // then
-        verify(notificationService, times(3)).createAndSend(
-            anyLong(),
+        verify(notificationService, times(1)).createAndSendToMultiple(
+            eq(List.of(1L, 2L, 3L)),
             eq(NotificationType.LIVE_AUCTION_START),
             contains("테스트 상품"),
             eq("AUCTION_ROOM"),
@@ -100,8 +100,8 @@ public class AuctionRoomNotificationListenerTest {
 
         // then
         verify(likeLiveRepository, never()).findUserIdsByLiveItemId(anyLong());
-        verify(notificationService, never()).createAndSend(
-            anyLong(), any(), any(), any(), anyLong(), any()
+        verify(notificationService, never()).createAndSendToMultiple(
+            any(List.class), any(), any(), any(), anyLong(), any()
         );
     }
 
@@ -131,8 +131,8 @@ public class AuctionRoomNotificationListenerTest {
         listener.handleAuctionRoomStarted(event);
 
         // then
-        verify(notificationService, never()).createAndSend(
-            anyLong(), any(), any(), any(), anyLong(), any()
+        verify(notificationService, never()).createAndSendToMultiple(
+            any(List.class), any(), any(), any(), anyLong(), any()
         );
     }
 
@@ -163,8 +163,8 @@ public class AuctionRoomNotificationListenerTest {
         listener.handleAuctionRoomStarted(event);
 
         // then
-        verify(notificationService, times(3)).createAndSend(
-            anyLong(),
+        verify(notificationService, times(2)).createAndSendToMultiple(
+            any(List.class),
             eq(NotificationType.LIVE_AUCTION_START),
             any(),
             eq("AUCTION_ROOM"),
