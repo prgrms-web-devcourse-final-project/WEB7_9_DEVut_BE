@@ -7,9 +7,12 @@ import devut.buzzerbidder.domain.deliveryTracking.dto.request.DeliveryRequest;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
 import devut.buzzerbidder.domain.user.dto.request.UserUpdateRequest;
 import devut.buzzerbidder.domain.user.dto.response.MyItemListResponse;
+import devut.buzzerbidder.domain.user.dto.response.UserDealListResponse;
+import devut.buzzerbidder.domain.user.dto.response.UserDealResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserProfileResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserUpdateResponse;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.service.UserDealService;
 import devut.buzzerbidder.domain.user.service.UserService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
@@ -33,6 +36,7 @@ public class UserMeController {
     private final LiveDealService liveDealService;
     private final DelayedDealService delayedDealService;
     private final UserService userService;
+    private final UserDealService userDealService;
 
     @PatchMapping("/deals/{type}/{dealId}/delivery")
     @Operation(summary = "배송 정보 입력")
@@ -96,11 +100,12 @@ public class UserMeController {
     @GetMapping("/items")
     public ApiResponse<MyItemListResponse> getMyItems(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "15") int size
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String type
     ) {
         Pageable pageable = PageRequest.of(page - 1, size);
         User currentUser = requestContext.getCurrentUser();
-        MyItemListResponse response = userService.getMyItems(currentUser, pageable);
+        MyItemListResponse response = userService.getMyItems(currentUser, pageable, type);
         return ApiResponse.ok("물품 목록 조회 성공", response);
     }
 
@@ -108,11 +113,37 @@ public class UserMeController {
     @GetMapping("/likes")
     public ApiResponse<MyItemListResponse> getMyLikedItems(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "15") int size
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String type
     ) {
         Pageable pageable = PageRequest.of(page - 1, size);
         User currentUser = requestContext.getCurrentUser();
-        MyItemListResponse response = userService.getMyLikedItems(currentUser, pageable);
+        MyItemListResponse response = userService.getMyLikedItems(currentUser, pageable, type);
         return ApiResponse.ok("물품 목록 조회 성공", response);
+    }
+
+    @Operation(summary = "거래 내역 목록 조회", description = "현재 로그인한 사용자의 거래 내역 목록을 조회합니다.")
+    @GetMapping("/deals")
+    public ApiResponse<UserDealListResponse> getMyDeals(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String type
+    ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        User currentUser = requestContext.getCurrentUser();
+        UserDealListResponse response = userDealService.getUserDeals(currentUser, pageable, type);
+        return ApiResponse.ok("경매 거래 내역 목록 조회 성공", response);
+    }
+
+    @Operation(summary = "거래 내역 상세 조회", description = "현재 로그인한 사용자의 거래 내역 상세 정보를 조회합니다.")
+    @GetMapping("/deals/{auctionType}/{dealId}")
+    public ApiResponse<UserDealResponse> getMyDeal(
+            @PathVariable String auctionType,
+            @PathVariable Long dealId
+    ) {
+        User currentUser = requestContext.getCurrentUser();
+        AuctionType type = AuctionType.fromString(auctionType);
+        UserDealResponse response = userDealService.getUserDeal(currentUser, type, dealId);
+        return ApiResponse.ok("경매 거래 내역 조회 성공", response);
     }
 }
