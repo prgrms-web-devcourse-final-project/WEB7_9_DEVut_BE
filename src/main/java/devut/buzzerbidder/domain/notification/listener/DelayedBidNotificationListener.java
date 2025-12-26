@@ -23,8 +23,8 @@ public class DelayedBidNotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFirstBid(DelayedFirstBidEvent event) {
 
-        String message = "'%s' 상품에 첫 입찰(₩%,d)이 들어왔습니다!"
-            .formatted(event.delayedItemName(), event.firstBidAmount());
+        String message = "'%s' 상품에 첫 입찰이 들어왔습니다!"
+            .formatted(event.delayedItemName());
 
         notificationService.createAndSend(
             event.sellerUserId(),
