@@ -171,6 +171,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 log.info("기존 사용자에 소셜 로그인 Provider 추가: userId={}, email={}, provider={}", 
                         user.getId(), email, providerType);
                 
+                // 기존 비밀번호 보존 (기존 비밀번호가 있으면 유지)
+                String existingPassword = user.getPassword();
+                
                 // Provider가 이미 있는지 확인 (이론적으로는 없어야 하지만 안전장치)
                 if (!providerRepository.existsByUserAndProviderType(user, providerType)) {
                     Provider newProvider = Provider.builder()
@@ -186,6 +189,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 if (!walletService.hasWallet(user.getId())) {
                     walletService.createWallet(user);
                     log.info("지갑 생성 완료: userId={}", user.getId());
+                }
+                
+                // 기존 비밀번호가 있었는데 null로 변경되었다면 복원
+                if (existingPassword != null && user.getPassword() == null) {
+                    user.updatePassword(existingPassword);
+                    log.info("기존 비밀번호 복원: userId={}", user.getId());
                 }
                 
                 return user;
