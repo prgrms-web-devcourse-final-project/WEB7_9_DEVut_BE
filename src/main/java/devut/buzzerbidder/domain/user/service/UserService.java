@@ -78,7 +78,6 @@ public class UserService {
                     .user(user)
                     .build();
             providerRepository.save(emailProvider);
-            walletService.createWallet(user);
             emailVerificationService.deleteVerifiedEmail(request.email());
             
             return LoginResponse.of(user);
