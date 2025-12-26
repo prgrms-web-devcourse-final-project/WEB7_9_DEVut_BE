@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.notification.listener;
 
 import devut.buzzerbidder.domain.delayedbid.event.DelayedBidOutbidEvent;
 import devut.buzzerbidder.domain.delayedbid.event.DelayedBuyNowEvent;
+import devut.buzzerbidder.domain.delayedbid.event.DelayedFirstBidEvent;
 import devut.buzzerbidder.domain.notification.enums.NotificationType;
 import devut.buzzerbidder.domain.notification.service.NotificationService;
 import java.util.Map;
@@ -20,9 +21,29 @@ public class DelayedBidNotificationListener {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleOutbid(DelayedBidOutbidEvent event) {
+    public void handleFirstBid(DelayedFirstBidEvent event) {
 
-        String message = "%s 상품 상위 입찰이 들어왔습니다."
+        String message = "'%s' 상품에 첫 입찰이 들어왔습니다!"
+            .formatted(event.delayedItemName());
+
+        notificationService.createAndSend(
+            event.sellerUserId(),
+            NotificationType.DELAYED_FIRST_BID,
+            message,
+            "DELAYED_ITEM",
+            event.delayedItemId(),
+            Map.of(
+                "firstBidderUserId", event.firstBidderUserId(),
+                "firstBidAmount", event.firstBidAmount()
+            )
+        );
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleOutbid(DelayedBidOutbidEvent event)  {
+
+        String message = "'%s' 상품 상위 입찰이 들어왔습니다."
             .formatted(event.delayedItemName());
 
         notificationService.createAndSend(
@@ -46,7 +67,7 @@ public class DelayedBidNotificationListener {
         notificationService.createAndSend(
             event.sellerUserId(),
             NotificationType.DELAYED_BUY_NOW_SOLD,
-            "%s 상품이 즉시 구매로 판매되었습니다."
+            "'%s' 상품이 즉시 구매로 판매되었습니다."
                 .formatted(event.delayedItemName()),
             "DELAYED_ITEM",
             event.delayedItemId(),
@@ -61,7 +82,7 @@ public class DelayedBidNotificationListener {
             notificationService.createAndSend(
                 event.previousHighestBidderUserId(),
                 NotificationType.DELAYED_CANCELLED_BY_BUY_NOW,
-                "%s 상품이 즉시 구매로 종료되었습니다."
+                "'%s' 상품이 즉시 구매로 종료되었습니다."
                     .formatted(event.delayedItemName()),
                 "DELAYED_ITEM",
                 event.delayedItemId(),
