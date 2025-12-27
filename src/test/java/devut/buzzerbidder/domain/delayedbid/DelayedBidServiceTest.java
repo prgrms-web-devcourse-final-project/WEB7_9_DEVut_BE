@@ -92,10 +92,25 @@ public class DelayedBidServiceTest {
             .build();
         bidder2 = userRepository.save(bidder2);
 
-        Wallet wallet1 = walletRepository.findByUserId(bidder1.getId()).orElseThrow();
+        // Wallet 생성 또는 조회
+        Wallet wallet1 = walletRepository.findByUserId(bidder1.getId())
+            .orElseGet(() -> {
+                Wallet newWallet = Wallet.builder()
+                    .user(bidder1)
+                    .bizz(0L)
+                    .build();
+                return walletRepository.save(newWallet);
+            });
         wallet1.increaseBizz(100000L);
 
-        Wallet wallet2 = walletRepository.findByUserId(bidder2.getId()).orElseThrow();
+        Wallet wallet2 = walletRepository.findByUserId(bidder2.getId())
+            .orElseGet(() -> {
+                Wallet newWallet = Wallet.builder()
+                    .user(bidder2)
+                    .bizz(0L)
+                    .build();
+                return walletRepository.save(newWallet);
+            });
         wallet2.increaseBizz(100000L);
 
         delayedItem = DelayedItem.builder()
@@ -258,7 +273,7 @@ public class DelayedBidServiceTest {
     void t7() {
         // given
         Wallet wallet = walletRepository.findByUserId(bidder1.getId()).orElseThrow();
-        wallet.increaseBizz(99000L);
+        wallet.decreaseBizz(95000L);
 
         DelayedBidRequest request = new DelayedBidRequest(15000L);
 

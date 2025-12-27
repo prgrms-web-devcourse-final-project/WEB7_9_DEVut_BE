@@ -32,7 +32,7 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
         Pageable pageable
     );
 
-    @Query("SELECT di FROM DelayedItem di " +
+    @Query("SELECT DISTINCT di FROM DelayedItem di " +
         "LEFT JOIN FETCH di.images " +
         "WHERE di.id = :id")
     Optional<DelayedItem> findDelayedItemWithImagesById(

@@ -173,6 +173,7 @@ public class DelayedItem extends BaseEntity {
         this.category = request.category();
         this.description = request.description();
         this.startPrice = request.startPrice();
+        this.currentPrice = request.startPrice();
         this.buyNowPrice = request.buyNowPrice();
         this.endTime = request.endTime();
         this.itemStatus = request.itemStatus();

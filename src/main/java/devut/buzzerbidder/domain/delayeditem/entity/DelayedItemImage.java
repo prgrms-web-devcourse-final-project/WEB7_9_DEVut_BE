@@ -24,7 +24,5 @@ public class DelayedItemImage extends BaseEntity {
     public DelayedItemImage(String imageUrl, DelayedItem delayedItem) {
         this.imageUrl = imageUrl;
         this.delayedItem = delayedItem;
-        delayedItem.getImages().add(this);
     }
-
 }

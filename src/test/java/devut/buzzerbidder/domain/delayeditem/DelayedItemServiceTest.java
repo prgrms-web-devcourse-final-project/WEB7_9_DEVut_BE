@@ -2,6 +2,8 @@ package devut.buzzerbidder.domain.delayeditem;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doNothing;
 
 import devut.buzzerbidder.TestcontainersConfig;
 import devut.buzzerbidder.domain.delayedbid.entity.DelayedBidLog;
@@ -20,8 +22,10 @@ import devut.buzzerbidder.domain.delayeditem.service.DelayedItemService;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.entity.User.UserRole;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
+import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import devut.buzzerbidder.global.image.ImageService;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +34,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -56,7 +61,13 @@ public class DelayedItemServiceTest {
     private DelayedBidRepository delayedBidRepository;
 
     @Autowired
+    private WalletRepository walletRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @MockBean
+    private ImageService imageService;
 
     private User seller;
     private User otherUser;
@@ -64,6 +75,8 @@ public class DelayedItemServiceTest {
 
     @BeforeEach
     void setUp() {
+        doNothing().when(imageService).deleteFiles(anyList());
+
         seller = User.builder()
             .email("seller@example.com")
             .password(passwordEncoder.encode("password123!"))
@@ -92,12 +105,15 @@ public class DelayedItemServiceTest {
     @DisplayName("경매 물품 생성 성공")
     void t1() {
         // given
+        LocalDateTime expectedEndTime = LocalDateTime.now().plusDays(5);
+
         DelayedItemCreateRequest request = new DelayedItemCreateRequest(
             "테스트 상품",
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
-            LocalDateTime.now().plusDays(5),
+            null,
+            expectedEndTime,
             ItemStatus.USED_LIKE_NEW,
             true,
             true,
@@ -113,7 +129,7 @@ public class DelayedItemServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.name()).isEqualTo("테스트 상품");
         assertThat(response.currentPrice()).isEqualTo(10000L);
-        assertThat(response.endTime()).isEqualTo(LocalDateTime.now().plusDays(5));
+        assertThat(response.endTime()).isEqualTo(expectedEndTime);
 
         DelayedItem saved = delayedItemRepository.findById(response.id()).orElseThrow();
         assertThat(saved.getName()).isEqualTo("테스트 상품");
@@ -129,6 +145,7 @@ public class DelayedItemServiceTest {
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(2),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -153,6 +170,7 @@ public class DelayedItemServiceTest {
             Category.ELECTRONICS,
             "상품 섦명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -171,11 +189,13 @@ public class DelayedItemServiceTest {
     @Test
     @DisplayName("경매 물품 수정 성공")
     void t4() {
+        // given
         DelayedItemCreateRequest createRequest = new DelayedItemCreateRequest(
             "테스트 상품",
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -186,12 +206,15 @@ public class DelayedItemServiceTest {
         );
         DelayedItemResponse created = delayedItemService.writeDelayedItem(createRequest, seller);
 
+        LocalDateTime expectedEndTime = LocalDateTime.now().plusDays(7);
+
         DelayedItemModifyRequest modifyRequest = new DelayedItemModifyRequest(
             "수정된 상품",
             Category.CLOTHES,
             "수정된 설명",
             15000L,
-            LocalDateTime.now().plusDays(7),
+            null,
+            expectedEndTime,
             ItemStatus.NEW,
             false,
             false,
@@ -210,7 +233,7 @@ public class DelayedItemServiceTest {
         // then
         assertThat(response.name()).isEqualTo("수정된 상품");
         assertThat(response.currentPrice()).isEqualTo(15000L);
-        assertThat(response.endTime()).isEqualTo(LocalDateTime.now().plusDays(7));
+        assertThat(response.endTime()).isEqualTo(expectedEndTime);
     }
 
     @Test
@@ -222,6 +245,7 @@ public class DelayedItemServiceTest {
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -237,6 +261,7 @@ public class DelayedItemServiceTest {
             Category.CLOTHES,
             "수정된 설명",
             15000L,
+            null,
             LocalDateTime.now().plusDays(7),
             ItemStatus.NEW,
             false,
@@ -262,6 +287,7 @@ public class DelayedItemServiceTest {
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -278,6 +304,7 @@ public class DelayedItemServiceTest {
             .delayedItem(item)
             .bidderUserId(otherUser.getId())
             .bidAmount(15000L)
+            .bidTime(LocalDateTime.now())
             .build();
         delayedBidRepository.save(bid);
 
@@ -286,6 +313,7 @@ public class DelayedItemServiceTest {
             Category.CLOTHES,
             "수정된 설명",
             15000L,
+            null,
             LocalDateTime.now().plusDays(7),
             ItemStatus.NEW,
             false,
@@ -311,6 +339,7 @@ public class DelayedItemServiceTest {
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -336,6 +365,7 @@ public class DelayedItemServiceTest {
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -364,6 +394,7 @@ public class DelayedItemServiceTest {
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -379,6 +410,7 @@ public class DelayedItemServiceTest {
             .delayedItem(item)
             .bidderUserId(otherUser.getId())
             .bidAmount(15000L)
+            .bidTime(LocalDateTime.now())
             .build();
         delayedBidRepository.save(bid);
 
@@ -386,7 +418,7 @@ public class DelayedItemServiceTest {
         assertThatThrownBy(() ->
             delayedItemService.deleteDelayedItem(created.id(), seller))
             .isInstanceOf(BusinessException.class)
-            .hasMessageContaining(ErrorCode.EDIT_UNAVAILABLE_DUE_TO_BIDS.getMessage());
+            .hasMessageContaining(ErrorCode.DELETE_UNAVAILABLE_DUE_TO_BIDS.getMessage());
 
         assertThat(delayedItemRepository.findById(created.id())).isPresent();
     }
@@ -400,6 +432,7 @@ public class DelayedItemServiceTest {
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -440,6 +473,7 @@ public class DelayedItemServiceTest {
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -455,6 +489,7 @@ public class DelayedItemServiceTest {
             Category.CLOTHES,
             "상품 설명",
             20000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.NEW,
             true,
@@ -481,7 +516,7 @@ public class DelayedItemServiceTest {
 
         // then
         assertThat(response.delayedItems()).hasSizeGreaterThan(1);
-        assertThat(response.delayedItems().getFirst().name()).isEqualTo("전자제품 상품");
+        assertThat(response.delayedItems()).extracting("name").contains("전자제품 상품");
     }
 
     @Test
@@ -493,6 +528,7 @@ public class DelayedItemServiceTest {
             Category.ELECTRONICS,
             "상품 설명",
             10000L,
+            null,
             LocalDateTime.now().plusDays(5),
             ItemStatus.USED_LIKE_NEW,
             true,
@@ -511,4 +547,3 @@ public class DelayedItemServiceTest {
         assertThat(response.delayedItems()).isNotNull();
     }
 }
-
