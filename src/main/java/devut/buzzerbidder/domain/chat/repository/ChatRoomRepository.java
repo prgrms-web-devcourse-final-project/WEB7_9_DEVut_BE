@@ -19,4 +19,20 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             "AND cr.referenceType = 'AUCTION_ROOM' " +
             "AND cr.referenceEntityId = :auctionId")
     Optional<ChatRoom> findByAuctionId(@Param("auctionId") Long auctionId);
+
+    /**
+     * 특정 아이템에 대해 특정 유저(구매자)가 참여 중인 1:1 채팅방 조회
+     * @param itemId 상품 ID
+     * @param userId 유저 ID
+     */
+    @Query("""
+    SELECT cre.chatRoom FROM ChatRoomEntered cre
+     WHERE cre.chatRoom.roomType = 'DM'
+       AND cre.chatRoom.referenceType = 'ITEM'
+       AND cre.chatRoom.referenceEntityId = :itemId
+       AND cre.user.id = :userId
+    """)
+    Optional<ChatRoom> findDmRoomByItemAndUser(@Param("itemId") Long itemId,
+                                               @Param("userId") Long userId);
+
 }

@@ -1,6 +1,7 @@
 package devut.buzzerbidder.domain.chat.controller;
 
 import devut.buzzerbidder.domain.chat.dto.response.AuctionChatEnterResponse;
+import devut.buzzerbidder.domain.chat.dto.response.ChatListResponse;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
 import devut.buzzerbidder.domain.chat.service.ChatRoomService;
 import devut.buzzerbidder.domain.user.entity.User;
@@ -20,6 +21,14 @@ public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
     private final RequestContext requestContext;
+
+    @GetMapping
+    @Operation(summary = "채팅방 목록 조회", description = "특정 사용자의 DM 채팅방 목록을 조회합니다.")
+    public ApiResponse<ChatListResponse> getChatList() {
+        User user = requestContext.getCurrentUser();
+
+        ApiResponse<ChatListResponse> response = .getChatList();
+    }
 
     @PutMapping("/{auctionId}/enter")
     @Operation(summary = "경매방 채팅 입장", description = "특정 경매방의 채팅방에 입장합니다.")

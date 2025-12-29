@@ -28,6 +28,10 @@ public class ChatRoom extends BaseEntity {
     @Column(nullable = false)
     private Long referenceEntityId;
 
+    @Column
+    private Long lastMessageId;
+
+    @Column(nullable = false)
     private boolean isActive = false;
 
     @Builder
@@ -35,6 +39,7 @@ public class ChatRoom extends BaseEntity {
         this.roomType = roomType;
         this.referenceType = referenceType;
         this.referenceEntityId = referenceEntityId;
+        this.lastMessageId = null;
         this.isActive = isActive;
     }
 
