@@ -186,8 +186,8 @@ public class ChatRoomService {
                             room.getId(),
                             otherUser.getNickname(),
                             otherUser.getProfileImageUrl(),
-                            "마지막 메시지 내용(반정규화 필드)", // ChatRoom에 필드 추가 필요
-                            room.getUpdateDate(),
+                            room.getLastMessageContent(),
+                            room.getLastMessageTime(),
                             hasUnread
                     );
                 }).toList();
