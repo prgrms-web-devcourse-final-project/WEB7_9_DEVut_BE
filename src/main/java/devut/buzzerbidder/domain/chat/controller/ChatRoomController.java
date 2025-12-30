@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.chat.controller;
 
 import devut.buzzerbidder.domain.chat.dto.response.AuctionChatEnterResponse;
 import devut.buzzerbidder.domain.chat.dto.response.ChatListResponse;
+import devut.buzzerbidder.domain.chat.dto.response.ChatRoomDetailResponse;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
 import devut.buzzerbidder.domain.chat.service.ChatRoomService;
 import devut.buzzerbidder.domain.user.entity.User;
@@ -30,6 +31,15 @@ public class ChatRoomController {
         ChatListResponse response = chatRoomService.getChatList(user);
 
         return ApiResponse.ok("DM 목록 조회 성공",response);
+    }
+
+    @GetMapping("/{roomId}")
+    @Operation(summary = "DM 상세 및 메시지 목록 조회", description = "DM 상단 상품 정보와 과거 메시지 내역을 조회합니다.")
+    public ApiResponse<ChatRoomDetailResponse> getChatRoomDetail(
+            @PathVariable Long roomId) {
+        User user = requestContext.getCurrentUser();
+        ChatRoomDetailResponse response = chatRoomService.getChatRoomDetail(roomId, user);
+        return ApiResponse.ok("채팅방 상세 조회 성공", response);
     }
 
     @PutMapping("/{auctionId}/enter")
@@ -63,5 +73,4 @@ public class ChatRoomController {
 
         return ApiResponse.ok("경매방 채팅 퇴장 처리 완료");
     }
-
 }

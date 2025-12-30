@@ -3,8 +3,12 @@ package devut.buzzerbidder.domain.chat.service;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
 import devut.buzzerbidder.domain.chat.dto.response.ChatListResponse;
+import devut.buzzerbidder.domain.chat.dto.response.ChatRoomDetailResponse;
+import devut.buzzerbidder.domain.chat.dto.response.DirectMessageResponse;
+import devut.buzzerbidder.domain.chat.entity.ChatMessage;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
 import devut.buzzerbidder.domain.chat.entity.ChatRoomEntered;
+import devut.buzzerbidder.domain.chat.repository.ChatMessageRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
@@ -37,7 +41,7 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomEnteredRepository chatRoomEnteredRepository;
     private final AuctionRoomRepository auctionRoomRepository;
-    private final LiveItemRepository liveItemRepository;
+    private final ChatMessageRepository chatMessageRepository;
     private final DelayedItemRepository delayedItemRepository;
     private final UserService userService;
 
@@ -193,6 +197,47 @@ public class ChatRoomService {
                 }).toList();
 
         return new ChatListResponse(items);
+    }
+
+    @Transactional(readOnly = true)
+    public ChatRoomDetailResponse getChatRoomDetail(Long chatRoomId, User user) {
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHATROOM_NOT_FOUND));
+
+        if (!chatRoomEnteredRepository.existsByUserAndChatRoom(user, chatRoom)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
+        // 상품 정보 조회 (ReferenceEntityType이 ITEM인 경우)
+        ChatRoomDetailResponse.ItemInfo itemInfo = null;
+        if (chatRoom.getReferenceType() == ChatRoom.ReferenceEntityType.ITEM) {
+            DelayedItem item = delayedItemRepository.findDelayedItemWithImagesById(chatRoom.getReferenceEntityId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+
+            String firstImageUrl = item.getImages().isEmpty() ? null : item.getImages().get(0).getImageUrl();
+
+            itemInfo = new ChatRoomDetailResponse.ItemInfo(
+                    item.getId(),
+                    item.getName(),
+                    item.getCurrentPrice(),
+                    firstImageUrl,
+                    item.getAuctionStatus().name()
+            );
+        }
+
+        // 메시지 내역 조회 (ChatMessageRepository에 별도 쿼리 필요)
+        List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomOrderByCreateDateAsc(chatRoom);
+
+        List<DirectMessageResponse> messageResponses = chatMessages.stream()
+                .map(m -> new DirectMessageResponse(
+                        m.getId(),
+                        m.getSender().getProfileImageUrl(),
+                        m.getSender().getNickname(),
+                        m.getMessage(),
+                        m.getCreateDate()
+                )).toList();
+
+        return new ChatRoomDetailResponse(itemInfo, messageResponses);
     }
 }
 
