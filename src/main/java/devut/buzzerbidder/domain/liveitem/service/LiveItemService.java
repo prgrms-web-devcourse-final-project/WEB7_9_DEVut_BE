@@ -5,6 +5,7 @@ import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomService;
 import devut.buzzerbidder.domain.likelive.service.LikeLiveService;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidService;
+import devut.buzzerbidder.domain.liveBid.service.LiveBidWebSocketService;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
@@ -18,6 +19,7 @@ import devut.buzzerbidder.domain.liveitem.dto.response.RoomDto;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
+import devut.buzzerbidder.domain.liveitem.event.LiveAuctionEndedEvent;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
@@ -33,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -52,6 +55,8 @@ public class LiveItemService {
     private final RedissonClient redissonClient;
     private final TransactionTemplate transactionTemplate;
     private final LiveBidRedisService  liveBidRedisService;
+    private final LiveBidWebSocketService liveBidWebSocketService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public LiveItemCreateResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
 
@@ -504,12 +509,51 @@ public class LiveItemService {
             // 유찰 처리
             liveItem.changeAuctionStatus(AuctionStatus.FAILED);
             log.info("경매 유찰 처리 완료 - Item ID: {}", itemId);
+
+            // WebSocket 브로드캐스트
+            liveBidWebSocketService.broadcastAuctionEnd(
+                liveItem.getAuctionRoom().getId(),
+                itemId,
+                false,
+                null,
+                null
+            );
+
+            // SSE 개인 알림
+            eventPublisher.publishEvent(new LiveAuctionEndedEvent(
+                itemId,
+                liveItem.getName(),
+                liveItem.getSellerUserId(),
+                false,
+                null,
+                null
+            ));
+
         } else {
 
             // 낙찰 처리 -> 결제 대기 상태로 변경
             Long winnerId = Long.parseLong(currentBidderId);
             Integer finalPrice = Integer.parseInt(maxBidPriceStr);
             liveItem.changeAuctionStatus(AuctionStatus.PAYMENT_PENDING);
+
+            // WebSocket 브로드캐스트
+            liveBidWebSocketService.broadcastAuctionEnd(
+                liveItem.getAuctionRoom().getId(),
+                itemId,
+                true,
+                winnerId,
+                finalPrice
+            );
+
+            // SSE 개인 알림
+            eventPublisher.publishEvent(new LiveAuctionEndedEvent(
+                itemId,
+                liveItem.getName(),
+                liveItem.getSellerUserId(),
+                true,
+                winnerId,
+                finalPrice
+            ));
 
             // TODO: 낙찰자에게 알림 발송 및 주문/결제 데이터 생성 로직 호출 LiveDeal 도메인에 구현
 

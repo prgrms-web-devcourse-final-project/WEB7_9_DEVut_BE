@@ -7,9 +7,12 @@ public enum NotificationType {
     DELAYED_FAILED_SELLER,          // 지연 경매 판매자에게 유찰 알림
     DELAYED_BUY_NOW_SOLD,           // 지연 경매 판매자에게 즉시 구매 알림
     DELAYED_CANCELLED_BY_BUY_NOW,   // 지연 경매 이전 최고 입찰자에게 즉시 구매로 인한 취소 알림
+    LIVE_AUCTION_START,             // 찜한 상품 라이브 경매 시작
+    LIVE_SUCCESS_BIDDER,            // 라이브 경매 낙찰자에게 낙찰 알림
+    LIVE_SUCCESS_SELLER,            // 라이브 경매 판매자에게 낙찰 알림
+    LIVE_FAILED_SELLER,             // 라이브 경매 판매자에게 유찰 알림
 
 
-    LIVE_AUCTION_START,             // 관심 경매 시작
     PAYMENT_COMPLETE,               // 결제 완료
     TRANSACTION_COMPLETE,           // 거래 완료
     MESSAGE_RECEIVED,               // 채팅 메시지
