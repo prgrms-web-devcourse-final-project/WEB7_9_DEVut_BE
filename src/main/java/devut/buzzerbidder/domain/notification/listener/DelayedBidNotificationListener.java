@@ -33,6 +33,7 @@ public class DelayedBidNotificationListener {
             "DELAYED_ITEM",
             event.delayedItemId(),
             Map.of(
+                "itemName", event.delayedItemName(),
                 "firstBidderUserId", event.firstBidderUserId(),
                 "firstBidAmount", event.firstBidAmount()
             )
@@ -53,6 +54,7 @@ public class DelayedBidNotificationListener {
             "DELAYED_ITEM",
             event.delayedItemId(),
             Map.of(
+                "itemName", event.delayedItemName(),
                 "newBidAmount", event.newBidAmount(),
                 "newBidderUserId", event.newBidderUserId()
             )
@@ -72,6 +74,7 @@ public class DelayedBidNotificationListener {
             "DELAYED_ITEM",
             event.delayedItemId(),
             Map.of(
+                "itemName", event.delayedItemName(),
                 "buyNowPrice", event.buyNowPrice(),
                 "buyUserId", event.buyUserId()
             )
@@ -87,6 +90,7 @@ public class DelayedBidNotificationListener {
                 "DELAYED_ITEM",
                 event.delayedItemId(),
                 Map.of(
+                    "itemName", event.delayedItemName(),
                     "buyNowPrice", event.buyNowPrice()
                 )
             );

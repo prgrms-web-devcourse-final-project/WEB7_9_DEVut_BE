@@ -30,6 +30,7 @@ public class DelayedAuctionEndedNotificationListener {
                 "DELAYED_ITEM",
                 event.delayedItemId(),
                 Map.of(
+                    "itemName", event.delayedItemName(),
                     "finalPrice", event.finalPrice(),
                     "winnerUserId", event.winnerUserId()
                 )
@@ -43,6 +44,7 @@ public class DelayedAuctionEndedNotificationListener {
                 "DELAYED_ITEM",
                 event.delayedItemId(),
                 Map.of(
+                    "itemName", event.delayedItemName(),
                     "finalPrice", event.finalPrice()
                 )
             );
@@ -54,7 +56,9 @@ public class DelayedAuctionEndedNotificationListener {
                 "'%s' 상품이 유찰되었습니다.".formatted(event.delayedItemName()),
                 "DELAYED_ITEM",
                 event.delayedItemId(),
-                null
+                Map.of(
+                    "itemName", event.delayedItemName()
+                )
             );
         }
     }

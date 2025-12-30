@@ -61,6 +61,7 @@ public class AuctionRoomNotificationListener {
                 "AUCTION_ROOM",
                 event.roomId(),
                 Map.of(
+                    "itemName", items.get(0).getName(),
                     "itemCount", items.size(),
                     "itemsId", items.stream().map(LiveItem::getId).toList(),
                     "liveTime", event.liveTime().toString()
