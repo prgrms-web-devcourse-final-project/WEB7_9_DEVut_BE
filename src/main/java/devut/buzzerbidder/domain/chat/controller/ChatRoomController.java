@@ -23,11 +23,13 @@ public class ChatRoomController {
     private final RequestContext requestContext;
 
     @GetMapping
-    @Operation(summary = "채팅방 목록 조회", description = "특정 사용자의 DM 채팅방 목록을 조회합니다.")
+    @Operation(summary = "DM 목록 조회", description = "특정 사용자의 DM 채팅방 목록을 조회합니다.")
     public ApiResponse<ChatListResponse> getChatList() {
         User user = requestContext.getCurrentUser();
 
-        ApiResponse<ChatListResponse> response = .getChatList();
+        ChatListResponse response = chatRoomService.getChatList(user);
+
+        return ApiResponse.ok("DM 목록 조회 성공",response);
     }
 
     @PutMapping("/{auctionId}/enter")
@@ -62,5 +64,4 @@ public class ChatRoomController {
         return ApiResponse.ok("경매방 채팅 퇴장 처리 완료");
     }
 
-    // TODO: 1:1 채팅 퇴장 처리 구현
 }

@@ -21,7 +21,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -147,8 +151,48 @@ public class ChatRoomService {
         }
     }
 
-    public ApiResponse<ChatListResponse> getChatList() {
+    @Transactional(readOnly = true)
+    public ChatListResponse getChatList(User me) {
+        // 내 입장 정보 및 방 정보 한꺼번에 조회 (N+1 방지)
+        List<ChatRoomEntered> myEntries = chatRoomEnteredRepository.findAllMyDmEntries(me);
 
+        if (myEntries.isEmpty()) {
+            return new ChatListResponse(Collections.emptyList());
+        }
+
+        // 상대방 유저 정보를 가져오기 위해 방 목록 추출
+        List<ChatRoom> myRooms = myEntries.stream()
+                .map(ChatRoomEntered::getChatRoom)
+                .toList();
+
+        // 상대 유저들의 정보 조회
+        List<ChatRoomEntered> counterpartEntries = chatRoomEnteredRepository.findCounterparts(myRooms, me);
+
+        // 방 ID별로 상대방 정보를 매핑
+        Map<Long, User> counterpartMap = counterpartEntries.stream()
+                .collect(Collectors.toMap(e -> e.getChatRoom().getId(), ChatRoomEntered::getUser));
+
+        // DTO 변환 및 안 읽은 메시지 여부 판단
+        List<ChatListResponse.ChatRoomItem> items = myEntries.stream()
+                .map(entry -> {
+                    ChatRoom room = entry.getChatRoom();
+                    User otherUser = counterpartMap.get(room.getId());
+
+                    // 마지막 메시지 ID 비교를 통해 안 읽은 상태 확인
+                    boolean hasUnread = room.getLastMessageId() != null &&
+                            room.getLastMessageId() > entry.getLastReadMessageID();
+
+                    return new ChatListResponse.ChatRoomItem(
+                            room.getId(),
+                            otherUser.getNickname(),
+                            otherUser.getProfileImageUrl(),
+                            "마지막 메시지 내용(반정규화 필드)", // ChatRoom에 필드 추가 필요
+                            room.getUpdateDate(),
+                            hasUnread
+                    );
+                }).toList();
+
+        return new ChatListResponse(items);
     }
 }
 

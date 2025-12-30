@@ -64,8 +64,7 @@ public class ChatMessageService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHATROOM_NOT_FOUND));
 
         // 해당 채팅방의 참여자가 아닐 시 예외처리
-        boolean isParticipant = chatRoomEnteredRepository.
-                existsByUserAndChatRoom(sender, chatRoom);
+        boolean isParticipant = chatRoomEnteredRepository.existsByUserAndChatRoom(sender, chatRoom);
         if (!isParticipant) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
         }
@@ -76,6 +75,18 @@ public class ChatMessageService {
                 .message(request.content())
                 .build();
         chatMessageRepository.save(chatMessage);
+
+        // 채팅방 정보 업데이트
+        chatRoomRepository.updateLastMessage(
+                chatRoomId,
+                chatMessage.getId(),
+                chatMessage.getMessage(),
+                chatMessage.getCreateDate()
+        );
+
+        // 보낸 사람(나)의 읽음 상태 갱신 (나는 내가 보낸 메시지를 읽은 상태임)
+        chatRoomEnteredRepository.findByUserAndChatRoom(sender, chatRoom)
+                .ifPresent(entered -> entered.updateReadStatus(chatMessage.getId()));
 
         DirectMessageResponse response = new DirectMessageResponse(
                 chatMessage.getId(),

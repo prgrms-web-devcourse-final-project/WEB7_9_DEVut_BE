@@ -25,7 +25,6 @@ public class ChatMessageController {
     private final ChatMessageService chatMessageService;
 
     // send/chat/auction/{auctionId}
-    @Tag(name = "ChatMessage", description = "채팅 메세지 api")
     @MessageMapping("/auction/{auctionId}")
     public void sendAuctionMessage(
             @DestinationVariable Long auctionId,
