@@ -97,6 +97,9 @@ public class ChatRoomService {
         ChatRoomEntered buyerEntry = new ChatRoomEntered(buyer, newRoom);
         ChatRoomEntered sellerEntry = new ChatRoomEntered(seller, newRoom);
 
+        chatRoomEnteredRepository.save(buyerEntry);
+        chatRoomEnteredRepository.save(sellerEntry);
+
         return newRoom;
 
     }
@@ -214,7 +217,7 @@ public class ChatRoomService {
             DelayedItem item = delayedItemRepository.findDelayedItemWithImagesById(chatRoom.getReferenceEntityId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
-            String firstImageUrl = item.getImages().isEmpty() ? null : item.getImages().get(0).getImageUrl();
+            String firstImageUrl = item.getImages().isEmpty() ? null : item.getImages().getFirst().getImageUrl();
 
             itemInfo = new ChatRoomDetailResponse.ItemInfo(
                     item.getId(),
