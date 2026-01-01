@@ -113,7 +113,7 @@ public class LiveItemController {
     @GetMapping("/hot")
     @Operation(summary = "인기 경매품 조회")
     public ApiResponse<LiveItemListResponse> getHotLiveItems(
-        @RequestParam(defaultValue = "3") int limit,
+        @RequestParam(defaultValue = "10") int limit,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 

@@ -63,6 +63,10 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
     )
     FROM LiveItem li
     LEFT JOIN LikeLive ll ON ll.liveItem = li
+    WHERE li.auctionStatus IN (
+            devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.BEFORE_BIDDING,
+            devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.IN_PROGRESS
+        )
     GROUP BY li.id, li.name, li.thumbnail, li.liveTime, li.auctionStatus, li.initPrice
     ORDER BY COUNT(ll.id) DESC, li.id DESC
 """)
