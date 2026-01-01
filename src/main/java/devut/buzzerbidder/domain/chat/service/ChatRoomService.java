@@ -5,7 +5,7 @@ import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
 import devut.buzzerbidder.domain.chat.entity.ChatRoomEntered;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
-import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;
+import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;import devut.buzzerbidder.domain.user.dto.response.UserInfo;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.wallet.service.WalletRedisService;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -89,6 +91,14 @@ public class ChatRoomService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHAT_NOT_PARTICIPANT));
 
         chatRoomEnteredRepository.delete(entered);
+    }
+
+    // 채팅방에 입장한 유저들의 프로필 정보 조회
+    public List<UserInfo> getEnteredUsers(ChatRoom chatRoom) {
+        List<User> users = chatRoomEnteredRepository.findUsersByChatRoom(chatRoom);
+        return users.stream()
+                .map(UserInfo::from)
+                .collect(Collectors.toList());
     }
 
     // TODO: 1대1 채팅 inActive 활용
