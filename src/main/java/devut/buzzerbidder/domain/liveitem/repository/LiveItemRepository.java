@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.liveitem.repository;
 
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.Category;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -81,4 +83,9 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
             @Param("status") LiveItem.AuctionStatus status,
             @Param("thresholdTime") LocalDateTime thresholdTime
     );
+
+    // 특정 상태의 라이브 경매 전체 조회 (이미지 + 경매방 포함)
+    @EntityGraph(attributePaths = {"images", "auctionRoom"})
+    @Query("SELECT li FROM LiveItem li WHERE li.auctionStatus IN :statuses")
+    List<LiveItem> findByAuctionStatusInWithImages(@Param("statuses") List<AuctionStatus> statuses);
 }

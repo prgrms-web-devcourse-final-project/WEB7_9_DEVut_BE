@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -80,5 +81,10 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
         List<AuctionStatus> statuses,
         LocalDateTime endTime
     );
+
+    // 진행중인 지연 경매 전체 조회 (이미지 포함)
+    @EntityGraph(attributePaths = {"images"})
+    @Query("SELECT di FROM DelayedItem di WHERE di.auctionStatus = :status")
+    List<DelayedItem> findByAuctionStatusWithImages(@Param("status") AuctionStatus status);
 
 }
