@@ -81,4 +81,14 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
             @Param("status") LiveItem.AuctionStatus status,
             @Param("thresholdTime") LocalDateTime thresholdTime
     );
+
+    @Query("""
+        select distinct li
+        from LiveItem li
+        left join fetch li.images img
+        where li.auctionRoom.id = :auctionRoomId
+        order by li.id asc
+    """)
+    List<LiveItem> findItemsWithImagesByRoomId(@Param("auctionRoomId") Long auctionRoomId);
+
 }
