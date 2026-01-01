@@ -409,7 +409,7 @@ public class LiveItemService {
             Long userId
     ) {
 
-        Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), pageable);
+        Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), reqBody.isSaling(), pageable);
 
         List<LiveItemResponse> baseList = page.getContent();
 

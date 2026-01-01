@@ -29,10 +29,18 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
     FROM LiveItem li
     WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
       AND (:category IS NULL OR li.category = :category)
+      AND (
+                  :isSaling IS NULL OR :isSaling = false
+                  OR li.auctionStatus IN (
+                      devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.BEFORE_BIDDING,
+                      devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.IN_PROGRESS
+                  )
+                )
 """)
     Page<LiveItemResponse> searchLiveItems(
         @Param("name") String name,
         @Param("category") Category category,
+        @Param("isSaling") Boolean isSaling,
         Pageable pageable
     );
 
