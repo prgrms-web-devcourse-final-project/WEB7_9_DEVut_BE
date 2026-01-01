@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.liveitem.service;
 
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomService;
+import devut.buzzerbidder.domain.likelive.repository.LikeLiveRepository;
 import devut.buzzerbidder.domain.likelive.service.LikeLiveService;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidService;
@@ -60,6 +61,7 @@ public class LiveItemService {
     private final RedissonClient redissonClient;
     private final TransactionTemplate transactionTemplate;
     private final LiveBidRedisService  liveBidRedisService;
+    private final LikeLiveRepository likeLiveRepository;
 
     @Timed(
             value = "buzzerbidder.redis.liveitem",
@@ -360,11 +362,16 @@ public class LiveItemService {
     }
 
     @Transactional(readOnly = true)
-    public LiveItemDetailResponse getLiveItem(Long id) {
+    public LiveItemDetailResponse getLiveItem(Long id, Long userId) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
+        boolean isLiked = false;
+        if (userId != null) {
+            isLiked = likeLiveRepository.existsByUserIdAndLiveItemId(userId, liveItem.getId());
+            // 또는 existsByUser_IdAndLiveItem_Id(userId, liveItem.getId());
+        }
         long likeCount = likeLiveService.countByLiveItemId(id);
 
         String redisKey = "liveItem:" + liveItem.getId();
@@ -389,20 +396,33 @@ public class LiveItemService {
                         .map(LiveItemImage::getImageUrl)
                         .toList(),
                 likeCount,
-                currentMaxPrice
+                currentMaxPrice,
+                isLiked
         );
     }
 
     // TODO: 레디스에서 현재 입찰가로 가격 필터링 로직 추가
     @Transactional(readOnly = true)
-    public LiveItemListResponse  getLiveItems(
+    public LiveItemListResponse getLiveItems(
             LiveItemSearchRequest reqBody,
-            Pageable pageable
+            Pageable pageable,
+            Long userId
     ) {
 
         Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), pageable);
 
-        // 2. Redis에서 현재 입찰가 가져오기
+        List<LiveItemResponse> baseList = page.getContent();
+
+        List<Long> liveItemIds = baseList.stream().map(LiveItemResponse::id).toList();
+
+        Set<Long> likedSet = Collections.emptySet();
+        if (userId != null && !liveItemIds.isEmpty()) {
+            likedSet = new HashSet<>(likeLiveRepository.findLikedLiveItemIds(userId, liveItemIds));
+        }
+
+        final Set<Long> finalLikedSet = likedSet;
+
+        // 2. Redis에서 현재 입찰가 가져오기 + 찜 여부 넣기
         List<LiveItemResponse> dtoList = page.getContent().stream()
                 .map(item -> {
                     String redisKey = "liveItem:" + item.id();
@@ -412,6 +432,8 @@ public class LiveItemService {
                             ? Long.parseLong(maxBidPriceStr)
                             : item.currentPrice();
 
+                    boolean isLiked = finalLikedSet.contains(item.id());
+
                     // DTO에 현재 입찰가 세팅
                     return new LiveItemResponse(
                             item.id(),
@@ -419,7 +441,8 @@ public class LiveItemService {
                             item.image(),
                             item.startAt(),
                             item.auctionStatus(),
-                            currentMaxBidPrice
+                            currentMaxBidPrice,
+                            isLiked
                     );
                 })
                 .toList();
@@ -444,10 +467,21 @@ public class LiveItemService {
     }
 
     @Transactional(readOnly = true)
-    public LiveItemListResponse getHotLiveItems(int limit) {
+    public LiveItemListResponse getHotLiveItems(
+        int limit,
+        Long userId) {
 
         Pageable pageable = PageRequest.of(0, limit);
         List<LiveItemResponse> beforeBidPrice = liveItemRepository.findHotLiveItems(pageable);
+
+        List<Long> liveItemIds = beforeBidPrice.stream().map(LiveItemResponse::id).toList();
+
+        Set<Long> likedSet = Collections.emptySet();
+        if (userId != null && !liveItemIds.isEmpty()) {
+            likedSet = new HashSet<>(likeLiveRepository.findLikedLiveItemIds(userId, liveItemIds));
+        }
+
+        final Set<Long> finalLikedSet = likedSet;
 
         List<LiveItemResponse> dtoList = beforeBidPrice.stream()
                 .map(item -> {
@@ -458,13 +492,17 @@ public class LiveItemService {
                             ? Long.parseLong(maxBidPriceStr)
                             : item.currentPrice(); // DB 값 fallback
 
+                    boolean isLiked = finalLikedSet.contains(item.id());
+
+
                     return new LiveItemResponse(
                             item.id(),
                             item.name(),
                             item.image(),
                             item.startAt(),
                             item.auctionStatus(),
-                            currentMaxBidPrice
+                            currentMaxBidPrice,
+                            isLiked
                     );
                 })
                 .toList();

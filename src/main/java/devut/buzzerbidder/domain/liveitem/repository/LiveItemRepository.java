@@ -23,7 +23,8 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.thumbnail,
         li.liveTime,
         li.auctionStatus,
-        li.initPrice
+        li.initPrice,
+        null
     )
     FROM LiveItem li
     WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
@@ -49,7 +50,8 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.thumbnail,
         li.liveTime,
         li.auctionStatus,
-        li.initPrice
+        li.initPrice,
+        false
     )
     FROM LiveItem li
     LEFT JOIN LikeLive ll ON ll.liveItem = li
