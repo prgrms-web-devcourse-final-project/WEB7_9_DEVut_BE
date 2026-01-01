@@ -53,7 +53,7 @@ public class LiveItemService {
             extraTags = {"op", "write"},
             histogram = true
     )
-    public LiveItemResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
+    public LiveItemCreateResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -122,7 +122,7 @@ public class LiveItemService {
             extraTags = {"op", "modify"},
             histogram = true
     )
-    public LiveItemResponse modifyLiveItem(Long id, LiveItemModifyRequest reqBody, User user) {
+    public LiveItemModifyResponse modifyLiveItem(Long id, LiveItemModifyRequest reqBody, User user) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
