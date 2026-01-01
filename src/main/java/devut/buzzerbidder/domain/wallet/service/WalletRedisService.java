@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.wallet.service;
 
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -86,6 +87,11 @@ public class WalletRedisService {
      * - 성공 시: sessionKey, balKey, verKey 생성 + TTL 설정 + Stream에 INIT 이벤트 기록
      * - 실패 시: (이미 세션이 있다면) 아무 것도 변경하지 않고 false 반환
      */
+    @Timed(
+            value = "buzzerbidder.redis.wallet",
+            extraTags = {"op", "acquire"},
+            histogram = true
+    )
     public boolean tryAcquireSessionAndInitBalance(Long userId, Long roomId, Long balanceFromDb, String traceId) {
         String sKey = SESSION_KEY_PREFIX + userId;
         String bKey = BAL_KEY_PREFIX + userId;
@@ -116,6 +122,11 @@ public class WalletRedisService {
      * - Redis에 bizz 키가 없으면 hit=false로 반환
      * - 잔액 부족이면 INSUFFICIENT로 처리
      */
+    @Timed(
+            value = "buzzerbidder.redis.wallet",
+            extraTags = {"op", "change"},
+            histogram = true
+    )
     public RedisBizzChangeResult changeBalanceIfPresent(
             Long userId,
             Long amount,
@@ -171,6 +182,11 @@ public class WalletRedisService {
      * - hit=false면 이미 만료/삭제된 상태 -> 호출자가 “DB flush 불가” 케이스로 처리
      * - hit=true면 finalBalance를 DB에 저장하고 종료하면 됨
      */
+    @Timed(
+            value = "buzzerbidder.redis.wallet",
+            extraTags = {"op", "flush"},
+            histogram = true
+    )
     public RedisFlushResult flushBalanceAndClearSession(Long userId, String traceId) {
         String sKey = SESSION_KEY_PREFIX + userId;
         String bKey = BAL_KEY_PREFIX + userId;

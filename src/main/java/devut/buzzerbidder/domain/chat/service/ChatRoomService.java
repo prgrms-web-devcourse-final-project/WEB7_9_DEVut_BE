@@ -4,13 +4,14 @@ import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
 import devut.buzzerbidder.domain.chat.entity.ChatRoomEntered;
-import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;
+import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.wallet.service.WalletRedisService;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +59,11 @@ public class ChatRoomService {
     }
 
     // 채팅방 참여 상태 관리
+    @Timed(
+            value = "buzzerbidder.chat.enter",
+            extraTags = {"op", "live_room_enter"},
+            histogram = true
+    )
     public void enterChatRoom(User user, ChatRoom chatRoom) {
         Long userId =  user.getId();
         Long chatRoomId = chatRoom.getReferenceEntityId();

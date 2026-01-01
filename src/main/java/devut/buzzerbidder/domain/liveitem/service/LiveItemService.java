@@ -23,6 +23,7 @@ import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.image.ImageService;
+import io.micrometer.core.annotation.Timed;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -40,6 +41,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -53,6 +61,11 @@ public class LiveItemService {
     private final TransactionTemplate transactionTemplate;
     private final LiveBidRedisService  liveBidRedisService;
 
+    @Timed(
+            value = "buzzerbidder.redis.liveitem",
+            extraTags = {"op", "write"},
+            histogram = true
+    )
     public LiveItemCreateResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
 
         LocalDateTime now = LocalDateTime.now();
@@ -130,6 +143,11 @@ public class LiveItemService {
         }
     }
 
+    @Timed(
+            value = "buzzerbidder.redis.liveitem",
+            extraTags = {"op", "modify"},
+            histogram = true
+    )
     public LiveItemModifyResponse modifyLiveItem(Long id, LiveItemModifyRequest reqBody, User user) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
