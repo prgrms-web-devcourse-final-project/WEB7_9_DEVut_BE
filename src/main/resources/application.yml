@@ -76,6 +76,7 @@ management:
     tags:
       application: buzzerbidder
       env: ${spring.profiles.active}
+      lettuce: true
     distribution:
       percentiles-histogram:
         http.server.requests: true

@@ -1,5 +1,6 @@
 package devut.buzzerbidder.domain.liveBid.service;
 
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -164,7 +165,11 @@ public class LiveBidRedisService {
         return 1
 """;
 
-
+    @Timed(
+            value = "buzzerbidder.redis.livebid",
+            extraTags = {"op", "atomic_update"},
+            histogram = true
+    )
     public Long updateMaxBidPriceAtomicWithDeposit(
             String redisKey,
             Long bidderId,
