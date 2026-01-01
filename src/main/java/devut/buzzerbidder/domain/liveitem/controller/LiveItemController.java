@@ -4,8 +4,10 @@ import devut.buzzerbidder.domain.liveitem.dto.request.AuctionStatusRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
+import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemCreateResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemDetailResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemListResponse;
+import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemModifyResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.service.LiveItemService;
 import devut.buzzerbidder.global.response.ApiResponse;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
@@ -37,12 +40,12 @@ public class LiveItemController {
 
     @PostMapping
     @Operation(summary = "경매품 생성")
-    public ApiResponse<LiveItemResponse> createLiveItem(
-        @RequestBody LiveItemCreateRequest reqBody,
+    public ApiResponse<LiveItemCreateResponse> createLiveItem(
+        @Valid @RequestBody LiveItemCreateRequest reqBody,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ){
 
-        LiveItemResponse response = liveItemService.writeLiveItem(reqBody, userDetails.getUser());
+        LiveItemCreateResponse response = liveItemService.writeLiveItem(reqBody, userDetails.getUser());
 
         return ApiResponse.ok("경매품 생성",response);
 
@@ -50,13 +53,13 @@ public class LiveItemController {
 
     @PutMapping("/{id}")
     @Operation(summary = "경매품 정보 수정")
-    public ApiResponse<LiveItemResponse> modifyLiveItem(
+    public ApiResponse<LiveItemModifyResponse> modifyLiveItem(
         @PathVariable Long id,
         @RequestBody LiveItemModifyRequest reqBody,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
-        LiveItemResponse response =liveItemService.modifyLiveItem(id, reqBody, userDetails.getUser());
+        LiveItemModifyResponse response = liveItemService.modifyLiveItem(id, reqBody, userDetails.getUser());
 
         return ApiResponse.ok("%d번 경매품 수정".formatted(id), response);
     }

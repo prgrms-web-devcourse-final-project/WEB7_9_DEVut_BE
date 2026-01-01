@@ -9,13 +9,16 @@ public record MyItemResponse(
     String type,
     String name,
     String category,
+    Long currentPrice,
     Long initPrice,
     Long instantBuyPrice,
-    Long likes,
+    Boolean wish,
     String image,
+    String auctionStatus,
+    LocalDateTime endTime,
     LocalDateTime createdAt
 ) {
-    public static MyItemResponse fromLiveItem(LiveItem liveItem, Long likes) {
+    public static MyItemResponse fromLiveItem(LiveItem liveItem, Long currentPrice, Boolean wish) {
         String imageUrl = liveItem.getImages().isEmpty() 
             ? null 
             : liveItem.getImages().get(0).getImageUrl();
@@ -25,15 +28,18 @@ public record MyItemResponse(
             "LIVE",
             liveItem.getName(),
             liveItem.getCategory() != null ? liveItem.getCategory().name() : null,
+            currentPrice,
             liveItem.getInitPrice(),
             null, // LiveItem에는 instantBuyPrice가 없음
-            likes,
+            wish,
             imageUrl,
+            liveItem.getAuctionStatus() != null ? liveItem.getAuctionStatus().name() : null,
+            liveItem.getLiveTime(), // 라이브 경매는 liveTime을 endTime으로 사용
             liveItem.getCreateDate()
         );
     }
 
-    public static MyItemResponse fromDelayedItem(DelayedItem delayedItem, Long likes) {
+    public static MyItemResponse fromDelayedItem(DelayedItem delayedItem, Boolean wish) {
         String imageUrl = delayedItem.getImages().isEmpty() 
             ? null 
             : delayedItem.getImages().get(0).getImageUrl();
@@ -43,10 +49,13 @@ public record MyItemResponse(
             "DELAYED",
             delayedItem.getName(),
             delayedItem.getCategory() != null ? delayedItem.getCategory().name() : null,
+            delayedItem.getCurrentPrice(),
             delayedItem.getStartPrice(),
-            null, // DelayedItem에는 instantBuyPrice가 없음 (필요시 추가 가능)
-            likes,
+            delayedItem.getBuyNowPrice(), // DelayedItem의 buyNowPrice를 instantBuyPrice로 사용
+            wish,
             imageUrl,
+            delayedItem.getAuctionStatus() != null ? delayedItem.getAuctionStatus().name() : null,
+            delayedItem.getEndTime(), // 지연 경매는 endTime 사용
             delayedItem.getCreateDate()
         );
     }

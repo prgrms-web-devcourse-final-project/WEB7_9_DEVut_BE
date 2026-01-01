@@ -109,6 +109,30 @@ public class SwaggerConfig {
     }
 
     @Bean
+    public GroupedOpenApi delayedItemApi() {
+        return GroupedOpenApi.builder()
+            .group("10. Delayed Item API")
+            .pathsToMatch("/api/v1/auction/delayed/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi notificationApi() {
+        return GroupedOpenApi.builder()
+            .group("11. Notification API")
+            .pathsToMatch("/api/v1/notifications/**")
+            .build();
+    }
+
+    @Bean
+    public GroupedOpenApi adminApi() {
+        return GroupedOpenApi.builder()
+            .group("12. Admin API")
+            .pathsToMatch("/api/v1/admin/**")
+            .build();
+    }
+
+    @Bean
     public GroupedOpenApi allApi() {
         return GroupedOpenApi.builder()
             .group("00. All APIs")
