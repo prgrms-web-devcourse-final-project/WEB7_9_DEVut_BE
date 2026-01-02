@@ -2,20 +2,33 @@ package devut.buzzerbidder.domain.chat.service;
 
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
+import devut.buzzerbidder.domain.chat.dto.response.ChatListResponse;
+import devut.buzzerbidder.domain.chat.dto.response.ChatRoomDetailResponse;
+import devut.buzzerbidder.domain.chat.dto.response.DirectMessageResponse;
+import devut.buzzerbidder.domain.chat.entity.ChatMessage;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
 import devut.buzzerbidder.domain.chat.entity.ChatRoomEntered;
+import devut.buzzerbidder.domain.chat.repository.ChatMessageRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
+import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
+import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.service.UserService;
 import devut.buzzerbidder.domain.wallet.service.WalletRedisService;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

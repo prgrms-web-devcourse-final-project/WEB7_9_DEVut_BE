@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,8 +31,11 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomEnteredRepository chatRoomEnteredRepository;
 
+    /**
+     * 휘발성 메시지용 임시 ID 생성 (타임스탬프)
+     */
     private String generateTemporaryId() {
-        return UUID.randomUUID().toString();
+        return String.valueOf(System.currentTimeMillis());
     }
 
     public void sendAuctionMessage(Long auctionId, User sender, ChatMessageRequest request) {
@@ -41,7 +43,7 @@ public class ChatMessageService {
         ChatRoom chatRoom = chatRoomRepository.findByAuctionId(auctionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHATROOM_NOT_FOUND));
 
-        String tempId =  generateTemporaryId();
+        String tempId = generateTemporaryId();
         String message = request.content();
         LocalDateTime now = LocalDateTime.now();
 

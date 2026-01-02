@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
 public record AuctionChatMessageResponse(
-        @Schema(description = "메시지 임시 ID")
+        @Schema(description = "메시지 임시 ID (타임스탬프)", example = "1735776000000")
         String tempId,
         @Schema(description = "발신자 프로필 사진 URL")
         String profileImageUrl,
