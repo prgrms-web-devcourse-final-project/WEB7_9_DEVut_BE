@@ -49,7 +49,7 @@ public class ChatMessageService {
 
 
         AuctionChatMessageResponse response = new AuctionChatMessageResponse(
-                "CHAT_MESSAGE",
+                "AUCTION_CHAT",
                 tempId,
                 sender.getProfileImageUrl(),
                 sender.getNickname(),
@@ -92,7 +92,7 @@ public class ChatMessageService {
                 .ifPresent(entered -> entered.updateReadStatus(chatMessage.getId()));
 
         DirectMessageResponse response = new DirectMessageResponse(
-                "CHAT_MESSAGE",
+                "DM",
                 chatMessage.getId(),
                 sender.getProfileImageUrl(),
                 sender.getNickname(),

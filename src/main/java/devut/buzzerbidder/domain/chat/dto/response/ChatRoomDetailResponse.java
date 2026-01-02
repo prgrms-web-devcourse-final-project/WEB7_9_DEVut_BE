@@ -1,11 +1,13 @@
 package devut.buzzerbidder.domain.chat.dto.response;
 
+import devut.buzzerbidder.domain.chat.dto.DirectMessageDto;
+
 import java.util.List;
 
 public record ChatRoomDetailResponse(
         ItemInfo itemInfo,
         // 메시지 목록
-        List<DirectMessageResponse> messages
+        List<DirectMessageDto> messages
 ) {
     public record ItemInfo(
             Long itemId,

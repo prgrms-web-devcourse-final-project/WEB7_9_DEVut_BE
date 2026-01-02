@@ -2,9 +2,9 @@ package devut.buzzerbidder.domain.chat.service;
 
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
+import devut.buzzerbidder.domain.chat.dto.DirectMessageDto;
 import devut.buzzerbidder.domain.chat.dto.response.ChatListResponse;
 import devut.buzzerbidder.domain.chat.dto.response.ChatRoomDetailResponse;
-import devut.buzzerbidder.domain.chat.dto.response.DirectMessageResponse;
 import devut.buzzerbidder.domain.chat.entity.ChatMessage;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
 import devut.buzzerbidder.domain.chat.entity.ChatRoomEntered;
@@ -235,9 +235,8 @@ public class ChatRoomService {
         // 메시지 내역 조회 (ChatMessageRepository에 별도 쿼리 필요)
         List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomOrderByCreateDateAsc(chatRoom);
 
-        List<DirectMessageResponse> messageResponses = chatMessages.stream()
-                .map(m -> new DirectMessageResponse(
-                        "CHAT_MESSAGE",
+        List<DirectMessageDto> messageResponses = chatMessages.stream()
+                .map(m -> new DirectMessageDto(
                         m.getId(),
                         m.getSender().getProfileImageUrl(),
                         m.getSender().getNickname(),

@@ -1,13 +1,10 @@
-package devut.buzzerbidder.domain.chat.dto.response;
+package devut.buzzerbidder.domain.chat.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
-public record DirectMessageResponse(
-        @Schema(description = "메시지 타입", example = "DM")
-        String type,
-
+public record DirectMessageDto(
         @Schema(description = "메시지 ID")
         Long id,
 

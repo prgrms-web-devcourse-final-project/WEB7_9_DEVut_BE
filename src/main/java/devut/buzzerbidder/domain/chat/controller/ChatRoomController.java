@@ -37,9 +37,9 @@ public class ChatRoomController {
     @GetMapping("/dm/{chatRoomId}")
     @Operation(summary = "DM 상세 및 메시지 목록 조회", description = "DM 상단 상품 정보와 과거 메시지 내역을 조회합니다.")
     public ApiResponse<ChatRoomDetailResponse> getChatRoomDetail(
-            @PathVariable Long roomId) {
+            @PathVariable Long chatRoomId) {
         User user = requestContext.getCurrentUser();
-        ChatRoomDetailResponse response = chatRoomService.getChatRoomDetail(roomId, user);
+        ChatRoomDetailResponse response = chatRoomService.getChatRoomDetail(chatRoomId, user);
         return ApiResponse.ok("채팅방 상세 조회 성공", response);
     }
 
