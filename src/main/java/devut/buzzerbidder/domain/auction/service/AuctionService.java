@@ -7,7 +7,6 @@ import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.likedelayed.service.LikeDelayedService;
 import devut.buzzerbidder.domain.likelive.service.LikeLiveService;
-import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
@@ -28,7 +27,6 @@ public class AuctionService {
 
     private final DelayedItemRepository delayedItemRepository;
     private final LiveItemRepository liveItemRepository;
-    private final LiveBidRedisService liveBidRedisService;
     private final LikeDelayedService likeDelayedService;
     private final LikeLiveService likeLiveService;
 
@@ -53,7 +51,14 @@ public class AuctionService {
         }
 
         // 정렬
-        allAuctions.sort(Comparator.comparing(AuctionItem::endTime));
+        allAuctions.sort(
+            Comparator
+                .comparing((AuctionItem item) -> {
+                    String status = item.auctionStatus();
+                    return status.equals("BEFORE_BIDDING") || status.equals("IN_PROGRESS") ? 0 : 1;
+                })
+                .thenComparing(AuctionItem::endTime)
+        );
 
         // 페이징
         int start = (int) pageable.getOffset();
@@ -89,11 +94,14 @@ public class AuctionService {
     }
 
     private List<LiveItem> getLiveItems(AuctionSearchRequest request) {
-        // 키워드 검색
-        if (request.keyword() != null || request.category() != null) {
-            Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(
+        // 키워드 검색 또는 가격 필터
+        if (hasSearchFilters(request)) {
+            Page<LiveItemResponse> page = liveItemRepository.searchLiveItemsForAuction(
                 request.keyword(),
                 request.category(),
+                request.minPrice(),
+                request.maxPrice(),
+                request.isSelling(),
                 Pageable.unpaged()
             );
 
@@ -142,25 +150,17 @@ public class AuctionService {
             : Set.of();
 
         return items.stream()
-            .map(item -> {
-                String redisKey = "liveItem:" + item.getId();
-                String maxBidPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
-                Long currentMaxBidPrice = (maxBidPriceStr != null)
-                    ? Long.parseLong(maxBidPriceStr)
-                    : item.getInitPrice();
-
-                return new AuctionItem(
-                    item.getId(),
-                    "LIVE",
-                    item.getName(),
-                    item.getThumbnail(),
-                    currentMaxBidPrice,
-                    item.getAuctionRoom().getLiveTime(),
-                    item.getAuctionStatus().name(),
-                    item.getAuctionRoom().getId(),
-                    likedItemIds.contains(item.getId())
-                );
-            })
+            .map(item -> new AuctionItem(
+                item.getId(),
+                "LIVE",
+                item.getName(),
+                item.getThumbnail(),
+                item.getInitPrice(),
+                item.getAuctionRoom().getLiveTime(),
+                item.getAuctionStatus().name(),
+                item.getAuctionRoom().getId(),
+                likedItemIds.contains(item.getId())
+            ))
             .toList();
     }
 

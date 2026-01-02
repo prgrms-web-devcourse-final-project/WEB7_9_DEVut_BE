@@ -70,7 +70,6 @@ public enum ErrorCode {
     AUCTION_STATUS_INVALID("AR007", HttpStatus.BAD_REQUEST, "잘못된 경매 상태입니다."),
     AUCTION_ROOM_ASSIGN_UNAVAILABLE("AR008", HttpStatus.CONFLICT, "할당 가능한 경매방이 없습니다."),
 
-
     // ========== LIVEITEM 도메인 에러 ==========
     CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
     INVALID_LIVETIME("LI002", HttpStatus.BAD_REQUEST,"유효한 경매 시작 시간이 아닙니다."),
@@ -112,7 +111,8 @@ public enum ErrorCode {
 
     // ========== chat 도메인 에러 ==========
     CHATROOM_NOT_FOUND("C001", HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."),
-    CHAT_NOT_PARTICIPANT("C002", HttpStatus.NOT_FOUND, "참여중이지 않은 채팅방입니다.");
+    CHAT_NOT_PARTICIPANT("C002", HttpStatus.NOT_FOUND, "참여중이지 않은 채팅방입니다."),
+    SELF_CHAT_NOT_ALLOWED("C003", HttpStatus.FORBIDDEN, "자기 자신과 채팅할 수 없습니다.");
 
     private final String code;
     private final HttpStatus status;

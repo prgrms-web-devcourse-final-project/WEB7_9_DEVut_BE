@@ -19,7 +19,7 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
 
     @Query("""
         SELECT di From DelayedItem di
-        LEFT JOIN di.images img
+        LEFT JOIN FETCH di.images img
         WHERE (:name IS NULL OR LOWER(di.name) LIKE %:name%)
         AND (:category IS NULL OR di.category = :category)
         AND (:minPrice IS NULL OR di.currentPrice >= :minPrice)
@@ -28,6 +28,12 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
             :isSelling = false
             OR di.auctionStatus IN :activeStatuses
         )
+        ORDER BY
+            CASE
+                WHEN di.auctionStatus IN ('BEFORE_BIDDING', 'IN_PROGRESS') THEN 0
+                ELSE 1
+            END,
+            di.endTime ASC
         """)
     Page<DelayedItem> searchDelayedItems(
         @Param("name") String name,
@@ -39,7 +45,7 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
         Pageable pageable
     );
 
-    @Query("SELECT di FROM DelayedItem di " +
+    @Query("SELECT DISTINCT di FROM DelayedItem di " +
         "LEFT JOIN FETCH di.images " +
         "WHERE di.id = :id")
     Optional<DelayedItem> findDelayedItemWithImagesById(
@@ -91,6 +97,6 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
     // 진행중인 지연 경매 전체 조회 (이미지 포함)
     @EntityGraph(attributePaths = {"images"})
     @Query("SELECT di FROM DelayedItem di WHERE di.auctionStatus in :statuses")
-    List<DelayedItem> findByAuctionStatusWithImages(@Param("status") List<AuctionStatus> status);
+    List<DelayedItem> findByAuctionStatusWithImages(@Param("statuses") List<AuctionStatus> statuses);
 
 }

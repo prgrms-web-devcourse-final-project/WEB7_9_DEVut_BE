@@ -70,6 +70,15 @@ public class NotificationController {
         return ApiResponse.ok("알림을 읽음 처리했습니다.");
     }
 
+    @PatchMapping("/read-all")
+    @Operation(summary = "모든 알림 읽음 처리", description = "현재 사용자의 읽지 않은 모든 알림을 읽음 처리합니다.")
+    public ApiResponse<Void> markAllAsRead() {
+        User user = requestContext.getCurrentUser();
+        int updatedCount = notificationService.markAllAsRead(user.getId());
+
+        return ApiResponse.ok(updatedCount + "개의 알림을 읽음 처리했습니다.");
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "알림 삭제", description = "특정 알림을 삭제합니다.")
     public ApiResponse<Void> deleteNotification(@PathVariable Long id) {

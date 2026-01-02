@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -85,8 +86,10 @@ public class LiveItemController {
         @RequestParam(defaultValue = "15") int size,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-        Long userId = userDetails != null ? userDetails.getUser().getId() : null;
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.ASC, "id"));
+
+        Long userId = (userDetails != null) ? userDetails.getId() : null;
+
         LiveItemListResponse response =
             liveItemService.getLiveItems(reqBody, pageable, userId);
 
@@ -99,8 +102,10 @@ public class LiveItemController {
         @PathVariable Long id,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userId = userDetails != null ? userDetails.getUser().getId() : null;
+
+        Long userId = (userDetails != null) ? userDetails.getId() : null;
         LiveItemDetailResponse response = liveItemService.getLiveItem(id, userId);
+
 
         return ApiResponse.ok("%d번 경매품 단건 조회".formatted(id), response);
     }
@@ -108,10 +113,12 @@ public class LiveItemController {
     @GetMapping("/hot")
     @Operation(summary = "인기 경매품 조회")
     public ApiResponse<LiveItemListResponse> getHotLiveItems(
-        @RequestParam(defaultValue = "3") int limit,
+        @RequestParam(defaultValue = "10") int limit,
         @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        Long userId = userDetails != null ? userDetails.getUser().getId() : null;
+
+        Long userId = (userDetails != null) ? userDetails.getId() : null;
+
         LiveItemListResponse response = liveItemService.getHotLiveItems(limit, userId);
 
         return ApiResponse.ok("인기 경매품 다건 조회", response);

@@ -26,15 +26,23 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.liveTime,
         li.auctionStatus,
         li.initPrice,
-        false
+        null
     )
     FROM LiveItem li
     WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
       AND (:category IS NULL OR li.category = :category)
+      AND (
+                  :isSelling IS NULL OR :isSelling = false
+                  OR li.auctionStatus IN (
+                      devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.BEFORE_BIDDING,
+                      devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.IN_PROGRESS
+                  )
+                )
 """)
     Page<LiveItemResponse> searchLiveItems(
         @Param("name") String name,
         @Param("category") Category category,
+        @Param("isSelling") Boolean isSelling,
         Pageable pageable
     );
 
@@ -57,6 +65,10 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
     )
     FROM LiveItem li
     LEFT JOIN LikeLive ll ON ll.liveItem = li
+    WHERE li.auctionStatus IN (
+            devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.BEFORE_BIDDING,
+            devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.IN_PROGRESS
+        )
     GROUP BY li.id, li.name, li.thumbnail, li.liveTime, li.auctionStatus, li.initPrice
     ORDER BY COUNT(ll.id) DESC, li.id DESC
 """)
@@ -86,12 +98,55 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
             @Param("thresholdTime") LocalDateTime thresholdTime
     );
 
+    @Query("""
+        select distinct li
+        from LiveItem li
+        left join fetch li.images img
+        where li.auctionRoom.id = :auctionRoomId
+        order by li.id asc
+    """)
+    List<LiveItem> findItemsWithImagesByRoomId(@Param("auctionRoomId") Long auctionRoomId);
+
+    // 통합 검색용 : AuctionRoom JOIN
     @EntityGraph(attributePaths = {"auctionRoom"})
     @Query("SELECT DISTINCT li FROM LiveItem li WHERE li.id IN :ids")
     List<LiveItem> findLiveItemsWithAuctionRoom(@Param("ids") List<Long> ids);
 
-    // 특정 상태의 라이브 경매 전체 조회 (이미지 + 경매방 포함)
+    // 통합 검색용: 상태별 조회 (images + auctionRoom)
     @EntityGraph(attributePaths = {"images", "auctionRoom"})
     @Query("SELECT li FROM LiveItem li WHERE li.auctionStatus IN :statuses")
     List<LiveItem> findByAuctionStatusInWithImages(@Param("statuses") List<AuctionStatus> statuses);
+
+    @Query("""
+      SELECT new devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse(
+          li.id,
+          li.name,
+          li.thumbnail,
+          li.liveTime,
+          li.auctionStatus,
+          li.initPrice,
+          null
+      )
+      FROM LiveItem li
+      WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
+        AND (:category IS NULL OR li.category = :category)
+        AND (:minPrice IS NULL OR li.initPrice >= :minPrice)
+        AND (:maxPrice IS NULL OR li.initPrice <= :maxPrice)
+        AND (
+            :isSelling = false
+            OR li.auctionStatus IN (
+                devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.BEFORE_BIDDING,
+                devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.IN_PROGRESS
+            )
+        )
+  """)
+    Page<LiveItemResponse> searchLiveItemsForAuction(
+        @Param("name") String name,
+        @Param("category") Category category,
+        @Param("minPrice") Long minPrice,
+        @Param("maxPrice") Long maxPrice,
+        @Param("isSelling") Boolean isSelling,
+        Pageable pageable
+    );
+
 }

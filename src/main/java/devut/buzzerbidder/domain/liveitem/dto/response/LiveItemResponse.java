@@ -13,19 +13,7 @@ public record LiveItemResponse(
     Long currentPrice,
     Boolean isLiked
 ) {
-    public LiveItemResponse(LiveItem liveItem) {
-        this(
-            liveItem.getId(),
-            liveItem.getName(),
-            liveItem.getThumbnail(),
-            liveItem.getLiveTime(),
-            liveItem.getAuctionStatus(),
-            liveItem.getInitPrice(),
-            false
-        );
-    }
-
-    public LiveItemResponse(LiveItem liveItem, boolean isLiked) {
+    public LiveItemResponse(LiveItem liveItem,Boolean isLiked ) {
         this(
             liveItem.getId(),
             liveItem.getName(),
