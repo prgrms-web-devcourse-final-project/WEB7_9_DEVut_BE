@@ -1,6 +1,7 @@
 package devut.buzzerbidder.domain.auctionroom.controller;
 
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomListResponse;
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomResponse;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionScheduleResponse;
 import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomService;
 import devut.buzzerbidder.global.response.ApiResponse;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -48,6 +50,17 @@ public class AuctionRoomController {
             auctionRoomService.getAuctionSchedule(fromDate,toDate);
 
         return ApiResponse.ok("경매방 스케줄 조회", response);
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "경매방 단건 조회")
+    public ApiResponse<AuctionRoomResponse> getAuctionRoom(
+        @PathVariable Long id
+    ) {
+
+        AuctionRoomResponse response = auctionRoomService.getAuctionRoom(id);
+
+        return ApiResponse.ok("경매방 단건 조회", response);
     }
 
 

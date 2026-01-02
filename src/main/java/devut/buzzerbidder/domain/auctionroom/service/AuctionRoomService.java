@@ -4,7 +4,9 @@ import static reactor.netty.http.HttpConnectionLiveness.log;
 
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionDaysDto;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomDto;
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomItemDto;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomListResponse;
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomResponse;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomSlotDto;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionScheduleResponse;
 import devut.buzzerbidder.domain.auctionroom.dto.response.LiveItemDto;
@@ -16,6 +18,8 @@ import devut.buzzerbidder.domain.auctionroom.event.AuctionRoomStartedEvent;
 import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
+import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDate;
@@ -37,6 +41,7 @@ public class AuctionRoomService {
     private final AuctionRoomRepository auctionRoomRepository;
     private final LiveBidRedisService liveBidRedisService;
     private final ApplicationEventPublisher eventPublisher;
+    private final LiveItemRepository liveItemRepository;
 
     public AuctionRoom assignRoom(LocalDateTime liveTime, long roomIndex) {
 
@@ -204,6 +209,28 @@ public class AuctionRoomService {
             endHour,
             days
         );
+
+    }
+
+    public AuctionRoomResponse getAuctionRoom(Long auctionRoomId) {
+
+        AuctionRoom room = auctionRoomRepository.findRoomWithItems(auctionRoomId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.AUCTION_ROOM_NOT_FOUND));
+
+        List<LiveItem> items = liveItemRepository.findItemsWithImagesByRoomId(auctionRoomId);
+
+        List<AuctionRoomItemDto> response  = items.stream()
+            .map(item -> new AuctionRoomItemDto(
+                item.getName(),
+                item.getImages().stream()
+                    .map(LiveItemImage::getImageUrl)
+                    .toList(),
+                item.getInitPrice(),
+                item.getAuctionStatus()
+            ))
+            .toList();
+
+        return new AuctionRoomResponse(response);
 
     }
 }
