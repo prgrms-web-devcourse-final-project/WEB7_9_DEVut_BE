@@ -1,8 +1,10 @@
 package devut.buzzerbidder.domain.wallet.enums;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
+@Getter
 public enum WalletTransactionType {
 
     // 증가 계열
@@ -14,13 +16,9 @@ public enum WalletTransactionType {
 
     // 감소 계열
     PAY_TO_USER(false),         // 다른 유저에게 보냄
-    BID_LOCK(false),            // 입찰 시 코인 차감
+    BID(false),            // 입찰 시 코인 차감
     WITHDRAW(false),            // 출금
     ADMIN_DEDUCT(false);        // 관리자 차감
 
     private final boolean isIncrease;
-
-    public boolean isIncrease() {
-        return isIncrease;
-    }
 }
