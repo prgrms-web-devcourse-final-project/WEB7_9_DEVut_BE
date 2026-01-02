@@ -43,6 +43,21 @@ public class ChatRoomController {
         return ApiResponse.ok("채팅방 상세 조회 성공", response);
     }
 
+    @PostMapping("/dm/{itemId}")
+    @Operation(summary = "DM 입장 처리", description = "구매자 <-> 판매자 간 지연 경매품에 대한 DM 채팅방 입장처리를 진행합니다.")
+    public ApiResponse<DirectMessageEnterResponse> enterDirectMessageChatRoom(
+            @PathVariable Long itemId
+    ) {
+
+        User user = requestContext.getCurrentUser();
+
+        ChatRoom chatRoom = chatRoomService.getOrCreateDMChatRoom(itemId, user);
+
+        DirectMessageEnterResponse response = new DirectMessageEnterResponse(chatRoom.getId());
+
+        return ApiResponse.ok("구매자와 판매자 DM 채팅방 입장 완료", response);
+    }
+
     @PutMapping("/auction/{auctionId}/enter")
     @Operation(summary = "경매방 채팅 입장", description = "특정 경매방의 채팅방에 입장합니다.")
     public ApiResponse<AuctionChatEnterResponse> enterAuctionChat(
@@ -73,20 +88,5 @@ public class ChatRoomController {
         chatRoomService.exitAuctionChatRoom(auctionId, user);
 
         return ApiResponse.ok("경매방 채팅 퇴장 처리 완료");
-    }
-
-    @PostMapping("/dm/{itemId}")
-    @Operation(summary = "dm 입장 처리", description = "구매자 <-> 판매자 간 지연 경매품에 대한 DM 채팅방을 생성합니다.")
-    public ApiResponse<DirectMessageEnterResponse> enterDirectMessageChatRoom(
-            @PathVariable Long itemId
-    ) {
-
-        User user = requestContext.getCurrentUser();
-
-        ChatRoom chatRoom = chatRoomService.getOrCreateDMChatRoom(itemId, user);
-
-        DirectMessageEnterResponse response = new DirectMessageEnterResponse(chatRoom.getId());
-
-        return ApiResponse.ok("DM 채팅방 생성 완료", response);
     }
 }
