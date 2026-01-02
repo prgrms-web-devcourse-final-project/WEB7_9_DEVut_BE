@@ -46,12 +46,12 @@ public class ChatRoomController {
     @PostMapping("/dm/{delayedItemId}")
     @Operation(summary = "DM 입장 처리", description = "구매자 <-> 판매자 간 지연 경매품에 대한 DM 채팅방 입장처리를 진행합니다.")
     public ApiResponse<DirectMessageEnterResponse> enterDirectMessageChatRoom(
-            @PathVariable Long itemId
+            @PathVariable Long delayedItemId
     ) {
 
         User user = requestContext.getCurrentUser();
 
-        ChatRoom chatRoom = chatRoomService.getOrCreateDMChatRoom(itemId, user);
+        ChatRoom chatRoom = chatRoomService.getOrCreateDMChatRoom(delayedItemId, user);
 
         DirectMessageEnterResponse response = new DirectMessageEnterResponse(chatRoom.getId());
 
