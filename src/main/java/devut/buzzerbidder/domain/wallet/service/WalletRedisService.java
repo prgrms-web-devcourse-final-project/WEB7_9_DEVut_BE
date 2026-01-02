@@ -30,7 +30,7 @@ public class WalletRedisService {
     private static final String EVENT_STREAM = "auction:bizz:events";
 
     // SESSION_TTL은 heartbeat(주기적으로 연결이 살아있는지 확인하는 신호) 또는 잔액 변경 때마다 연장
-    private static final Duration SESSION_TTL = Duration.ofSeconds(60);
+    private static final Duration SESSION_TTL = Duration.ofSeconds(35);
     private static final Duration BALANCE_TTL = Duration.ofMinutes(10); // 예시
 
     // Lua에서 'Redis에 키가 없는 상태'를 표현하기 위한 값
@@ -51,7 +51,10 @@ public class WalletRedisService {
     // 2) balance 키가 존재하면 원자적으로 증감 + version 증가 + TTL 연장 + stream 로그
     private final DefaultRedisScript<List<Long>> changeIfPresentScript = buildChangeIfPresentScript();
 
-    // 3) flush: 최종 잔액/버전/roomId를 얻고 키 삭제 + stream 로그
+    // 3) transfer: 두 유저 balance가 존재할 때만 원자 송금 + version 증가 + TTL 연장 + stream 로그
+    private final DefaultRedisScript<List<Long>> transferIfPresentScript = buildTransferIfPresentScript();
+
+    // 4) flush: 최종 잔액/버전/roomId를 얻고 키 삭제 + stream 로그
     private final DefaultRedisScript<List<String>> flushAndClearScript = buildFlushAndClearScript();
 
     /* ==================== 결과 DTO ==================== */
@@ -68,6 +71,20 @@ public class WalletRedisService {
     ) {}
 
     /**
+     * Redis에 올라와 있을 때만 송금(출금+입금) 수행
+     * hit은 처리 성공 여부, hit=false면 Redis에 없음
+     */
+    public record RedisTransferResult(
+            boolean hit,
+            Long fromBefore,
+            Long fromAfter,
+            Long fromVersion,
+            Long toBefore,
+            Long toAfter,
+            Long toVersion
+    ) {}
+
+    /**
      * flush 결과
      * hit=true면 Redis에서 최종 값을 얻어 DB에 반영할 수 있음
      */
@@ -79,6 +96,22 @@ public class WalletRedisService {
     ) {}
 
     /* ==================== public ==================== */
+
+    public Long getBizzBalance(Long userId) {
+        String key = "auction:bizz:" + userId;
+        String redisBizzStr = stringRedisTemplate.opsForValue().get(key);
+
+        if(redisBizzStr != null && !redisBizzStr.isBlank()) {
+            try {
+                return Long.parseLong(redisBizzStr);
+            } catch (NumberFormatException e) {
+                log.error("Redis의 Bizz 값이 숫자가 아닙니다. userId={}, key={}, Redis result={}", userId, key, redisBizzStr);
+                throw new BusinessException(ErrorCode.REDIS_INVALID_BIZZ_VALUE);
+            }
+        }
+
+        return null;
+    }
 
     /**
      * 세션을 획득하고, 획득에 성공하면 잔액/버전 초기화
@@ -116,7 +149,7 @@ public class WalletRedisService {
      * - Redis에 bizz 키가 없으면 hit=false로 반환
      * - 잔액 부족이면 INSUFFICIENT로 처리
      */
-    public RedisBizzChangeResult changeBalanceIfPresent(
+    public RedisBizzChangeResult changeBizzIfPresent(
             Long userId,
             Long amount,
             boolean isIncrease,
@@ -166,6 +199,80 @@ public class WalletRedisService {
     }
 
     /**
+     * Redis에 잔액이 '이미 올라와 있을 때만' 송금(출금+입금)을 단일 연산으로 처리
+     *
+     * - Redis에 키가 없거나 세션이 없으면 hit=false
+     * - 잔액 부족이면 INSUFFICIENT로 처리(예외)
+     * - 성공하면 from/to 잔액 변경 + 각자 version INCR + TTL 연장 + Stream TRANSFER 이벤트 기록
+     */
+    public RedisTransferResult transferBizzIfPresent(
+            Long fromUserId,
+            Long toUserId,
+            Long amount,
+            String reason,
+            String traceId
+    ) {
+        if (fromUserId == null || toUserId == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        if (Objects.equals(fromUserId, toUserId)) {
+            throw new BusinessException(ErrorCode.INVALID_TRANSFER);
+        }
+        if (amount == null || amount <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_WALLET_AMOUNT);
+        }
+
+        String fromSKey = SESSION_KEY_PREFIX + fromUserId;
+        String fromBKey = BAL_KEY_PREFIX + fromUserId;
+        String fromVKey = VER_KEY_PREFIX + fromUserId;
+
+        String toSKey = SESSION_KEY_PREFIX + toUserId;
+        String toBKey = BAL_KEY_PREFIX + toUserId;
+        String toVKey = VER_KEY_PREFIX + toUserId;
+
+        // result: [fromBefore, fromAfter, fromVer, toBefore, toAfter, toVer]
+        List<Long> result = executeLongList(
+                transferIfPresentScript,
+                List.of(fromBKey, fromVKey, fromSKey, toBKey, toVKey, toSKey),
+                fromUserId.toString(),
+                toUserId.toString(),
+                amount.toString(),
+                reason == null ? "" : reason,
+                traceId == null ? "" : traceId,
+                String.valueOf(SESSION_TTL.getSeconds()),
+                String.valueOf(BALANCE_TTL.getSeconds()),
+                EVENT_STREAM,
+                STREAM_MAXLEN.toString()
+        );
+
+        if (result.size() != 6) {
+            log.error("Redis transfer 스크립트 반환 형식이 예상과 다릅니다. from={}, to={}, result={}",
+                    fromUserId, toUserId, result);
+            throw new BusinessException(ErrorCode.UNEXPECTED_REDIS_SCRIPT_RETURN);
+        }
+
+        Long fromBefore = result.get(0);
+        Long fromAfter = result.get(1);
+        Long fromVer = result.get(2);
+        Long toBefore = result.get(3);
+        Long toAfter = result.get(4);
+        Long toVer = result.get(5);
+
+        // MISS면 Redis에 필요한 상태가 없음 -> 호출자가 DB fallback
+        if (fromBefore.equals(MISS) || toBefore.equals(MISS)) {
+            return new RedisTransferResult(false, null, null, null, null, null, null);
+        }
+
+        // 잔액 부족이면 예외
+        if (fromAfter.equals(INSUFFICIENT)) {
+            throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
+        }
+
+        return new RedisTransferResult(true, fromBefore, fromAfter, fromVer, toBefore, toAfter, toVer);
+    }
+
+
+    /**
      * Redis에 잔액이 올라와 있으면 최종 값을 꺼내고, 관련 키를 삭제
      *
      * - hit=false면 이미 만료/삭제된 상태 -> 호출자가 “DB flush 불가” 케이스로 처리
@@ -209,6 +316,25 @@ public class WalletRedisService {
         stringRedisTemplate.expire(SESSION_KEY_PREFIX + userId, SESSION_TTL);
         stringRedisTemplate.expire(BAL_KEY_PREFIX + userId, BALANCE_TTL);
         stringRedisTemplate.expire(VER_KEY_PREFIX + userId, BALANCE_TTL);
+    }
+
+    /**
+     * "Redis 세션에 올라와 있다"를 판단하는 함수
+     * - 세션키(auction:session:{userId})가 존재하고
+     * - 잔액키(auction:bizz:{userId})도 존재할 때만 true
+     *
+     * - 세션만 있고 bal이 없으면 false로 봄
+     */
+    public boolean isRedisActive(Long userId) {
+        if (userId == null) return false;
+
+        String sKey = SESSION_KEY_PREFIX + userId;
+        String bKey = BAL_KEY_PREFIX + userId;
+
+        Boolean sessionExists = stringRedisTemplate.hasKey(sKey);
+        Boolean balanceExists = stringRedisTemplate.hasKey(bKey);
+
+        return Boolean.TRUE.equals(sessionExists) && Boolean.TRUE.equals(balanceExists);
     }
 
     /* ==================== execute 헬퍼 (unchecked 경고를 한 곳에만 모음) ==================== */
@@ -346,6 +472,106 @@ public class WalletRedisService {
 
         return script;
     }
+
+    private DefaultRedisScript<List<Long>> buildTransferIfPresentScript() {
+        DefaultRedisScript<List<Long>> script = new DefaultRedisScript<>();
+
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        Class<List<Long>> listClass = (Class) List.class;
+        script.setResultType(listClass);
+
+        script.setScriptText("""
+        local fromBalKey = KEYS[1]
+        local fromVerKey = KEYS[2]
+        local fromSesKey = KEYS[3]
+        local toBalKey   = KEYS[4]
+        local toVerKey   = KEYS[5]
+        local toSesKey   = KEYS[6]
+
+        local fromUserId = ARGV[1]
+        local toUserId   = ARGV[2]
+        local amount     = tonumber(ARGV[3])
+        local reason     = ARGV[4]
+        local traceId    = ARGV[5]
+        local sessionTtl = tonumber(ARGV[6])
+        local balanceTtl = tonumber(ARGV[7])
+        local stream     = ARGV[8]
+        local maxlen     = tonumber(ARGV[9])
+
+        -- 1) 세션 검증: 둘 중 하나라도 세션이 없으면 MISS (그리고 해당 유저 키 정리)
+        if redis.call('EXISTS', fromSesKey) == 0 then
+          redis.call('DEL', fromBalKey)
+          redis.call('DEL', fromVerKey)
+          return { %d, %d, 0, %d, %d, 0 }
+        end
+        if redis.call('EXISTS', toSesKey) == 0 then
+          redis.call('DEL', toBalKey)
+          redis.call('DEL', toVerKey)
+          return { %d, %d, 0, %d, %d, 0 }
+        end
+
+        -- 2) 잔액 존재 검증: 둘 중 하나라도 bal이 없으면 MISS
+        local fromCur = redis.call('GET', fromBalKey)
+        local toCur = redis.call('GET', toBalKey)
+        if (not fromCur) or (not toCur) then
+          return { %d, %d, 0, %d, %d, 0 }
+        end
+        fromCur = tonumber(fromCur)
+        toCur = tonumber(toCur)
+
+        -- 3) 잔액 부족 검증: 부족하면 아무 것도 변경하지 않고 표시값 반환
+        if fromCur < amount then
+          local fv = tonumber(redis.call('GET', fromVerKey) or "0")
+          local tv = tonumber(redis.call('GET', toVerKey) or "0")
+          return { fromCur, %d, fv, toCur, toCur, tv }
+        end
+
+        -- 4) 송금 반영(원자): from 감소 + to 증가
+        local fromNew = fromCur - amount
+        local toNew = toCur + amount
+
+        redis.call('SET', fromBalKey, fromNew)
+        redis.call('SET', toBalKey, toNew)
+
+        -- 5) 버전 증가(각 유저별)
+        local fromVer = redis.call('INCR', fromVerKey)
+        local toVer = redis.call('INCR', toVerKey)
+
+        -- 6) TTL 연장(세션/잔액/버전 모두)
+        redis.call('EXPIRE', fromSesKey, sessionTtl)
+        redis.call('EXPIRE', toSesKey, sessionTtl)
+        redis.call('EXPIRE', fromBalKey, balanceTtl)
+        redis.call('EXPIRE', toBalKey, balanceTtl)
+        redis.call('EXPIRE', fromVerKey, balanceTtl)
+        redis.call('EXPIRE', toVerKey, balanceTtl)
+
+        -- 7) 이벤트 기록(TRANSFER)
+        redis.call('XADD', stream, 'MAXLEN', '~', maxlen, '*',
+          'event', 'TRANSFER',
+          'fromUserId', fromUserId,
+          'toUserId', toUserId,
+          'amount', tostring(amount),
+          'fromBefore', tostring(fromCur),
+          'fromAfter', tostring(fromNew),
+          'toBefore', tostring(toCur),
+          'toAfter', tostring(toNew),
+          'fromVersion', tostring(fromVer),
+          'toVersion', tostring(toVer),
+          'reason', reason,
+          'traceId', traceId
+        )
+
+        return { fromCur, fromNew, fromVer, toCur, toNew, toVer }
+    """.formatted(
+                MISS, MISS, MISS, MISS,          // from 세션 없음
+                MISS, MISS, MISS, MISS,          // to 세션 없음
+                MISS, MISS, MISS, MISS,          // 잔액 키 없음
+                INSUFFICIENT                     // 잔액 부족 표시
+        ));
+
+        return script;
+    }
+
 
     private DefaultRedisScript<List<String>> buildFlushAndClearScript() {
         DefaultRedisScript<List<String>> script = new DefaultRedisScript<>();
