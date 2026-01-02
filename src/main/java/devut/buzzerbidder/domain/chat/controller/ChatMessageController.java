@@ -55,7 +55,7 @@ public class ChatMessageController {
     @MessageMapping("/dm/{roomId}")
     public void sendDirectMessage(
             @DestinationVariable Long roomId,
-            @Payload ChatMessageRequest request, // (DTO 필요)
+            @Payload ChatMessageRequest request,
             Principal principal
     ) {
         // Principal 타입이 아닐 경우 예외처리
