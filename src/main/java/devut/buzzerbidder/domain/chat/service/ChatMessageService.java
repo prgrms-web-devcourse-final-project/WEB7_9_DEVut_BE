@@ -92,6 +92,7 @@ public class ChatMessageService {
                 .ifPresent(entered -> entered.updateReadStatus(chatMessage.getId()));
 
         DirectMessageResponse response = new DirectMessageResponse(
+                "CHAT_MESSAGE",
                 chatMessage.getId(),
                 sender.getProfileImageUrl(),
                 sender.getNickname(),
