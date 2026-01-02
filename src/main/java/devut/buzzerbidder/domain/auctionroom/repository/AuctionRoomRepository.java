@@ -50,4 +50,12 @@ public interface AuctionRoomRepository extends JpaRepository<AuctionRoom, Long> 
         @Param("fromAt") LocalDateTime fromAt,
         @Param("toAt") LocalDateTime toAt
     );
+
+    @Query("""
+        select ar
+        from AuctionRoom ar
+        left join fetch ar.liveItems li
+        where ar.id = :auctionRoomId
+    """)
+    Optional<AuctionRoom> findRoomWithItems(@Param("auctionRoomId") Long auctionRoomId);
 }

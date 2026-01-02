@@ -6,6 +6,7 @@ public record LiveItemSearchRequest(
     String name,
     Category category,
     Long minBidPrice,
-    Long maxBidPrice
+    Long maxBidPrice,
+    Boolean isSelling
 ){
 }

@@ -26,10 +26,11 @@ public class DelayedAuctionEndedNotificationListener {
             notificationService.createAndSend(
                 event.sellerUsedId(),
                 NotificationType.DELAYED_SUCCESS_SELLER,
-                "%s 상품이 낙찰되었습니다.".formatted(event.delayedItemName()),
+                "'%s' 상품이 낙찰되었습니다.".formatted(event.delayedItemName()),
                 "DELAYED_ITEM",
                 event.delayedItemId(),
                 Map.of(
+                    "itemName", event.delayedItemName(),
                     "finalPrice", event.finalPrice(),
                     "winnerUserId", event.winnerUserId()
                 )
@@ -39,10 +40,11 @@ public class DelayedAuctionEndedNotificationListener {
             notificationService.createAndSend(
                 event.winnerUserId(),
                 NotificationType.DELAYED_SUCCESS_BIDDER,
-                "축하합니다! %s 상품의 낙찰에 성공했습니다.".formatted(event.delayedItemName()),
+                "축하합니다! '%s' 상품의 낙찰에 성공했습니다.".formatted(event.delayedItemName()),
                 "DELAYED_ITEM",
                 event.delayedItemId(),
                 Map.of(
+                    "itemName", event.delayedItemName(),
                     "finalPrice", event.finalPrice()
                 )
             );
@@ -51,10 +53,12 @@ public class DelayedAuctionEndedNotificationListener {
             notificationService.createAndSend(
                 event.sellerUsedId(),
                 NotificationType.DELAYED_FAILED_SELLER,
-                "%s 상품이 유찰되었습니다.".formatted(event.delayedItemName()),
+                "'%s' 상품이 유찰되었습니다.".formatted(event.delayedItemName()),
                 "DELAYED_ITEM",
                 event.delayedItemId(),
-                null
+                Map.of(
+                    "itemName", event.delayedItemName()
+                )
             );
         }
     }

@@ -23,15 +23,24 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.thumbnail,
         li.liveTime,
         li.auctionStatus,
-        li.initPrice
+        li.initPrice,
+        null
     )
     FROM LiveItem li
     WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
       AND (:category IS NULL OR li.category = :category)
+      AND (
+                  :isSelling IS NULL OR :isSelling = false
+                  OR li.auctionStatus IN (
+                      devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.BEFORE_BIDDING,
+                      devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.IN_PROGRESS
+                  )
+                )
 """)
     Page<LiveItemResponse> searchLiveItems(
         @Param("name") String name,
         @Param("category") Category category,
+        @Param("isSelling") Boolean isSelling,
         Pageable pageable
     );
 
@@ -49,10 +58,15 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.thumbnail,
         li.liveTime,
         li.auctionStatus,
-        li.initPrice
+        li.initPrice,
+        false
     )
     FROM LiveItem li
     LEFT JOIN LikeLive ll ON ll.liveItem = li
+    WHERE li.auctionStatus IN (
+            devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.BEFORE_BIDDING,
+            devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.IN_PROGRESS
+        )
     GROUP BY li.id, li.name, li.thumbnail, li.liveTime, li.auctionStatus, li.initPrice
     ORDER BY COUNT(ll.id) DESC, li.id DESC
 """)
@@ -81,4 +95,14 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
             @Param("status") LiveItem.AuctionStatus status,
             @Param("thresholdTime") LocalDateTime thresholdTime
     );
+
+    @Query("""
+        select distinct li
+        from LiveItem li
+        left join fetch li.images img
+        where li.auctionRoom.id = :auctionRoomId
+        order by li.id asc
+    """)
+    List<LiveItem> findItemsWithImagesByRoomId(@Param("auctionRoomId") Long auctionRoomId);
+
 }
