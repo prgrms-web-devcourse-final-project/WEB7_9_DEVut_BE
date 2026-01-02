@@ -43,7 +43,7 @@ public class ChatRoomController {
         return ApiResponse.ok("채팅방 상세 조회 성공", response);
     }
 
-    @PostMapping("/dm/{DelayedItemId}")
+    @PostMapping("/dm/{delayedItemId}")
     @Operation(summary = "DM 입장 처리", description = "구매자 <-> 판매자 간 지연 경매품에 대한 DM 채팅방 입장처리를 진행합니다.")
     public ApiResponse<DirectMessageEnterResponse> enterDirectMessageChatRoom(
             @PathVariable Long itemId
