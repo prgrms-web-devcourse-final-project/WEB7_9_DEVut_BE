@@ -32,9 +32,15 @@ public record UserDealItemResponse(
     DealStatus status,
 
     @Schema(description = "이미지 URL", example = "https://cdn.example.com/items/live/1.jpg")
-    String image
+    String image,
+
+    @Schema(description = "찜 여부", example = "true")
+    Boolean wish,
+
+    @Schema(description = "경매 상태", example = "IN_DEAL")
+    String auctionStatus
 ) {
-    public static UserDealItemResponse fromLiveDeal(LiveDeal liveDeal) {
+    public static UserDealItemResponse fromLiveDeal(LiveDeal liveDeal, Boolean wish) {
         String imageUrl = liveDeal.getItem().getImages().isEmpty()
             ? null
             : liveDeal.getItem().getImages().get(0).getImageUrl();
@@ -48,11 +54,13 @@ public record UserDealItemResponse(
             liveDeal.getBuyer().getNickname(),
             liveDeal.getWinningPrice(),
             liveDeal.getStatus(),
-            imageUrl
+            imageUrl,
+            wish,
+            liveDeal.getItem().getAuctionStatus() != null ? liveDeal.getItem().getAuctionStatus().name() : null
         );
     }
 
-    public static UserDealItemResponse fromDelayedDeal(DelayedDeal delayedDeal) {
+    public static UserDealItemResponse fromDelayedDeal(DelayedDeal delayedDeal, Boolean wish) {
         String imageUrl = delayedDeal.getItem().getImages().isEmpty()
             ? null
             : delayedDeal.getItem().getImages().get(0).getImageUrl();
@@ -66,7 +74,9 @@ public record UserDealItemResponse(
             delayedDeal.getBuyer().getNickname(),
             delayedDeal.getWinningPrice(),
             delayedDeal.getStatus(),
-            imageUrl
+            imageUrl,
+            wish,
+            delayedDeal.getItem().getAuctionStatus() != null ? delayedDeal.getItem().getAuctionStatus().name() : null
         );
     }
 
@@ -80,7 +90,9 @@ public record UserDealItemResponse(
             this.buyerName,
             this.winningPrice,
             this.status,
-            this.image
+            this.image,
+            this.wish,
+            this.auctionStatus
         );
     }
 }
