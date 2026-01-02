@@ -14,8 +14,10 @@ import devut.buzzerbidder.domain.user.dto.response.MyItemListResponse;
 import devut.buzzerbidder.domain.user.dto.response.MyItemResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserProfileResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserUpdateResponse;
+import devut.buzzerbidder.domain.user.entity.DeliveryAddress;
 import devut.buzzerbidder.domain.user.entity.Provider;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.DeliveryAddressRepository;
 import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
@@ -40,6 +42,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final ProviderRepository providerRepository;
+    private final DeliveryAddressRepository deliveryAddressRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
     private final WalletService walletService;
@@ -176,8 +179,26 @@ public class UserService {
         );
         User updatedUser = userRepository.save(user);
 
+        Optional<DeliveryAddress> deliveryAddress = deliveryAddressRepository.findByUser(user);
+        if(deliveryAddress.isPresent()) {
+            deliveryAddress.get().update(
+                    request.address(),
+                    request.addressDetail(),
+                    request.postalCode()
+            );
+        } else {
+            DeliveryAddress newDeliveryAddress = DeliveryAddress.builder()
+                    .user(user)
+                    .address(request.address())
+                    .addressDetail(request.addressDetail())
+                    .postalCode(request.postalCode())
+                    .build();
+            deliveryAddressRepository.save(newDeliveryAddress);
+        }
+
         return UserUpdateResponse.from(updatedUser);
     }
+
 
     public MyItemListResponse getMyItems(User user, Pageable pageable) {
         // 전체 개수 계산

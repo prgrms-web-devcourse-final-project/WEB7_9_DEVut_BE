@@ -1,6 +1,7 @@
 package devut.buzzerbidder.global.exeption;
 
 import lombok.Getter;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 
 @Getter
@@ -29,6 +30,10 @@ public enum ErrorCode {
     USER_SOCIAL_ACCOUNT("M009", HttpStatus.BAD_REQUEST, "소셜 로그인으로 가입한 계정입니다. 소셜 로그인을 사용해주세요."),
     USER_INVALID_PROVIDER("M010", HttpStatus.BAD_REQUEST, "유효하지 않은 로그인 제공자입니다."),
     USER_EMAIL_NOT_VERIFIED("M011", HttpStatus.BAD_REQUEST, "이메일 인증이 완료되지 않았습니다."),
+    DELIVERY_ADDRESS_USER_NOT_NULL("M012", HttpStatus.BAD_REQUEST, "배송지의 주인(User)은 null일 수 없습니다."),
+    DELIVERY_ADDRESS_NOT_VALID("M013", HttpStatus.BAD_REQUEST,"주소는 null이거나 비어있을 수 없습니다."),
+    DELIVERY_ADDRESS_DETAIL_NOT_VALID("M014", HttpStatus.BAD_REQUEST, "상세주소는 null이거나 비어있을 수 없습니다."),
+    DELIVERY_POSTAL_CODE_NOT_VALID("M015", HttpStatus.BAD_REQUEST,"우편번호는 null이거나 비어있을 수 없습니다."),
 
     // ========== Deal 도메인 에러 ==========
     DEAL_NOT_FOUND("D001", HttpStatus.NOT_FOUND, "존재하지 않는 거래입니다."),
@@ -46,6 +51,9 @@ public enum ErrorCode {
     INVALID_TRANSFER("W006", HttpStatus.BAD_REQUEST, "자기 자신에게 지불할 수 없습니다."),
     WALLET_ALREADY_EXISTS("W007", HttpStatus.CONFLICT, "사용자 지갑이 이미 존재합니다."),
     WITHDRAWAL_NOT_FOUND("W008", HttpStatus.CONFLICT, "출금 내역이 존재하지 않습니다."),
+    REDIS_INVALID_BIZZ_VALUE("W009", HttpStatus.CONFLICT, "Redis의 Bizz 값이 숫자가 아닙니다."),
+    WALLET_USER_NOT_NULL("W010", HttpStatus.BAD_REQUEST, "User를 null로 하여 지갑을 생성할 수 없습니다."),
+    TRANSFER_ERROR("W011", HttpStatus.INTERNAL_SERVER_ERROR, "TransferBizz 처리 중 에러가 발생했습니다."),
 
     // ========== Payment 도메인 에러 ==========
     PAYMENT_NOT_FOUND("P001", HttpStatus.NOT_FOUND, "결제정보를 찾을 수 없습니다."),

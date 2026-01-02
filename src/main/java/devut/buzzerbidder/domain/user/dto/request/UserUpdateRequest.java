@@ -13,7 +13,16 @@ public record UserUpdateRequest(
         String nickname,
 
         @Schema(description = "프로필 이미지 URL", example = "https://example.com/image.jpg")
-        String image
+        String image,
+
+        @Schema(description = "주소", example = "서울시 중구 세종대로 135-5")
+        String address,
+
+        @Schema(description = "상세주소", example = "OO아파트 101동 101호")
+        String addressDetail,
+
+        @Schema(description = "우편번호", example = "12345")
+        String postalCode
 ) {
 }
 
