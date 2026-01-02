@@ -237,6 +237,7 @@ public class ChatRoomService {
 
         List<DirectMessageResponse> messageResponses = chatMessages.stream()
                 .map(m -> new DirectMessageResponse(
+                        "CHAT_MESSAGE",
                         m.getId(),
                         m.getSender().getProfileImageUrl(),
                         m.getSender().getNickname(),

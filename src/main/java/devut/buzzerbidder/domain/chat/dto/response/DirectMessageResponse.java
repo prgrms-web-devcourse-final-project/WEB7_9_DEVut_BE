@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
 public record DirectMessageResponse(
+        @Schema(description = "메시지 타입", example = "CHAT_MESSAGE")
+        String type,
+
         @Schema(description = "메시지 ID")
         Long id,
 
