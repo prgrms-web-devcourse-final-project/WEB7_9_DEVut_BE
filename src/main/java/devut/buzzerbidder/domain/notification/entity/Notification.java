@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
     indexes = {
         @Index(
             name = "idx_notification_user_check_date",
-            columnList = "user_id, check, create_date DESC"
+            columnList = "user_id, is_checked, create_date DESC"
         )
     })
 @Getter
@@ -36,8 +36,8 @@ public class Notification extends BaseEntity {
     @Column(nullable = false, length = 500)
     private String message;
 
-    @Column(nullable = false)
-    private boolean check;
+    @Column(name = "is_checked", nullable = false)
+    private boolean isChecked;
 
     @Column(name = "resource_type", length = 50)
     private String resourceType;
@@ -60,14 +60,14 @@ public class Notification extends BaseEntity {
         this.userId = userId;
         this.type = type;
         this.message = message;
-        this.check = false;
+        this.isChecked = false;
         this.resourceType = resourceType;
         this.resourceId = resourceId;
         this.metadata = metadata;
     }
 
-    public void markAsCheck() {
-        this.check = true;
+    public void markAsChecked() {
+        this.isChecked = true;
     }
 
 }

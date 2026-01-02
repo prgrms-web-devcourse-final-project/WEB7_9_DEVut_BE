@@ -22,7 +22,7 @@ public record NotificationDto(
     String message,
 
     @Schema(description = "읽음 여부", example = "false")
-    boolean check,
+    boolean isChecked,
 
     @Schema(description = "생성 일자")
     LocalDateTime createDate,
@@ -58,7 +58,7 @@ public record NotificationDto(
             notification.getUserId(),
             notification.getType(),
             notification.getMessage(),
-            notification.isCheck(),
+            notification.isChecked(),
             notification.getCreateDate(),
             notification.getResourceType(),
             notification.getResourceId(),

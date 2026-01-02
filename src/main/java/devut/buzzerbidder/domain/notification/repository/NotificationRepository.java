@@ -8,8 +8,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     List<Notification> findByUserIdOrderByCreateDateDesc(Long userId);
 
-    List<Notification> findByUserIdAndCheckFalseOrderByCreateDateDesc(Long userId);
+    List<Notification> findByUserIdAndIsCheckedFalseOrderByCreateDateDesc(Long userId);
 
-    Long countByUserIdAndCheckFalse(Long userId);
+    Long countByUserIdAndIsCheckedFalse(Long userId);
 
 }

@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,15 @@ import org.springframework.stereotype.Component;
 public class RequestContext {
     private final HttpServletRequest request;
     private final HttpServletResponse response;
+
+    @Value("${cookie.domain:#{null}}")
+    private String cookieDomain;
+    
+    @Value("${cookie.secure:true}")
+    private boolean cookieSecure;
+    
+    @Value("${cookie.same-site:Lax}")
+    private String cookieSameSite;
 
     public void setHeader(String name, String value) {
         response.setHeader(name, value);
@@ -51,12 +61,31 @@ public class RequestContext {
         Cookie cookie = new Cookie(name, value);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
-        cookie.setDomain("localhost");
-        cookie.setSecure(true);
-        cookie.setAttribute("SameSite", "Strict");
-
-        // 값이 없다면 해당 쿠키변수를 삭제하라는 뜻
-        if (value.isBlank()) {
+        
+        // 도메인 설정: 환경 변수가 있으면 사용, 없으면 요청의 서버명 사용
+        // localhost인 경우에는 도메인을 설정하지 않음 (브라우저가 자동으로 처리)
+        String domain = cookieDomain != null && !cookieDomain.isBlank() 
+            ? cookieDomain 
+            : (request.getServerName() != null && !request.getServerName().equals("localhost") 
+                ? request.getServerName() 
+                : null);
+        
+        if (domain != null && !domain.isBlank()) {
+            cookie.setDomain(domain);
+        }
+        
+        // Secure 설정: 개발 환경에서는 false, 프로덕션에서는 true
+        cookie.setSecure(cookieSecure);
+        
+        // SameSite 설정: OAuth2 리디렉션을 위해 Lax 또는 None 사용
+        // Strict는 크로스 사이트 리디렉션에서 쿠키가 전달되지 않음
+        cookie.setAttribute("SameSite", cookieSameSite);
+        
+        // 쿠키 만료 시간 설정 (기본값: 7일)
+        if (!value.isBlank()) {
+            cookie.setMaxAge(60 * 60 * 24 * 7); // 7일
+        } else {
+            // 값이 없다면 해당 쿠키변수를 삭제하라는 뜻
             cookie.setMaxAge(0);
         }
 

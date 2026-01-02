@@ -1,5 +1,6 @@
 package devut.buzzerbidder.domain.user.service;
 
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -18,6 +19,11 @@ public class RefreshTokenService {
 
     private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
 
+    @Timed(
+            value = "buzzerbidder.redis.auth",
+            extraTags = {"op", "refresh-save"},
+            histogram = true
+    )
     public void saveRefreshToken(Long userId, String refreshToken) {
         String key = REFRESH_TOKEN_PREFIX + userId;
         redisTemplate.opsForValue().set(key, refreshToken, refreshExpireSeconds, TimeUnit.SECONDS);

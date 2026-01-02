@@ -74,6 +74,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         if(requestURI.equals("/api/v1/users/signup") || 
            requestURI.equals("/api/v1/users/signin") ||
            requestURI.equals("/api/v1/users/refresh") ||
+           requestURI.equals("/api/v1/users/oauth/signin") ||
            requestURI.equals("/api/v1/users/email/verification") ||
            requestURI.equals("/api/v1/users/email/verification/verify") ||
            // GET 메서드의 경매품 조회는 로그인 불필요

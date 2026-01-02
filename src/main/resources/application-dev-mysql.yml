@@ -121,6 +121,9 @@ custom:
     expireSeconds: 1800  # 30분 (초)
     shortExpireSeconds: 600  # 10분 (초)
     refreshExpireSeconds: 604800  # 7일 (초)
+  # OAuth2 임시 토큰 설정
+  oauth2:
+    tempTokenExpireSeconds: 300  # 5분 (초)
   # 이메일 인증 설정
   email:
     verification:
