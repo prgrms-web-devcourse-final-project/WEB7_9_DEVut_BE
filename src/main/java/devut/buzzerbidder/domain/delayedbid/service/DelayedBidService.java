@@ -80,7 +80,7 @@ public class DelayedBidService {
             walletService.refundBidBizz(previousBidder, previousBid.getBidAmount());
         }
         // 코인 차감
-        walletService.lockBizzForBid(user, request.bidPrice());
+        walletService.bidBizz(user, request.bidPrice());
 
         // 7. 입찰 로그 저장
         DelayedBidLog bidLog = DelayedBidLog.builder()
@@ -183,7 +183,7 @@ public class DelayedBidService {
         if (!walletService.hasEnoughBizz(buyer, item.getBuyNowPrice())) {
             throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
         }
-        walletService.lockBizzForBid(buyer, item.getBuyNowPrice());
+        walletService.bidBizz(buyer, item.getBuyNowPrice());
 
         // 6. 기존 최고가 입찰자에게 환불 (있는 경우)
         DelayedBidLog currentHighestBid = delayedBidRepository
