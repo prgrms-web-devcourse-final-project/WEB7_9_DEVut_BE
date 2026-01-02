@@ -49,6 +49,7 @@ public class ChatMessageService {
 
 
         AuctionChatMessageResponse response = new AuctionChatMessageResponse(
+                "CHAT_MESSAGE",
                 tempId,
                 sender.getProfileImageUrl(),
                 sender.getNickname(),
