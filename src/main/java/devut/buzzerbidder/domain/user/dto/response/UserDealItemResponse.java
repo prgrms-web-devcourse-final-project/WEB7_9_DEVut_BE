@@ -2,7 +2,6 @@ package devut.buzzerbidder.domain.user.dto.response;
 
 import devut.buzzerbidder.domain.deal.entity.DelayedDeal;
 import devut.buzzerbidder.domain.deal.entity.LiveDeal;
-import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "거래 내역 목록 아이템")
@@ -25,9 +24,6 @@ public record UserDealItemResponse(
     @Schema(description = "낙찰가", example = "100000")
     Long winningPrice,
 
-    @Schema(description = "거래 상태", example = "COMPLETED")
-    DealStatus status,
-
     @Schema(description = "이미지 URL", example = "https://cdn.example.com/items/live/1.jpg")
     String image,
 
@@ -49,7 +45,6 @@ public record UserDealItemResponse(
             liveDeal.getItem().getName(),
             liveDeal.getBuyer().getNickname(),
             liveDeal.getWinningPrice(),
-            liveDeal.getStatus(),
             imageUrl,
             wish,
             liveDeal.getItem().getAuctionStatus() != null ? liveDeal.getItem().getAuctionStatus().name() : null
@@ -68,7 +63,6 @@ public record UserDealItemResponse(
             delayedDeal.getItem().getName(),
             delayedDeal.getBuyer().getNickname(),
             delayedDeal.getWinningPrice(),
-            delayedDeal.getStatus(),
             imageUrl,
             wish,
             delayedDeal.getItem().getAuctionStatus() != null ? delayedDeal.getItem().getAuctionStatus().name() : null
