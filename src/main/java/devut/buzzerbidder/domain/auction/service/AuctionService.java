@@ -67,23 +67,24 @@ public class AuctionService {
     }
 
     private List<DelayedItem> getDelayedItems(AuctionSearchRequest request) {
-        // 키워드 검색
+        // 키워드 검색 또는 isSelling=false (모든 상태 조회)
         if (hasSearchFilters(request)) {
             Page<DelayedItem> page = delayedItemRepository.searchDelayedItems(
                 request.keyword(),
                 convertCategory(request.category()),
                 request.minPrice(),
                 request.maxPrice(),
+                request.isSelling(),
+                DelayedItem.AuctionStatus.ACTIVE_STATUSES,
                 Pageable.unpaged()
             );
 
-            return page.getContent().stream()
-                .filter(item -> item.getAuctionStatus() == DelayedItem.AuctionStatus.IN_PROGRESS)
-                .toList();
+            return page.getContent();
         } else {
-            // 필터 없으면 단순 조회
-            return delayedItemRepository
-                .findByAuctionStatusWithImages(DelayedItem.AuctionStatus.IN_PROGRESS);
+            // 필터 없으면 단순 조회 (진행중만)
+            return delayedItemRepository.findByAuctionStatusWithImages(
+                List.of(DelayedItem.AuctionStatus.BEFORE_BIDDING, DelayedItem.AuctionStatus.IN_PROGRESS)
+            );
         }
     }
 
@@ -102,14 +103,9 @@ public class AuctionService {
 
             if (ids.isEmpty()) return List.of();
 
-            List<LiveItem> items = liveItemRepository.findLiveItemsWithAuctionRoomForSearch(ids);
-
-            return items.stream()
-                .filter(item -> item.getAuctionStatus() == LiveItem.AuctionStatus.BEFORE_BIDDING ||
-                    item.getAuctionStatus() == LiveItem.AuctionStatus.IN_PROGRESS)
-                .toList();
+            return liveItemRepository.findLiveItemsWithAuctionRoom(ids);
         } else {
-            // 필터 없으면 단순 조회
+            // 필터 없으면 단순 조회 (진행중만)
             return liveItemRepository.findByAuctionStatusInWithImages(
                 List.of(LiveItem.AuctionStatus.BEFORE_BIDDING, LiveItem.AuctionStatus.IN_PROGRESS)
             );
@@ -146,46 +142,34 @@ public class AuctionService {
             : Set.of();
 
         return items.stream()
-            .filter(item -> item.getAuctionRoom() != null)
-            .map(item -> new AuctionItem(
-                item.getId(),
-                "LIVE",
-                item.getName(),
-                item.getImages().isEmpty() ? null : item.getImages().get(0).getImageUrl(),
-                item.getInitPrice(),
-                calculateLiveItemEndTime(item),
-                item.getAuctionStatus().name(),
-                item.getAuctionRoom().getId(),
-                likedItemIds.contains(item.getId())
-            ))
-            .toList();
-    }
+            .map(item -> {
+                String redisKey = "liveItem:" + item.getId();
+                String maxBidPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
+                Long currentMaxBidPrice = (maxBidPriceStr != null)
+                    ? Long.parseLong(maxBidPriceStr)
+                    : item.getInitPrice();
 
-    private java.time.LocalDateTime calculateLiveItemEndTime(LiveItem item) {
-        if (item.getAuctionStatus() == LiveItem.AuctionStatus.IN_PROGRESS) {
-            // 진행 중: Redis에서 정확한 종료 시간 조회
-            String redisKey = "liveItem:" + item.getId();
-            String endTimeStr = liveBidRedisService.getHashField(redisKey, "endTime");
-
-            if (endTimeStr != null) {
-                long endTimeMillis = Long.parseLong(endTimeStr);
-                return java.time.LocalDateTime.ofInstant(
-                    java.time.Instant.ofEpochMilli(endTimeMillis),
-                    java.time.ZoneId.systemDefault()
+                return new AuctionItem(
+                    item.getId(),
+                    "LIVE",
+                    item.getName(),
+                    item.getThumbnail(),
+                    currentMaxBidPrice,
+                    item.getAuctionRoom().getLiveTime(),
+                    item.getAuctionStatus().name(),
+                    item.getAuctionRoom().getId(),
+                    likedItemIds.contains(item.getId())
                 );
-            }
-        }
-        // BEFORE_BIDDING 또는 Redis 조회 실패 : 순서 기반 예상 시간
-        int ItemIndex = item.getAuctionRoom().getLiveItems().indexOf(item);
-        return item.getAuctionRoom().getLiveTime()
-            .plusMinutes((ItemIndex + 1) * 5);
+            })
+            .toList();
     }
 
     private boolean hasSearchFilters(AuctionSearchRequest request) {
         return request.keyword() != null ||
             request.category() != null ||
             request.minPrice() != null ||
-            request.maxPrice() != null;
+            request.maxPrice() != null ||
+            Boolean.FALSE.equals(request.isSelling());
     }
 
     private DelayedItem.Category convertCategory(LiveItem.Category category) {

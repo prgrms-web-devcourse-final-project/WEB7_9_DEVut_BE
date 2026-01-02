@@ -24,12 +24,18 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
         AND (:category IS NULL OR di.category = :category)
         AND (:minPrice IS NULL OR di.currentPrice >= :minPrice)
         AND (:maxPrice IS NULL OR di.currentPrice <= :maxPrice)
+        AND (
+            :isSelling = false
+            OR di.auctionStatus IN :activeStatuses
+        )
         """)
     Page<DelayedItem> searchDelayedItems(
         @Param("name") String name,
         @Param("category") Category category,
         @Param("minPrice") Long minPrice,
         @Param("maxPrice") Long maxPrice,
+        @Param("isSelling") Boolean isSelling,
+        @Param("activeStatuses") List<DelayedItem.AuctionStatus> activeStatuses,
         Pageable pageable
     );
 
@@ -84,7 +90,7 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
 
     // 진행중인 지연 경매 전체 조회 (이미지 포함)
     @EntityGraph(attributePaths = {"images"})
-    @Query("SELECT di FROM DelayedItem di WHERE di.auctionStatus = :status")
-    List<DelayedItem> findByAuctionStatusWithImages(@Param("status") AuctionStatus status);
+    @Query("SELECT di FROM DelayedItem di WHERE di.auctionStatus in :statuses")
+    List<DelayedItem> findByAuctionStatusWithImages(@Param("status") List<AuctionStatus> status);
 
 }

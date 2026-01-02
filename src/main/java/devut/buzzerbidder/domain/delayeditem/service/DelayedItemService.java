@@ -206,6 +206,8 @@ public class DelayedItemService {
             reqBody.category(),
             reqBody.minCurrentPrice(),
             reqBody.maxCurrentPrice(),
+            reqBody.isSelling(),
+            AuctionStatus.ACTIVE_STATUSES,
             pageable
         );
 

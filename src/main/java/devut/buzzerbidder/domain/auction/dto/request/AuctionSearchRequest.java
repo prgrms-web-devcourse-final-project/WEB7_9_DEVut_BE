@@ -20,7 +20,10 @@ public record AuctionSearchRequest(
     Long minPrice,
 
     @Schema(description = "최대 가격")
-    Long maxPrice
+    Long maxPrice,
+
+    @Schema(description = "참여 가능한 경매 여부(입찰 전, 라이브 대기, 입찰 중")
+    Boolean isSelling
 ) {
     public AuctionSearchRequest {
         if (type == null || type.isBlank()) type = "ALL";

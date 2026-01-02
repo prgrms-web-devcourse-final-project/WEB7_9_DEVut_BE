@@ -6,7 +6,8 @@ public record DelayedItemSearchRequest(
     String name,
     Category category,
     Long minCurrentPrice,
-    Long maxCurrentPrice
+    Long maxCurrentPrice,
+    Boolean isSelling
 ) {
 
 }

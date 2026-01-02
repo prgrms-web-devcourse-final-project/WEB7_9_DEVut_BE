@@ -25,7 +25,8 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.thumbnail,
         li.liveTime,
         li.auctionStatus,
-        li.initPrice
+        li.initPrice,
+        false
     )
     FROM LiveItem li
     WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
@@ -51,7 +52,8 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.thumbnail,
         li.liveTime,
         li.auctionStatus,
-        li.initPrice
+        li.initPrice,
+        false
     )
     FROM LiveItem li
     LEFT JOIN LikeLive ll ON ll.liveItem = li
@@ -84,9 +86,9 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
             @Param("thresholdTime") LocalDateTime thresholdTime
     );
 
-    @EntityGraph(attributePaths = {"images", "auctionRoom", "auctionRoom.liveItems"})
+    @EntityGraph(attributePaths = {"auctionRoom"})
     @Query("SELECT DISTINCT li FROM LiveItem li WHERE li.id IN :ids")
-    List<LiveItem> findLiveItemsWithAuctionRoomForSearch(@Param("ids") List<Long> ids);
+    List<LiveItem> findLiveItemsWithAuctionRoom(@Param("ids") List<Long> ids);
 
     // 특정 상태의 라이브 경매 전체 조회 (이미지 + 경매방 포함)
     @EntityGraph(attributePaths = {"images", "auctionRoom"})
