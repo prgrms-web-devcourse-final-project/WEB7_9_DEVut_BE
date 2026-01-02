@@ -143,8 +143,6 @@ public class UserDealService {
             }
         }
 
-        // TODO: 판매자 이름 조회 (필요시 추가)
-
         // 최종 결과 조립 (순서 유지)
         List<UserDealItemResponse> items = new ArrayList<>();
         for (Object[] row : results) {
@@ -155,21 +153,13 @@ public class UserDealService {
                 LiveDeal deal = liveDealMap.get(id);
                 if (deal != null) {
                     Boolean wish = likedLiveItemIds.contains(deal.getItem().getId());
-                    UserDealItemResponse response = UserDealItemResponse.fromLiveDeal(deal, wish);
-                    // 판매자 이름 설정 (필요시)
-                    // String sellerName = getSellerName(deal.getItem().getSellerUserId());
-                    // response = response.withSellerName(sellerName);
-                    items.add(response);
+                    items.add(UserDealItemResponse.fromLiveDeal(deal, wish));
                 }
             } else if ("DELAYED".equals(type)) {
                 DelayedDeal deal = delayedDealMap.get(id);
                 if (deal != null) {
                     Boolean wish = likedDelayedItemIds.contains(deal.getItem().getId());
-                    UserDealItemResponse response = UserDealItemResponse.fromDelayedDeal(deal, wish);
-                    // 판매자 이름 설정 (필요시)
-                    // String sellerName = getSellerName(deal.getItem().getSellerUserId());
-                    // response = response.withSellerName(sellerName);
-                    items.add(response);
+                    items.add(UserDealItemResponse.fromDelayedDeal(deal, wish));
                 }
             }
         }

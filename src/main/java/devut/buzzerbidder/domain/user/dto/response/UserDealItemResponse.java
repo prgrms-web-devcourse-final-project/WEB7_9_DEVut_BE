@@ -19,9 +19,6 @@ public record UserDealItemResponse(
     @Schema(description = "물품 이름", example = "물품 이름")
     String itemName,
 
-    @Schema(description = "판매자 이름", example = "판매자 이름")
-    String sellerName,
-
     @Schema(description = "구매자 이름", example = "구매자 이름")
     String buyerName,
 
@@ -50,7 +47,6 @@ public record UserDealItemResponse(
             liveDeal.getItem().getId(),
             "LIVE",
             liveDeal.getItem().getName(),
-            null, // sellerName은 Service에서 조회하여 설정
             liveDeal.getBuyer().getNickname(),
             liveDeal.getWinningPrice(),
             liveDeal.getStatus(),
@@ -70,7 +66,6 @@ public record UserDealItemResponse(
             delayedDeal.getItem().getId(),
             "DELAYED",
             delayedDeal.getItem().getName(),
-            null, // sellerName은 Service에서 조회하여 설정
             delayedDeal.getBuyer().getNickname(),
             delayedDeal.getWinningPrice(),
             delayedDeal.getStatus(),
@@ -80,20 +75,5 @@ public record UserDealItemResponse(
         );
     }
 
-    public UserDealItemResponse withSellerName(String sellerName) {
-        return new UserDealItemResponse(
-            this.id,
-            this.itemId,
-            this.type,
-            this.itemName,
-            sellerName,
-            this.buyerName,
-            this.winningPrice,
-            this.status,
-            this.image,
-            this.wish,
-            this.auctionStatus
-        );
-    }
 }
 
