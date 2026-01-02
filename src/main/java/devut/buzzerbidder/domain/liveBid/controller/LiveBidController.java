@@ -23,7 +23,7 @@ public class LiveBidController {
 
     private final LiveBidService liveBidService;
 
-    @PostMapping("{id}/bid")
+    @PostMapping("{itemId}/bid")
     @Operation(summary = "입찰 하기", description = "특정 라이브 경매 상품에 입찰을 시도합니다.")
     public ApiResponse<LiveBidResponse> bid(
             @Valid @RequestBody LiveBidRequest request,
