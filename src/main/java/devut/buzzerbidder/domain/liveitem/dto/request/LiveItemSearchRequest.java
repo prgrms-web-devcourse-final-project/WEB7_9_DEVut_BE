@@ -7,6 +7,6 @@ public record LiveItemSearchRequest(
     Category category,
     Long minBidPrice,
     Long maxBidPrice,
-    Boolean isSaling
+    Boolean isSelling
 ){
 }
