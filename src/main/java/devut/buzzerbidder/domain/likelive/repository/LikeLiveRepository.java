@@ -17,4 +17,7 @@ public interface LikeLiveRepository extends JpaRepository<LikeLive, Long> {
 
     @Query("SELECT l.liveItem.id, COUNT(l) FROM LikeLive l WHERE l.liveItem.id IN :ids GROUP BY l.liveItem.id")
     List<Object[]> countByLiveItemIdIn(@Param("ids") List<Long> ids);
+
+    @Query("SELECT ll.liveItem.id FROM LikeLive ll WHERE ll.user.id = :userId")
+    List<Long> findLiveItemIdsByUserId(@Param("userId") Long userId);
 }

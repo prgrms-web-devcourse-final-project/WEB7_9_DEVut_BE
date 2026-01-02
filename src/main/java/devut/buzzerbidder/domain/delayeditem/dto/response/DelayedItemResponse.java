@@ -11,7 +11,8 @@ public record DelayedItemResponse(
     Long currentPrice,
     Long buyNowPrice,
     LocalDateTime endTime,
-    AuctionStatus auctionStatus
+    AuctionStatus auctionStatus,
+    Boolean isLiked
 ) {
     public DelayedItemResponse(DelayedItem delayedItem) {
         this(
@@ -21,7 +22,21 @@ public record DelayedItemResponse(
             delayedItem.getCurrentPrice(),
             delayedItem.getBuyNowPrice(),
             delayedItem.getEndTime(),
-            delayedItem.getAuctionStatus()
+            delayedItem.getAuctionStatus(),
+            false
+        );
+    }
+
+    public DelayedItemResponse(DelayedItem delayedItem, boolean isLiked) {
+        this(
+            delayedItem.getId(),
+            delayedItem.getName(),
+            delayedItem.getImages().isEmpty() ? null : delayedItem.getImages().getFirst().getImageUrl(),
+            delayedItem.getCurrentPrice(),
+            delayedItem.getBuyNowPrice(),
+            delayedItem.getEndTime(),
+            delayedItem.getAuctionStatus(),
+            isLiked
         );
     }
 }

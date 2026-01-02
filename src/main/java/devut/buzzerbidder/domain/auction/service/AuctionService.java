@@ -5,6 +5,8 @@ import devut.buzzerbidder.domain.auction.dto.response.AuctionListResponse;
 import devut.buzzerbidder.domain.auction.dto.response.AuctionListResponse.AuctionItem;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
+import devut.buzzerbidder.domain.likedelayed.service.LikeDelayedService;
+import devut.buzzerbidder.domain.likelive.service.LikeLiveService;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
@@ -12,6 +14,7 @@ import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,22 +29,27 @@ public class AuctionService {
     private final DelayedItemRepository delayedItemRepository;
     private final LiveItemRepository liveItemRepository;
     private final LiveBidRedisService liveBidRedisService;
+    private final LikeDelayedService likeDelayedService;
+    private final LikeLiveService likeLiveService;
 
     /**
      * 통합 경매 검색 (페이징, 필터링, 검색)
      */
-    public AuctionListResponse searchAuctions(AuctionSearchRequest request, Pageable pageable) {
+    public AuctionListResponse searchAuctions(
+        AuctionSearchRequest request,
+        Pageable pageable,
+        Long userId) {
         List<AuctionItem> allAuctions = new ArrayList<>();
 
         // 타입별 조회
         if ("ALL".equals(request.type()) || "DELAYED".equals(request.type())) {
             List<DelayedItem> delayedItems = getDelayedItems(request);
-            allAuctions.addAll(convertDelayedItems(delayedItems));
+            allAuctions.addAll(convertDelayedItems(delayedItems, userId));
         }
 
         if ("ALL".equals(request.type()) || "LIVE".equals(request.type())) {
             List<LiveItem> liveItems = getLiveItems(request);
-            allAuctions.addAll(convertLiveItems(liveItems));
+            allAuctions.addAll(convertLiveItems(liveItems, userId));
         }
 
         // 정렬
@@ -94,7 +102,7 @@ public class AuctionService {
 
             if (ids.isEmpty()) return List.of();
 
-            List<LiveItem> items = liveItemRepository.findLiveItemsWithImages(ids);
+            List<LiveItem> items = liveItemRepository.findLiveItemsWithAuctionRoomForSearch(ids);
 
             return items.stream()
                 .filter(item -> item.getAuctionStatus() == LiveItem.AuctionStatus.BEFORE_BIDDING ||
@@ -108,7 +116,13 @@ public class AuctionService {
         }
     }
 
-    private List<AuctionItem> convertDelayedItems(List<DelayedItem> items) {
+    private List<AuctionItem> convertDelayedItems(List<DelayedItem> items, Long userId) {
+        if (items.isEmpty()) return List.of();
+
+        Set<Long> likedItemIds = userId != null
+           ? likeDelayedService.findLikeDelayedItemIdsByUserId(userId)
+           : Set.of();
+
         return items.stream()
             .map(item -> new AuctionItem(
                 item.getId(),
@@ -118,12 +132,19 @@ public class AuctionService {
                 item.getCurrentPrice(),
                 item.getEndTime(),
                 item.getAuctionStatus().name(),
-                null
+                null,
+                likedItemIds.contains(item.getId())
             ))
             .toList();
     }
 
-    private List<AuctionItem> convertLiveItems(List<LiveItem> items) {
+    private List<AuctionItem> convertLiveItems(List<LiveItem> items, Long userId) {
+        if (items.isEmpty()) return List.of();
+
+        Set<Long> likedItemIds = userId != null
+            ? likeLiveService.findLikedLiveItemIdsByUserId(userId)
+            : Set.of();
+
         return items.stream()
             .filter(item -> item.getAuctionRoom() != null)
             .map(item -> new AuctionItem(
@@ -134,7 +155,8 @@ public class AuctionService {
                 item.getInitPrice(),
                 calculateLiveItemEndTime(item),
                 item.getAuctionStatus().name(),
-                item.getAuctionRoom().getId()
+                item.getAuctionRoom().getId(),
+                likedItemIds.contains(item.getId())
             ))
             .toList();
     }

@@ -84,6 +84,10 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
             @Param("thresholdTime") LocalDateTime thresholdTime
     );
 
+    @EntityGraph(attributePaths = {"images", "auctionRoom", "auctionRoom.liveItems"})
+    @Query("SELECT DISTINCT li FROM LiveItem li WHERE li.id IN :ids")
+    List<LiveItem> findLiveItemsWithAuctionRoomForSearch(@Param("ids") List<Long> ids);
+
     // 특정 상태의 라이브 경매 전체 조회 (이미지 + 경매방 포함)
     @EntityGraph(attributePaths = {"images", "auctionRoom"})
     @Query("SELECT li FROM LiveItem li WHERE li.auctionStatus IN :statuses")

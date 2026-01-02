@@ -17,4 +17,7 @@ public interface LikeDelayedRepository extends JpaRepository<LikeDelayed, Long> 
 
     @Query("SELECT l.delayedItem.id, COUNT(l) FROM LikeDelayed l WHERE l.delayedItem.id IN :ids GROUP BY l.delayedItem.id")
     List<Object[]> countByDelayedItemIdIn(@Param("ids") List<Long> ids);
+
+    @Query("SELECT ld.delayedItem.id FROM LikeDelayed ld WHERE ld.user.id = :userId")
+    List<Long> findDelayedItemIdsByUserId(@Param("userId") Long userId);
 }

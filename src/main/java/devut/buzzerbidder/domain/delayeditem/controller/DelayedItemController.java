@@ -73,11 +73,14 @@ public class DelayedItemController {
     public ApiResponse<DelayedItemListResponse> getDelayedItems(
         DelayedItemSearchRequest reqBody,
         @RequestParam(defaultValue = "1") int page,
-        @RequestParam(defaultValue = "15") int size
+        @RequestParam(defaultValue = "15") int size,
+        @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Pageable pageable = PageRequest.of(page - 1, size);
+        Long userId = userDetails != null ? userDetails.getUser().getId() : null;
+
         DelayedItemListResponse response =
-            delayedItemService.getDelayedItems(reqBody, pageable);
+            delayedItemService.getDelayedItems(reqBody, pageable, userId);
 
         return ApiResponse.ok("지연 경매 목록 조회", response);
     }
@@ -85,9 +88,11 @@ public class DelayedItemController {
     @GetMapping("/{id}")
     @Operation(summary = "지연 경매 상세 조회")
     public ApiResponse<DelayedItemDetailResponse> getDelayedItem(
-        @PathVariable Long id
+        @PathVariable Long id,
+        @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        DelayedItemDetailResponse response = delayedItemService.getDelayedItem(id);
+        Long userId = userDetails != null ? userDetails.getUser().getId() : null;
+        DelayedItemDetailResponse response = delayedItemService.getDelayedItem(id, userId);
 
         return ApiResponse.ok("%d번 지연 경매 상세 조회".formatted(id), response);
     }

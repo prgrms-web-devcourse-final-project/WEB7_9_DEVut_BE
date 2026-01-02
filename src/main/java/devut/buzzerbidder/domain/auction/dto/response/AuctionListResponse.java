@@ -15,7 +15,8 @@ public record AuctionListResponse(
         Long currentPrice,
         LocalDateTime endTime,
         String auctionStatus,
-        Long roomId
+        Long roomId,
+        Boolean isLiked
     ) {}
 
 }

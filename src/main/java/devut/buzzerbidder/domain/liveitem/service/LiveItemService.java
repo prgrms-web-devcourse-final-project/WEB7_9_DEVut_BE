@@ -342,12 +342,18 @@ public class LiveItemService {
     }
 
     @Transactional(readOnly = true)
-    public LiveItemDetailResponse getLiveItem(Long id) {
+    public LiveItemDetailResponse getLiveItem(Long id, Long userId) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
         long likeCount = likeLiveService.countByLiveItemId(id);
+
+        boolean isLiked = false;
+        if (userId != null) {
+            Set<Long> likeIds = likeLiveService.findLikedLiveItemIdsByUserId(userId);
+            isLiked = likeIds.contains(id);
+        }
 
         String redisKey = "liveItem:" + liveItem.getId();
 
@@ -371,7 +377,8 @@ public class LiveItemService {
                         .map(LiveItemImage::getImageUrl)
                         .toList(),
                 likeCount,
-                currentMaxPrice
+                currentMaxPrice,
+                isLiked
         );
     }
 
@@ -379,10 +386,15 @@ public class LiveItemService {
     @Transactional(readOnly = true)
     public LiveItemListResponse  getLiveItems(
             LiveItemSearchRequest reqBody,
-            Pageable pageable
+            Pageable pageable,
+            Long userId
     ) {
 
         Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), pageable);
+
+        Set<Long> likedItemIds = userId != null
+            ? likeLiveService.findLikedLiveItemIdsByUserId(userId)
+            : Set.of();
 
         // 2. Redis에서 현재 입찰가 가져오기
         List<LiveItemResponse> dtoList = page.getContent().stream()
@@ -401,7 +413,8 @@ public class LiveItemService {
                             item.image(),
                             item.startAt(),
                             item.auctionStatus(),
-                            currentMaxBidPrice
+                            currentMaxBidPrice,
+                            likedItemIds.contains(item.id())
                     );
                 })
                 .toList();
@@ -426,10 +439,14 @@ public class LiveItemService {
     }
 
     @Transactional(readOnly = true)
-    public LiveItemListResponse getHotLiveItems(int limit) {
+    public LiveItemListResponse getHotLiveItems(int limit, Long userId) {
 
         Pageable pageable = PageRequest.of(0, limit);
         List<LiveItemResponse> beforeBidPrice = liveItemRepository.findHotLiveItems(pageable);
+
+        Set<Long> likedItemIds = userId != null
+            ? likeLiveService.findLikedLiveItemIdsByUserId(userId)
+            : Set.of();
 
         List<LiveItemResponse> dtoList = beforeBidPrice.stream()
                 .map(item -> {
@@ -446,7 +463,8 @@ public class LiveItemService {
                             item.image(),
                             item.startAt(),
                             item.auctionStatus(),
-                            currentMaxBidPrice
+                            currentMaxBidPrice,
+                            likedItemIds.contains(item.id())
                     );
                 })
                 .toList();

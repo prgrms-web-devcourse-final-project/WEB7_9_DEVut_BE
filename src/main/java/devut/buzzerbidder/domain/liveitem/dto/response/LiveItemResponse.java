@@ -10,7 +10,8 @@ public record LiveItemResponse(
     String image,
     LocalDateTime startAt,
     AuctionStatus auctionStatus,
-    Long currentPrice
+    Long currentPrice,
+    Boolean isLiked
 ) {
     public LiveItemResponse(LiveItem liveItem) {
         this(
@@ -19,7 +20,20 @@ public record LiveItemResponse(
             liveItem.getThumbnail(),
             liveItem.getLiveTime(),
             liveItem.getAuctionStatus(),
-            liveItem.getInitPrice()
+            liveItem.getInitPrice(),
+            false
+        );
+    }
+
+    public LiveItemResponse(LiveItem liveItem, boolean isLiked) {
+        this(
+            liveItem.getId(),
+            liveItem.getName(),
+            liveItem.getThumbnail(),
+            liveItem.getLiveTime(),
+            liveItem.getAuctionStatus(),
+            liveItem.getInitPrice(),
+            isLiked
         );
     }
 }

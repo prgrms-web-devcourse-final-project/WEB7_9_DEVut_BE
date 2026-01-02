@@ -4,11 +4,13 @@ import devut.buzzerbidder.domain.auction.dto.request.AuctionSearchRequest;
 import devut.buzzerbidder.domain.auction.dto.response.AuctionListResponse;
 import devut.buzzerbidder.domain.auction.service.AuctionService;
 import devut.buzzerbidder.global.response.ApiResponse;
+import devut.buzzerbidder.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,10 +32,14 @@ public class AuctionController {
     public ApiResponse<AuctionListResponse> searchAuctions(
         AuctionSearchRequest searchRequest,
         @RequestParam(defaultValue = "1") int page,
-        @RequestParam(defaultValue = "20") int size
+        @RequestParam(defaultValue = "20") int size,
+        @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        AuctionListResponse response = auctionService.searchAuctions(searchRequest, pageable);
+
+        Long userId = userDetails != null ? userDetails.getUser().getId() : null;
+
+        AuctionListResponse response = auctionService.searchAuctions(searchRequest, pageable, userId);
         return ApiResponse.ok("통합 경매 검색", response);
     }
 
