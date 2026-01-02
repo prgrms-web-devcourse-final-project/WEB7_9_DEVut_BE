@@ -34,7 +34,7 @@ public class ChatRoomController {
         return ApiResponse.ok("DM 목록 조회 성공", response);
     }
 
-    @GetMapping("/dm/{roomId}")
+    @GetMapping("/dm/{chatRoomId}")
     @Operation(summary = "DM 상세 및 메시지 목록 조회", description = "DM 상단 상품 정보와 과거 메시지 내역을 조회합니다.")
     public ApiResponse<ChatRoomDetailResponse> getChatRoomDetail(
             @PathVariable Long roomId) {
@@ -43,7 +43,7 @@ public class ChatRoomController {
         return ApiResponse.ok("채팅방 상세 조회 성공", response);
     }
 
-    @PostMapping("/dm/{itemId}")
+    @PostMapping("/dm/{DelayedItemId}")
     @Operation(summary = "DM 입장 처리", description = "구매자 <-> 판매자 간 지연 경매품에 대한 DM 채팅방 입장처리를 진행합니다.")
     public ApiResponse<DirectMessageEnterResponse> enterDirectMessageChatRoom(
             @PathVariable Long itemId
