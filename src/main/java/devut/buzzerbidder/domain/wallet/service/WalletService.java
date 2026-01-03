@@ -1,10 +1,13 @@
 package devut.buzzerbidder.domain.wallet.service;
 
 import devut.buzzerbidder.domain.wallet.dto.request.WithdrawalRequestDto;
+import devut.buzzerbidder.domain.wallet.dto.response.HistoriesPageResponseDto;
+import devut.buzzerbidder.domain.wallet.dto.response.HistoryResponseDto;
 import devut.buzzerbidder.domain.wallet.dto.response.WithdrawalResponseDto;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.entity.Wallet;
+import devut.buzzerbidder.domain.wallet.entity.WalletHistory;
 import devut.buzzerbidder.domain.wallet.entity.Withdrawal;
 import devut.buzzerbidder.domain.wallet.enums.WalletTransactionType;
 import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
@@ -13,10 +16,13 @@ import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -198,6 +204,46 @@ public class WalletService {
         }
     }
 
+
+    // 보유 잔액 검증 후, 출금 요청
+    @Transactional
+    public WithdrawalResponseDto withdrawal(Long userId, WithdrawalRequestDto request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Long amount = request.amount();
+        validateAmount(amount);
+
+        Wallet wallet = findByUserIdWithLockOrThrow(userId);
+        if (wallet.getBizz() < amount) {
+            throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
+        }
+
+        updateBizzAndRecordHistory(wallet, user, amount, WalletTransactionType.WITHDRAW);
+
+        Withdrawal withdrawal = new Withdrawal(user,
+                amount,
+                request.bankName(),
+                request.accountNumber(),
+                request.accountHolder()
+        );
+        withdrawRepository.save(withdrawal);
+
+        return WithdrawalResponseDto.from(withdrawal);
+    }
+
+    public HistoriesPageResponseDto getHistories(Long userId, int page) {
+        Page<WalletHistory> walletHistoriesPage = walletHistoryService.getWalletHistoriesPage(userId, page);
+
+        List<HistoryResponseDto> walletHistories = walletHistoriesPage.getContent()
+                .stream()
+                .map(HistoryResponseDto::from)
+                .toList();
+
+        return HistoriesPageResponseDto.from(walletHistoriesPage, walletHistories);
+    }
+
     /* ==================== 이 밑으로는 헬퍼 메서드 ==================== */
 
     private void transferDbFallback(User fromUser, User toUser, Long amount) {
@@ -288,33 +334,5 @@ public class WalletService {
 
         Long balanceAfter = wallet.getBizz();
         walletHistoryService.recordWalletHistory(user, amount, type, balanceBefore, balanceAfter);
-    }
-
-    // 보유 잔액 검증 후, 출금 요청
-    @Transactional
-    public WithdrawalResponseDto withdrawal(Long userId, WithdrawalRequestDto request) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        Long amount = request.amount();
-        validateAmount(amount);
-
-        Wallet wallet = findByUserIdWithLockOrThrow(userId);
-        if (wallet.getBizz() < amount) {
-            throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
-        }
-
-        updateBizzAndRecordHistory(wallet, user, amount, WalletTransactionType.WITHDRAW);
-
-        Withdrawal withdrawal = new Withdrawal(user,
-                amount,
-                request.bankName(),
-                request.accountNumber(),
-                request.accountHolder()
-        );
-        withdrawRepository.save(withdrawal);
-
-        return WithdrawalResponseDto.from(withdrawal);
     }
 }
