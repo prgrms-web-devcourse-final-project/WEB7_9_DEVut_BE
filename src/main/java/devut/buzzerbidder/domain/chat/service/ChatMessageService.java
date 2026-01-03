@@ -51,6 +51,7 @@ public class ChatMessageService {
         AuctionChatMessageResponse response = new AuctionChatMessageResponse(
                 "AUCTION_CHAT",
                 tempId,
+                sender.getId(),
                 sender.getProfileImageUrl(),
                 sender.getNickname(),
                 message,
@@ -94,6 +95,7 @@ public class ChatMessageService {
         DirectMessageResponse response = new DirectMessageResponse(
                 "DM",
                 chatMessage.getId(),
+                sender.getId(),
                 sender.getProfileImageUrl(),
                 sender.getNickname(),
                 chatMessage.getMessage(),
