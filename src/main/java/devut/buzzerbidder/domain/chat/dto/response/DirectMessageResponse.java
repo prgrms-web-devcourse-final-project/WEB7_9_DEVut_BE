@@ -11,6 +11,9 @@ public record DirectMessageResponse(
         @Schema(description = "메시지 ID")
         Long id,
 
+        @Schema(description = "유저 ID")
+        Long senderId,
+
         @Schema(description = "발신자 프로필 사진 URL")
         String profileImageUrl,
 

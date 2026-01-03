@@ -9,6 +9,8 @@ public record AuctionChatMessageResponse(
         String type,
         @Schema(description = "메시지 임시 ID (타임스탬프)", example = "1735776000000")
         String tempId,
+        @Schema(description = "발신자 ID")
+        Long senderId,
         @Schema(description = "발신자 프로필 사진 URL")
         String profileImageUrl,
         @Schema(description = "발신자 닉네임")
@@ -18,9 +20,10 @@ public record AuctionChatMessageResponse(
         @Schema(description = "메시지 발신 시간")
         LocalDateTime sendTime
 ) {
-    public AuctionChatMessageResponse(String type, String tempId, String profileImageUrl, String nickname, String message, LocalDateTime sendTime) {
+    public AuctionChatMessageResponse(String type, String tempId, Long senderId, String profileImageUrl, String nickname, String message, LocalDateTime sendTime) {
         this.type = type;
         this.tempId = tempId;
+        this.senderId = senderId;
         this.profileImageUrl = profileImageUrl;
         this.nickname = nickname;
         this.message = message;
