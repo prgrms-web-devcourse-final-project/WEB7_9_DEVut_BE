@@ -155,6 +155,11 @@ public class WalletRedisService {
      * - Redis에 bizz 키가 없으면 hit=false로 반환
      * - 잔액 부족이면 INSUFFICIENT로 처리
      */
+    @Timed(
+        value = "buzzerbidder.redis.wallet",
+        extraTags = {"op", "change"},
+        histogram = true
+    )
     public RedisBizzChangeResult changeBizzIfPresent(
             Long userId,
             Long amount,
