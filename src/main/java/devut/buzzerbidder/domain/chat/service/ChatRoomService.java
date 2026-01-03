@@ -8,9 +8,10 @@ import devut.buzzerbidder.domain.chat.dto.response.ChatRoomDetailResponse;
 import devut.buzzerbidder.domain.chat.entity.ChatMessage;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
 import devut.buzzerbidder.domain.chat.entity.ChatRoomEntered;
+import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
+import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;import devut.buzzerbidder.domain.user.dto.response.UserInfo;
 import devut.buzzerbidder.domain.chat.repository.ChatMessageRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;
-import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
@@ -152,6 +153,21 @@ public class ChatRoomService {
         }
     }
 
+    // 채팅방에 입장한 유저들의 프로필 정보 조회
+    public List<UserInfo> getEnteredUsers(ChatRoom chatRoom) {
+        // findCounterparts를 활용하여 채팅방의 모든 유저 조회 (me를 null로 전달하여 모든 유저 조회)
+        List<ChatRoomEntered> entries = chatRoomEnteredRepository.findCounterparts(
+                Collections.singletonList(chatRoom), 
+                null
+        );
+        
+        return entries.stream()
+                .map(ChatRoomEntered::getUser)
+                .map(UserInfo::from)
+                .collect(Collectors.toList());
+    }
+
+    // TODO: 1대1 채팅 inActive 활용
     public void validateAuctionRoomEntry(Long auctionId) {
         AuctionRoom auctionRoom = auctionRoomRepository.findById(auctionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.AUCTION_ROOM_NOT_FOUND));
@@ -238,6 +254,7 @@ public class ChatRoomService {
         List<DirectMessageDto> messageResponses = chatMessages.stream()
                 .map(m -> new DirectMessageDto(
                         m.getId(),
+                        m.getSender().getId(),
                         m.getSender().getProfileImageUrl(),
                         m.getSender().getNickname(),
                         m.getMessage(),

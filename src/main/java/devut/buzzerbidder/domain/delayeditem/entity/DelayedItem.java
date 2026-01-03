@@ -133,7 +133,6 @@ public class DelayedItem extends BaseEntity {
     public enum AuctionStatus {
         BEFORE_BIDDING,        // 입찰 전
         IN_PROGRESS,           // 입찰 중
-        ENDED,                 // 경매 종료 (낙찰)
         FAILED,                // 유찰 (입찰자 없음)
         IN_DEAL,               // 거래 중
         PURCHASE_CONFIRMED;    // 구매 확정

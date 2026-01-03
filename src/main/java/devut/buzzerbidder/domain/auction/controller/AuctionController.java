@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "통합 경매 API", description = "라이브 경매 + 지연 경매 통합 조회/검색")
 @RestController
-@RequestMapping("/api/v1/auction")
+@RequestMapping("/api/v1/auction/search")
 @RequiredArgsConstructor
 public class AuctionController {
 

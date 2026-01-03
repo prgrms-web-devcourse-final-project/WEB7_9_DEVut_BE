@@ -444,7 +444,7 @@ public class DelayedItemServiceTest {
         DelayedItemResponse created = delayedItemService.writeDelayedItem(request, seller);
 
         // when
-        DelayedItemDetailResponse response = delayedItemService.getDelayedItem(created.id());
+        DelayedItemDetailResponse response = delayedItemService.getDelayedItem(created.id(), null);
 
         // then
         assertThat(response).isNotNull();
@@ -459,7 +459,7 @@ public class DelayedItemServiceTest {
     @DisplayName("경매 물품 상세 조회 실패 - 존재하지 않는 물품")
     void t11() {
         // when & then
-        assertThatThrownBy(() -> delayedItemService.getDelayedItem(99999L))
+        assertThatThrownBy(() -> delayedItemService.getDelayedItem(99999L, null))
             .isInstanceOf(BusinessException.class)
             .hasMessageContaining(ErrorCode.NOT_FOUND_DATA.getMessage());
     }
@@ -504,14 +504,16 @@ public class DelayedItemServiceTest {
             null,
             Category.ELECTRONICS,
             null,
-            null
+            null,
+            true
         );
         Pageable pageable = PageRequest.of(0, 10);
 
         // when
         DelayedItemListResponse response = delayedItemService.getDelayedItems(
             searchRequest,
-            pageable
+            pageable,
+            null
         );
 
         // then
