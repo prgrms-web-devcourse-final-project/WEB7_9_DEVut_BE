@@ -10,8 +10,6 @@ import lombok.*;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 public class Wallet extends BaseEntity {
 
     @OneToOne(fetch = FetchType.LAZY)
@@ -20,6 +18,13 @@ public class Wallet extends BaseEntity {
 
     @Column(nullable = false)
     private Long bizz;
+
+    @Builder
+    private Wallet(User user) {
+        if (user == null) throw new BusinessException(ErrorCode.WALLET_USER_NOT_NULL);
+        this.user = user;
+        this.bizz = 0L;
+    }
 
     public void increaseBizz(Long amount) {
         validateAmount(amount);
