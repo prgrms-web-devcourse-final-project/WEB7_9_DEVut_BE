@@ -26,12 +26,12 @@ public interface ChatRoomEnteredRepository extends JpaRepository<ChatRoomEntered
     """)
     List<ChatRoomEntered> findAllMyDmEntries(@Param("user") User user);
 
-    // 여러 채팅방의 상대방 입장 정보를 한꺼번에 조회
+    // 여러 채팅방의 상대방 입장 정보를 한꺼번에 조회(me가 null이면 모든 유저 조회)
     @Query("""
         SELECT cre FROM ChatRoomEntered cre 
         JOIN FETCH cre.user 
         WHERE cre.chatRoom IN :chatRooms 
-          AND cre.user != :me
+          AND (:me IS NULL OR cre.user != :me)
     """)
     List<ChatRoomEntered> findCounterparts(@Param("chatRooms") List<ChatRoom> chatRooms, @Param("me") User me);
 }

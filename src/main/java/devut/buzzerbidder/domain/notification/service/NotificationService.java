@@ -159,6 +159,14 @@ public class NotificationService {
     }
 
     /**
+     * 사용자의 모든 읽지 않은 알림을 읽음 처리
+     */
+    @Transactional
+    public int markAllAsRead(Long userId) {
+        return repository.markAllAsReadByUserId(userId);
+    }
+
+    /**
      * 알림 삭제
      */
     @Transactional(readOnly = false)
