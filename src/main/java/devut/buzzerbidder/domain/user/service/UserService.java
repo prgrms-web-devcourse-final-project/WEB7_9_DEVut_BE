@@ -2,9 +2,12 @@ package devut.buzzerbidder.domain.user.service;
 
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
+import devut.buzzerbidder.domain.likedelayed.entity.LikeDelayed;
 import devut.buzzerbidder.domain.likedelayed.repository.LikeDelayedRepository;
+import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
+import devut.buzzerbidder.domain.likelive.entity.LikeLive;
 import devut.buzzerbidder.domain.likelive.repository.LikeLiveRepository;
 import devut.buzzerbidder.domain.user.dto.request.EmailLoginRequest;
 import devut.buzzerbidder.domain.user.dto.request.EmailSignUpRequest;
@@ -25,9 +28,11 @@ import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -50,6 +55,7 @@ public class UserService {
     private final DelayedItemRepository delayedItemRepository;
     private final LikeLiveRepository likeLiveRepository;
     private final LikeDelayedRepository likeDelayedRepository;
+    private final LiveBidRedisService liveBidRedisService;
 
     @Transactional
     public LoginResponse signUp(EmailSignUpRequest request) {
@@ -81,7 +87,6 @@ public class UserService {
                     .user(user)
                     .build();
             providerRepository.save(emailProvider);
-            walletService.createWallet(user);
             emailVerificationService.deleteVerifiedEmail(request.email());
             
             return LoginResponse.of(user);
@@ -199,37 +204,38 @@ public class UserService {
         return UserUpdateResponse.from(updatedUser);
     }
 
-
-    public MyItemListResponse getMyItems(User user, Pageable pageable) {
+    public MyItemListResponse getMyItems(User user, Pageable pageable, String type) {
         // 전체 개수 계산
-        long totalElements = userRepository.countMyItems(user.getId());
+        long totalElements = userRepository.countMyItems(user.getId(), type);
         
         // UNION 쿼리로 ID와 타입만 가져오기 (페이징 적용)
         List<Object[]> results = userRepository.findMyItemIdsAndTypes(
             user.getId(),
+            type,
             pageable.getPageSize(),
             pageable.getOffset()
         );
 
-        // 공통 로직으로 처리
-        List<MyItemResponse> items = fetchAndMapItems(results);
+        // 공통 로직으로 처리 (내가 작성한 글이므로 찜 여부 확인 필요)
+        List<MyItemResponse> items = fetchAndMapItems(results, user, false);
 
         return new MyItemListResponse(items, totalElements);
     }
 
-    public MyItemListResponse getMyLikedItems(User user, Pageable pageable) {
+    public MyItemListResponse getMyLikedItems(User user, Pageable pageable, String type) {
         // 전체 개수 계산
-        long totalElements = userRepository.countMyLikedItems(user.getId());
+        long totalElements = userRepository.countMyLikedItems(user.getId(), type);
         
         // UNION 쿼리로 ID와 타입만 가져오기 (페이징 적용)
         List<Object[]> results = userRepository.findMyLikedItemIdsAndTypes(
             user.getId(),
+            type,
             pageable.getPageSize(),
             pageable.getOffset()
         );
 
-        // 공통 로직으로 처리
-        List<MyItemResponse> items = fetchAndMapItems(results);
+        // 공통 로직으로 처리 (찜한 목록이므로 항상 wish = true)
+        List<MyItemResponse> items = fetchAndMapItems(results, user, true);
 
         return new MyItemListResponse(items, totalElements);
     }
@@ -237,8 +243,11 @@ public class UserService {
     /**
      * ID와 타입 리스트를 받아서 엔티티를 조회하고 DTO로 변환하는 공통 메서드
      * N+1 문제를 해결하기 위해 좋아요 개수도 IN 절로 한 번에 조회
+     * @param results ID와 타입 리스트
+     * @param user 현재 사용자 (찜 여부 확인용)
+     * @param isLikedItems 찜한 목록인지 여부 (true면 항상 wish = true)
      */
-    private List<MyItemResponse> fetchAndMapItems(List<Object[]> results) {
+    private List<MyItemResponse> fetchAndMapItems(List<Object[]> results, User user, boolean isLikedItems) {
         // ID와 타입 분리
         List<Long> liveItemIds = new ArrayList<>();
         List<Long> delayedItemIds = new ArrayList<>();
@@ -264,24 +273,33 @@ public class UserService {
             : delayedItemRepository.findDelayedItemsWithImages(delayedItemIds).stream()
                 .collect(Collectors.toMap(DelayedItem::getId, item -> item));
 
-        // 좋아요 개수 Batch 조회 (N+1 해결)
-        Map<Long, Long> liveLikesMap = liveItemIds.isEmpty() 
-            ? Collections.emptyMap()
-            : likeLiveRepository.countByLiveItemIdIn(liveItemIds).stream()
-                .collect(Collectors.toMap(
-                    row -> ((Number) row[0]).longValue(), 
-                    row -> ((Number) row[1]).longValue(),
-                    (existing, replacement) -> existing
-                ));
-
-        Map<Long, Long> delayedLikesMap = delayedItemIds.isEmpty() 
-            ? Collections.emptyMap()
-            : likeDelayedRepository.countByDelayedItemIdIn(delayedItemIds).stream()
-                .collect(Collectors.toMap(
-                    row -> ((Number) row[0]).longValue(), 
-                    row -> ((Number) row[1]).longValue(),
-                    (existing, replacement) -> existing
-                ));
+        // 찜 여부 Batch 조회 (N+1 해결) - 찜한 목록이 아닌 경우에만 조회
+        Set<Long> likedLiveItemIds = new HashSet<>();
+        Set<Long> likedDelayedItemIds = new HashSet<>();
+        
+        if (!isLikedItems && user != null) {
+            // LiveItem 찜 여부 조회
+            if (!liveItemIds.isEmpty()) {
+                List<LiveItem> liveItems = liveItemMap.values().stream().toList();
+                for (LiveItem liveItem : liveItems) {
+                    Optional<LikeLive> likeLive = likeLiveRepository.findByUserAndLiveItem(user, liveItem);
+                    if (likeLive.isPresent()) {
+                        likedLiveItemIds.add(liveItem.getId());
+                    }
+                }
+            }
+            
+            // DelayedItem 찜 여부 조회
+            if (!delayedItemIds.isEmpty()) {
+                List<DelayedItem> delayedItems = delayedItemMap.values().stream().toList();
+                for (DelayedItem delayedItem : delayedItems) {
+                    Optional<LikeDelayed> likeDelayed = likeDelayedRepository.findByUserAndDelayedItem(user, delayedItem);
+                    if (likeDelayed.isPresent()) {
+                        likedDelayedItemIds.add(delayedItem.getId());
+                    }
+                }
+            }
+        }
 
         // 최종 결과 조립 (순서 유지)
         List<MyItemResponse> items = new ArrayList<>();
@@ -292,14 +310,23 @@ public class UserService {
             if ("LIVE".equals(type)) {
                 LiveItem item = liveItemMap.get(id);
                 if (item != null) {
-                    Long likes = liveLikesMap.getOrDefault(id, 0L);
-                    items.add(MyItemResponse.fromLiveItem(item, likes));
+                    // Redis에서 현재 입찰가 가져오기
+                    String redisKey = "liveItem:" + item.getId();
+                    String maxBidPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
+                    Long currentPrice = (maxBidPriceStr != null)
+                        ? Long.parseLong(maxBidPriceStr)
+                        : item.getInitPrice(); // Redis에 없으면 초기 가격 사용
+                    
+                    // 찜 여부 확인
+                    Boolean wish = isLikedItems ? true : likedLiveItemIds.contains(id);
+                    items.add(MyItemResponse.fromLiveItem(item, currentPrice, wish));
                 }
             } else if ("DELAYED".equals(type)) {
                 DelayedItem item = delayedItemMap.get(id);
                 if (item != null) {
-                    Long likes = delayedLikesMap.getOrDefault(id, 0L);
-                    items.add(MyItemResponse.fromDelayedItem(item, likes));
+                    // 찜 여부 확인
+                    Boolean wish = isLikedItems ? true : likedDelayedItemIds.contains(id);
+                    items.add(MyItemResponse.fromDelayedItem(item, wish));
                 }
             }
         }

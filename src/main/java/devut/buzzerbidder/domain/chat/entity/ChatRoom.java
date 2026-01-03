@@ -10,6 +10,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,6 +30,16 @@ public class ChatRoom extends BaseEntity {
     @Column(nullable = false)
     private Long referenceEntityId;
 
+    @Column
+    private Long lastMessageId;
+
+    @Column(length = 200)
+    private String lastMessageContent;
+
+    @Column
+    private LocalDateTime lastMessageTime;
+
+    @Column(nullable = false)
     private boolean isActive = false;
 
     @Builder
@@ -35,6 +47,7 @@ public class ChatRoom extends BaseEntity {
         this.roomType = roomType;
         this.referenceType = referenceType;
         this.referenceEntityId = referenceEntityId;
+        this.lastMessageId = null;
         this.isActive = isActive;
     }
 
@@ -50,4 +63,12 @@ public class ChatRoom extends BaseEntity {
         AUCTION_ROOM // 경매방 엔티티 참조 (경매방 채팅의 경우 참조)
     }
 
+    public void updateLastMessage(Long messageId, String content, LocalDateTime time) {
+        // null 체크 및 더 최신 ID일 경우에만 업데이트 (순서 보장)
+        if (messageId != null && (this.lastMessageId == null || messageId > this.lastMessageId)) {
+            this.lastMessageId = messageId;
+            this.lastMessageContent = content;
+            this.lastMessageTime = time;
+        }
+    }
 }

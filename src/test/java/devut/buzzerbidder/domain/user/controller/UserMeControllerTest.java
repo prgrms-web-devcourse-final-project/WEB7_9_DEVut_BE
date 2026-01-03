@@ -17,7 +17,10 @@ import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItemImage;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
+import devut.buzzerbidder.domain.deliveryTracking.dto.DeliveryEvent;
 import devut.buzzerbidder.domain.deliveryTracking.dto.request.DeliveryRequest;
+import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
+import devut.buzzerbidder.domain.deliveryTracking.service.DeliveryTrackingService;
 import devut.buzzerbidder.domain.likedelayed.entity.LikeDelayed;
 import devut.buzzerbidder.domain.likedelayed.repository.LikeDelayedRepository;
 import devut.buzzerbidder.domain.likelive.entity.LikeLive;
@@ -37,6 +40,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,6 +50,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -78,6 +87,9 @@ public class UserMeControllerTest {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private ProviderRepository providerRepository;
+
+    @MockitoBean
+    private DeliveryTrackingService deliveryTrackingService;
 
     private User user1;
     private User user2;
@@ -335,6 +347,18 @@ public class UserMeControllerTest {
             // given
             String auctionType = "live";
             Long testLiveDealId = liveDeal2Id;
+
+            // 모킹된 배송 추적 응답 설정
+            DeliveryEvent lastEvent = new DeliveryEvent(
+                    "2025-11-04T12:22:09.000+09:00",
+                    "배송완료",
+                    "서울목동중앙",
+                    "고객님의 상품이 배송완료 되었습니다.(담당사원:우성환 010-7566-9558)"
+            );
+            List<DeliveryEvent> events = List.of(lastEvent);
+            DeliveryTrackingResponse mockResponse = new DeliveryTrackingResponse(lastEvent, events);
+
+            when(deliveryTrackingService.track(any(), any())).thenReturn(mockResponse);
 
             // when & then
             mockMvc.perform(get("/api/v1/users/me/deals/%s/%d/delivery".formatted(auctionType, testLiveDealId))

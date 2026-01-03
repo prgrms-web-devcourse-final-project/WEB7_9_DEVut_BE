@@ -1,24 +1,32 @@
 package devut.buzzerbidder.domain.payment;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import devut.buzzerbidder.TestcontainersConfig;
 import devut.buzzerbidder.domain.payment.infrastructure.tosspayments.TossPaymentsClient;
 import devut.buzzerbidder.domain.payment.infrastructure.tosspayments.dto.response.TossConfirmResponseDto;
 import devut.buzzerbidder.domain.payment.repository.PaymentRepository;
-import devut.buzzerbidder.domain.user.entity.Provider;
 import devut.buzzerbidder.domain.user.entity.User;
-import devut.buzzerbidder.domain.user.entity.User.UserRole;
 import devut.buzzerbidder.domain.user.repository.ProviderRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
+import devut.buzzerbidder.util.UserTestUtil;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,17 +35,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -68,28 +65,21 @@ public class PaymentControllerTest {
     @Autowired
     private AuthTokenService authTokenService;
 
-    @MockBean
+    @Autowired
+    private UserTestUtil userTestUtil;
+
+    @MockitoBean
     private TossPaymentsClient tossPaymentsClient;
 
     @BeforeEach
     void setUp() {
-        User testUser = User.builder()
-                .email("test@example.com")
-                .password(passwordEncoder.encode("password123!"))
-                .nickname("payUser")
-                .birthDate(LocalDate.of(1990, 1, 1))
-                .profileImageUrl("https://example.com/image.jpg")
-                .role(UserRole.USER)
-                .build();
-
-        testUser = userRepository.save(testUser);
-
-        Provider provider = Provider.builder()
-                .providerType(Provider.ProviderType.EMAIL)
-                .providerId(testUser.getEmail())
-                .user(testUser)
-                .build();
-        providerRepository.save(provider);
+        // UserTestUtil을 사용하여 사용자 생성 (Provider와 지갑도 함께 생성됨)
+        User testUser = userTestUtil.createUser(
+                "test@example.com",
+                "password123!",
+                "payUser",
+                "https://example.com/image.jpg"
+        );
 
         accessToken = authTokenService.genAccessToken(testUser);
     }
@@ -432,21 +422,14 @@ public class PaymentControllerTest {
         OffsetDateTime startDate = approvedAt.minusDays(1);
         OffsetDateTime endDate = approvedAt.plusDays(1);
 
-        String requestBody = String.format("""
-            {
-                "startDate" : "%s",
-                "endDate": "%s",
-                "status": "SUCCESS",
-                "page": 0,
-                "size": 1
-            }
-        """, startDate, endDate);
-
         ResultActions result = mockMvc.perform(
                 get("/api/v1/payments/history")
                         .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody)
+                        .param("startDate", startDate.toString())
+                        .param("endDate", endDate.toString())
+                        .param("status", "SUCCESS")
+                        .param("page", "0")
+                        .param("size", "1")
         ).andDo(print());
 
         result
@@ -458,21 +441,14 @@ public class PaymentControllerTest {
     @Test
     @DisplayName("결제 내역 조회 실패 - 기간 검증 오류")
     void getPaymentHistoryFail_validation() throws Exception {
-        String requestBody = """
-            {
-                "startDate" : "2025-12-31T23:59:59+09:00",
-                "endDate": "2025-12-01T00:00:00+09:00",
-                "status": "SUCCESS",
-                "page": 0,
-                "size": 1
-            }
-        """;
-
         ResultActions result = mockMvc.perform(
                 get("/api/v1/payments/history")
                         .header("Authorization", "Bearer " + accessToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody)
+                        .param("startDate", "2025-12-31T23:59:59+09:00")
+                        .param("endDate", "2025-12-01T00:00:00+09:00")
+                        .param("status", "SUCCESS")
+                        .param("page", "0")
+                        .param("size", "1")
         ).andDo(print());
 
         result
