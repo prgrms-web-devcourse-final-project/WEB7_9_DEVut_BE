@@ -67,26 +67,26 @@ services:
       timeout: 5s
       retries: 5
 
-  # Kafka
-  kafka:
-    image: apache/kafka:latest
-    container_name: buzzerbidder-kafka
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: buzzerbidder-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=10d'
     ports:
-      - "9094:9094"
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      # 로그 디렉토리
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      - "9090:9090"
+    networks:
+      - buzzerbidder-network
+
+# Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: buzzerbidder-grafana
+    ports:
+      - "3000:3000"
     networks:
       - buzzerbidder-network
 
@@ -99,4 +99,3 @@ volumes:
 networks:
   buzzerbidder-network:
     driver: bridge
-

@@ -17,13 +17,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/live-bids")
+@RequestMapping("/api/v1/auction/live")
 @Tag(name = "LiveBid", description = "라이브 경매 입찰 API")
 public class LiveBidController {
 
     private final LiveBidService liveBidService;
 
-    @PostMapping
+    @PostMapping("{itemId}/bid")
     @Operation(summary = "입찰 하기", description = "특정 라이브 경매 상품에 입찰을 시도합니다.")
     public ApiResponse<LiveBidResponse> bid(
             @Valid @RequestBody LiveBidRequest request,

@@ -5,13 +5,15 @@ import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidListResponse;
 import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidRequest;
 import devut.buzzerbidder.domain.delayedbid.dto.DelayedBidResponse;
 import devut.buzzerbidder.domain.delayedbid.entity.DelayedBidLog;
+import devut.buzzerbidder.domain.delayedbid.event.DelayedBidOutbidEvent;
+import devut.buzzerbidder.domain.delayedbid.event.DelayedBuyNowEvent;
+import devut.buzzerbidder.domain.delayedbid.event.DelayedFirstBidEvent;
 import devut.buzzerbidder.domain.delayedbid.repository.DelayedBidRepository;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
-import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
@@ -19,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,10 +33,10 @@ public class DelayedBidService {
 
     private final DelayedBidRepository delayedBidRepository;
     private final DelayedItemRepository delayedItemRepository;
+    private final DelayedDealService delayedDealService;
     private final UserRepository userRepository;
     private final WalletService walletService;
-    private final WalletRepository walletRepository;
-    private final DelayedDealService delayedDealService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public DelayedBidResponse placeBid(Long delayedItemId, DelayedBidRequest request, User user) {
@@ -57,17 +60,26 @@ public class DelayedBidService {
             throw new BusinessException(ErrorCode.BID_PRICE_TOO_LOW);
         }
 
+        // 4-1. 즉시 구매가 이상 입찰시 즉시 구매 처리
+        if (delayedItem.hasBuyNowPrice()
+            && request.bidPrice() >= delayedItem.getBuyNowPrice()) {
+
+            return buyNow(delayedItemId, user);
+        }
+
         // 5. 코인 잔액 확인
         if (!walletService.hasEnoughBizz(user, request.bidPrice())) {
             throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
         }
 
         // 6. 이전 최고가 입찰 확인 및 환불
+        Long previousBidderUserId = null;
         Optional<DelayedBidLog> previousBidOpt = delayedBidRepository
             .findTopByDelayedItemIdOrderByBidAmountDesc(delayedItemId);
 
         if (previousBidOpt.isPresent()) {
             DelayedBidLog previousBid = previousBidOpt.get();
+            previousBidderUserId = previousBid.getBidderUserId();
 
             // 본인이 이미 최고가 입찰자인 경우 재입찰 불가
             if (previousBid.getBidderUserId().equals(user.getId())) {
@@ -95,11 +107,33 @@ public class DelayedBidService {
         // 8. 첫 입찰시 상태 변경
         if (delayedItem.getAuctionStatus() == AuctionStatus.BEFORE_BIDDING) {
             delayedItem.changeAuctionStatus(AuctionStatus.IN_PROGRESS);
+
+            eventPublisher.publishEvent(
+                new DelayedFirstBidEvent(
+                    delayedItem.getId(),
+                    delayedItem.getName(),
+                    delayedItem.getSellerUserId(),
+                    user.getId(),
+                    request.bidPrice()
+                )
+            );
         }
 
         // 9. 경매품의 현재가 업데이트
         delayedItem.updateCurrentPrice(request.bidPrice());
         delayedItemRepository.save(delayedItem);
+
+        if (previousBidderUserId != null) {
+            eventPublisher.publishEvent(
+                new DelayedBidOutbidEvent(
+                    delayedItem.getId(),
+                    delayedItem.getName(),
+                    previousBidderUserId,
+                    user.getId(),
+                    request.bidPrice()
+                )
+            );
+        }
 
         // 10. 응답 생성
         return new DelayedBidResponse(
@@ -211,6 +245,17 @@ public class DelayedBidService {
         // 9. 경매 즉시 종료 및 거래 생성
         item.changeAuctionStatus(AuctionStatus.IN_DEAL);
         delayedDealService.createDealFromAuction(itemId);
+
+        eventPublisher.publishEvent(
+            new DelayedBuyNowEvent(
+                item.getId(),
+                item.getName(),
+                buyer.getId(),
+                item.getSellerUserId(),
+                currentHighestBid != null ? currentHighestBid.getBidderUserId() : null,
+                item.getBuyNowPrice()
+            )
+        );
 
         return new DelayedBidResponse(
             buyNowBid.getId(),

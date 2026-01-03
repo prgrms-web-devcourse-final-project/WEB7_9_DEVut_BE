@@ -27,6 +27,8 @@ public class AuctionRoom extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private AuctionStatus auctionStatus;
 
+    private long roomIndex;
+
     public enum RoomStatus {
         OPEN, FULL
     }
@@ -40,10 +42,11 @@ public class AuctionRoom extends BaseEntity {
     @OneToMany(mappedBy = "auctionRoom")
     private List<LiveItem> liveItems = new ArrayList<>();
 
-    public AuctionRoom(LocalDateTime liveTime) {
+    public AuctionRoom(LocalDateTime liveTime, Long roomIndex) {
         this.liveTime = liveTime;
         this.roomStatus = RoomStatus.OPEN;
         this.auctionStatus = AuctionStatus.SCHEDULED;
+        this.roomIndex = roomIndex;
     }
 
     public boolean isFull() {

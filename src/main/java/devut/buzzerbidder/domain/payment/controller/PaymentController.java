@@ -15,11 +15,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 
 @RestController
@@ -63,13 +64,18 @@ public class PaymentController {
     @Operation(summary = "결제 내역 조회")
     public ApiResponse<PaymentHistoryResponseDto> getPaymentHistory(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime endDate,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size
     ) {
-        PaymentHistoryRequestDto request = new PaymentHistoryRequestDto(startDate, endDate, status, page, size);
+        // 날짜 오프셋 형식으로 인코딩
+        ZoneId zoneId = ZoneId.of("Asia/Seoul");
+        OffsetDateTime start = startDate.atStartOfDay(zoneId).toOffsetDateTime();
+        OffsetDateTime end = endDate.plusDays(1).atStartOfDay(zoneId).minusNanos(1).toOffsetDateTime(); // 다음날 넘어가기 바로 직전의 종료일 조회
+
+        PaymentHistoryRequestDto request = new PaymentHistoryRequestDto(start, end, status, page, size);
         PaymentHistoryResponseDto response = paymentService.getPaymentHistory(userDetails.getId(), request);
         return ApiResponse.ok("결제 내역 조회에 성공했습니다.", response);
     }

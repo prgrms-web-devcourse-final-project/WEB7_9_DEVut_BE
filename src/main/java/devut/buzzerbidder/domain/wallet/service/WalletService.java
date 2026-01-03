@@ -110,6 +110,11 @@ public class WalletService {
         changeBizz(user, amount, WalletTransactionType.BID_REFUND);
     }
 
+    // 경매/즉시구매 거래 완료시 판매자 정산
+    public void settleDealToSeller(User seller, Long amount) {
+        changeBizz(seller, amount, WalletTransactionType.DEAL_SETTLEMENT);
+    }
+
     // A유저 -> B유저 송금
     public void transferBizz(User fromUser, User toUser, Long amount) {
         if (fromUser == null || toUser == null) {
