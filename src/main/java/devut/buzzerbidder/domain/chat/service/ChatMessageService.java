@@ -5,6 +5,7 @@ import devut.buzzerbidder.domain.chat.dto.response.AuctionChatMessageResponse;
 import devut.buzzerbidder.domain.chat.dto.response.DirectMessageResponse;
 import devut.buzzerbidder.domain.chat.entity.ChatMessage;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
+import devut.buzzerbidder.domain.chat.event.DirectMessageSentEvent;
 import devut.buzzerbidder.domain.chat.repository.ChatMessageRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
@@ -12,6 +13,7 @@ import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ public class ChatMessageService {
     private static final String DM_DESTINATION_PREFIX = "/receive/chat/dm/";
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomEnteredRepository chatRoomEnteredRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 휘발성 메시지용 임시 ID 생성 (타임스탬프)
@@ -91,6 +94,16 @@ public class ChatMessageService {
         // 보낸 사람(나)의 읽음 상태 갱신 (나는 내가 보낸 메시지를 읽은 상태임)
         chatRoomEnteredRepository.findByUserAndChatRoom(sender, chatRoom)
                 .ifPresent(entered -> entered.updateReadStatus(chatMessage.getId()));
+
+        eventPublisher.publishEvent(
+            new DirectMessageSentEvent(
+                chatMessage.getId(),
+                chatRoom.getId(),
+                sender.getId(),
+                sender.getNickname(),
+                chatMessage.getCreateDate()
+            )
+        );
 
         DirectMessageResponse response = new DirectMessageResponse(
                 "DM",
