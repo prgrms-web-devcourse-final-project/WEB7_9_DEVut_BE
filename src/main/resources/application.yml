@@ -41,6 +41,29 @@ logging:
   level:
     root: WARN
     devut.buzzerbidder: INFO
+
+---
+# 공통 CircuitBreaker / Retry 기본 정책
+resilience4j:
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 300ms
+        retry-exceptions:
+          - software.amazon.awssdk.core.exception.SdkException
+          - java.io.IOException
+
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        permitted-number-of-calls-in-half-open-state: 3
+        record-exceptions:
+          - software.amazon.awssdk.core.exception.SdkException
+
 # Swagger 테스트 환경 설정
 springdoc:
   swagger-ui:

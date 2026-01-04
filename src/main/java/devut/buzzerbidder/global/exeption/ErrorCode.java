@@ -116,6 +116,7 @@ public enum ErrorCode {
     IMAGE_URL_NOT_ALLOWED("IMG005", HttpStatus.FORBIDDEN, "허용되지 않은 S3 버킷입니다."),
     IMAGE_UPLOAD_FAILED("IMG006", HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드에 실패했습니다."),
     IMAGE_FILE_EMPTY("IMG007", HttpStatus.NOT_FOUND, "이미지 파일이 비어있습니다."),
+    IMAGE_PRESIGNED_URL_FAILED("IMG008", HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드 URL 생성에 실패했습니다"),
 
     // ========== chat 도메인 에러 ==========
     CHATROOM_NOT_FOUND("C001", HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."),

@@ -2,6 +2,7 @@ package devut.buzzerbidder.global.image;
 
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import io.github.resilience4j.retry.annotation.Retry;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -10,10 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.Delete;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
-import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -31,6 +28,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 public class ImageService {
 
     private final S3Client s3Client;
+    private final S3DeleteService s3DeleteService;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -42,6 +40,10 @@ public class ImageService {
 
 
     /** Presigned URL + 최종 URL 함께 생성 */
+    @Retry(
+        name = "s3PresignRetry",
+        fallbackMethod = "createPresignedUrlFallback"
+    )
     public PresignedUrlResponse createPresignedUrl(String fileName, String directory) {
         String key = generateKey(fileName, directory);
         String extension = ImageFileUtils.getFileExtension(fileName);
@@ -50,6 +52,11 @@ public class ImageService {
         String finalUrl = getFileUrl(key);
 
         return new PresignedUrlResponse(presignedUrl, finalUrl);
+    }
+
+    private PresignedUrlResponse createPresignedUrlFallback(String fileName, String directory, Throwable t) {
+        log.error("Failed to create presigned url", t);
+        throw new BusinessException(ErrorCode.IMAGE_PRESIGNED_URL_FAILED);
     }
 
     /** S3에 PUT 요청할 수 있는 임시 URL 생성 */
@@ -87,13 +94,7 @@ public class ImageService {
      */
     public void deleteFile(String fileUrl) {
         String key = extractNameFromUrl(fileUrl);
-
-        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-            .bucket(bucket)
-            .key(key)
-            .build();
-
-        s3Client.deleteObject(deleteObjectRequest);
+        s3DeleteService.deleteObject(bucket, key);
     }
 
     /** S3에서 여러 파일 삭제 */
@@ -102,23 +103,11 @@ public class ImageService {
             return;
         }
 
-        // URL -> S3 키로 변경
-        List<ObjectIdentifier> objectidentifiers = fileUrls.stream()
+        List<String> keys = fileUrls.stream()
             .map(this::extractNameFromUrl)
-            .map(key -> ObjectIdentifier.builder().key(key).build())
             .toList();
 
-        // 한 번의 요청으로 여러 파일 삭제
-        Delete delete = Delete.builder()
-            .objects(objectidentifiers)
-            .build();
-
-        DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
-            .bucket(bucket)
-            .delete(delete)
-            .build();
-
-        s3Client.deleteObjects(deleteObjectsRequest);
+        s3DeleteService.deleteObjects(bucket, keys);
     }
 
     /** S3 URL에서 키(경로) 추출 및 검증 */
