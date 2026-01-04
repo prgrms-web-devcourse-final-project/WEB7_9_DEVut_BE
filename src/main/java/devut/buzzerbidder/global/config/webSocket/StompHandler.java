@@ -41,7 +41,20 @@ public class StompHandler implements ChannelInterceptor {
 
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 jwt = authorizationHeader.substring(7);
-            } else {
+            }
+
+            // 헤더에 없으면 세션 속성(쿠키)에서 토큰 찾기
+            if (jwt == null) {
+                Object tokenAttribute = accessor.getSessionAttributes().get("ACCESS_TOKEN");
+                if (tokenAttribute != null) {
+                    jwt = tokenAttribute.toString();
+
+                    // 쿠키 값에 'Bearer '가 인코딩 되어 들어있다면 제거 로직 필요
+                    // 보통 쿠키에는 값만 넣으므로 그냥 쓰면 됩니다.
+                }
+            }
+
+            if (jwt == null) {
                 throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
             }
 
