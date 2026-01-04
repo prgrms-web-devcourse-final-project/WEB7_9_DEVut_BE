@@ -10,7 +10,9 @@ import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
 import devut.buzzerbidder.domain.deliveryTracking.service.DeliveryTrackingService;
+import devut.buzzerbidder.domain.user.entity.DeliveryAddress;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.DeliveryAddressRepository;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
@@ -29,6 +31,7 @@ public class DelayedDealService {
     private final DelayedItemRepository delayedItemRepository;
     private final DelayedBidRepository delayedBidRepository;
     private final UserRepository userRepository;
+    private final DeliveryAddressRepository deliveryAddressRepository;
     private final DeliveryTrackingService deliveryTrackingService;
     private final WalletService walletService;
 
@@ -72,12 +75,26 @@ public class DelayedDealService {
         User seller = userRepository.findById(item.getSellerUserId())
             .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        // 구매자의 기본 배송지 조회
+        DeliveryAddress defaultAddress = null;
+        if (buyer.getDefaultDeliveryAddressId() != null) {
+            defaultAddress = deliveryAddressRepository.findByUserAndId(buyer, buyer.getDefaultDeliveryAddressId())
+                    .orElse(null);
+        }
+        if (defaultAddress == null) {
+            defaultAddress = deliveryAddressRepository.findByUserAndIsDefaultTrue(buyer)
+                    .orElse(null);
+        }
+
         // DelayedDeal 생성
         DelayedDeal deal = DelayedDeal.builder()
             .item(item)
             .buyer(buyer)
             .winningPrice(highestBid.getBidAmount())
             .status(DealStatus.PENDING)
+            .deliveryAddress(defaultAddress != null ? defaultAddress.getAddress() : null)
+            .deliveryAddressDetail(defaultAddress != null ? defaultAddress.getAddressDetail() : null)
+            .deliveryPostalCode(defaultAddress != null ? defaultAddress.getPostalCode() : null)
             .build();
 
         DelayedDeal savedDeal = delayedDealRepository.save(deal);
@@ -124,6 +141,19 @@ public class DelayedDealService {
         }
 
         return deliveryTrackingService.track(carrierCode, trackingNumber);
+    }
+
+    // 거래 배송지 주소 수정
+    @Transactional
+    public void updateDeliveryAddress(User currentUser, Long dealId, String address, String addressDetail, String postalCode) {
+        DelayedDeal deal = findByIdOrThrow(dealId);
+
+        // 구매자 권한 체크
+        if (!deal.getBuyer().getId().equals(currentUser.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
+        deal.updateDeliveryAddress(address, addressDetail, postalCode);
     }
 
     // 구매 확정

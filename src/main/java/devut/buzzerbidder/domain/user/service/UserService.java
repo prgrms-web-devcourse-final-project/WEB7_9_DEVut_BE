@@ -157,7 +157,15 @@ public class UserService {
 
     public UserProfileResponse getMyProfile(User user) {
         Long bizz = walletService.getBizzBalance(user);
-        DeliveryAddress deliveryAddress = deliveryAddressRepository.findByUser(user).orElse(null);
+        DeliveryAddress deliveryAddress = null;
+        if (user.getDefaultDeliveryAddressId() != null) {
+            deliveryAddress = deliveryAddressRepository.findByUserAndId(user, user.getDefaultDeliveryAddressId())
+                    .orElse(null);
+        }
+        if (deliveryAddress == null) {
+            deliveryAddress = deliveryAddressRepository.findByUserAndIsDefaultTrue(user)
+                    .orElse(null);
+        }
         return UserProfileResponse.from(user, bizz, deliveryAddress);
     }
 
@@ -185,23 +193,66 @@ public class UserService {
         );
         User updatedUser = userRepository.save(user);
 
-        Optional<DeliveryAddress> deliveryAddressOptional = deliveryAddressRepository.findByUser(user);
-        DeliveryAddress deliveryAddress;
-        if(deliveryAddressOptional.isPresent()) {
-            deliveryAddress = deliveryAddressOptional.get();
-            deliveryAddress.update(
-                    request.address(),
-                    request.addressDetail(),
-                    request.postalCode()
-            );
+        DeliveryAddress deliveryAddress = null;
+        
+        // 배송주소 정보가 제공된 경우에만 처리
+        if (request.address() != null && request.addressDetail() != null && request.postalCode() != null) {
+            List<DeliveryAddress> existingAddresses = deliveryAddressRepository.findAllByUser(user);
+            
+            // 기본 배송지가 있으면 업데이트, 없으면 새로 생성
+            if (user.getDefaultDeliveryAddressId() != null) {
+                Optional<DeliveryAddress> defaultAddressOpt = deliveryAddressRepository
+                        .findByUserAndId(user, user.getDefaultDeliveryAddressId());
+                if (defaultAddressOpt.isPresent()) {
+                    deliveryAddress = defaultAddressOpt.get();
+                    deliveryAddress.update(
+                            request.address(),
+                            request.addressDetail(),
+                            request.postalCode()
+                    );
+                    deliveryAddress = deliveryAddressRepository.save(deliveryAddress);
+                }
+            }
+            
+            // 기본 배송지가 없거나 찾을 수 없는 경우
+            if (deliveryAddress == null) {
+                // 기존에 기본 배송지가 있는지 확인
+                Optional<DeliveryAddress> existingDefault = deliveryAddressRepository.findByUserAndIsDefaultTrue(user);
+                
+                if (existingDefault.isPresent()) {
+                    // 기존 기본 배송지 업데이트
+                    deliveryAddress = existingDefault.get();
+                    deliveryAddress.update(
+                            request.address(),
+                            request.addressDetail(),
+                            request.postalCode()
+                    );
+                    deliveryAddress = deliveryAddressRepository.save(deliveryAddress);
+                } else {
+                    // 새 기본 배송지 생성
+                    deliveryAddress = DeliveryAddress.builder()
+                            .user(user)
+                            .address(request.address())
+                            .addressDetail(request.addressDetail())
+                            .postalCode(request.postalCode())
+                            .isDefault(true)
+                            .build();
+                    deliveryAddress = deliveryAddressRepository.save(deliveryAddress);
+                    // User의 기본 배송지 ID 업데이트
+                    updatedUser.setDefaultDeliveryAddressId(deliveryAddress.getId());
+                    updatedUser = userRepository.save(updatedUser);
+                }
+            }
         } else {
-            DeliveryAddress newDeliveryAddress = DeliveryAddress.builder()
-                    .user(user)
-                    .address(request.address())
-                    .addressDetail(request.addressDetail())
-                    .postalCode(request.postalCode())
-                    .build();
-            deliveryAddress = deliveryAddressRepository.save(newDeliveryAddress);
+            // 배송주소 정보가 없으면 기본 배송지 조회
+            if (user.getDefaultDeliveryAddressId() != null) {
+                deliveryAddress = deliveryAddressRepository.findByUserAndId(user, user.getDefaultDeliveryAddressId())
+                        .orElse(null);
+            }
+            if (deliveryAddress == null) {
+                deliveryAddress = deliveryAddressRepository.findByUserAndIsDefaultTrue(user)
+                        .orElse(null);
+            }
         }
 
         return UserUpdateResponse.from(updatedUser, deliveryAddress);
