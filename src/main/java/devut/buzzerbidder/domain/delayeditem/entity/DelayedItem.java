@@ -131,11 +131,15 @@ public class DelayedItem extends BaseEntity {
     }
 
     public enum AuctionStatus {
-        BEFORE_BIDDING,    // 입찰 전
-        IN_PROGRESS,       // 입찰 중
-        FAILED,            // 유찰 (입찰자 없음)
-        IN_DEAL,           // 거래 중
-        PURCHASE_CONFIRMED // 구매 확정
+        BEFORE_BIDDING,        // 입찰 전
+        IN_PROGRESS,           // 입찰 중
+        FAILED,                // 유찰 (입찰자 없음)
+        IN_DEAL,               // 거래 중
+        PURCHASE_CONFIRMED;    // 구매 확정
+
+        // 판매중(입찰 가능) 상태 상수
+        public static final List<AuctionStatus> ACTIVE_STATUSES =
+            List.of(BEFORE_BIDDING, IN_PROGRESS);
     }
 
     // 비즈니스 메서드

@@ -41,4 +41,7 @@ public interface LikeLiveRepository extends JpaRepository<LikeLive, Long> {
         @Param("userId") Long userId,
         @Param("liveItemId") Long liveItemId
     );
+
+    @Query("SELECT ll.liveItem.id FROM LikeLive ll WHERE ll.user.id = :userId")
+    List<Long> findLiveItemIdsByUserId(@Param("userId") Long userId);
 }

@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.liveitem.repository;
 
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.Category;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -104,5 +106,47 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         order by li.id asc
     """)
     List<LiveItem> findItemsWithImagesByRoomId(@Param("auctionRoomId") Long auctionRoomId);
+
+    // 통합 검색용 : AuctionRoom JOIN
+    @EntityGraph(attributePaths = {"auctionRoom"})
+    @Query("SELECT DISTINCT li FROM LiveItem li WHERE li.id IN :ids")
+    List<LiveItem> findLiveItemsWithAuctionRoom(@Param("ids") List<Long> ids);
+
+    // 통합 검색용: 상태별 조회 (images + auctionRoom)
+    @EntityGraph(attributePaths = {"images", "auctionRoom"})
+    @Query("SELECT li FROM LiveItem li WHERE li.auctionStatus IN :statuses")
+    List<LiveItem> findByAuctionStatusInWithImages(@Param("statuses") List<AuctionStatus> statuses);
+
+    @Query("""
+      SELECT new devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse(
+          li.id,
+          li.name,
+          li.thumbnail,
+          li.liveTime,
+          li.auctionStatus,
+          li.initPrice,
+          null
+      )
+      FROM LiveItem li
+      WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
+        AND (:category IS NULL OR li.category = :category)
+        AND (:minPrice IS NULL OR li.initPrice >= :minPrice)
+        AND (:maxPrice IS NULL OR li.initPrice <= :maxPrice)
+        AND (
+            :isSelling = false
+            OR li.auctionStatus IN (
+                devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.BEFORE_BIDDING,
+                devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.IN_PROGRESS
+            )
+        )
+  """)
+    Page<LiveItemResponse> searchLiveItemsForAuction(
+        @Param("name") String name,
+        @Param("category") Category category,
+        @Param("minPrice") Long minPrice,
+        @Param("maxPrice") Long maxPrice,
+        @Param("isSelling") Boolean isSelling,
+        Pageable pageable
+    );
 
 }

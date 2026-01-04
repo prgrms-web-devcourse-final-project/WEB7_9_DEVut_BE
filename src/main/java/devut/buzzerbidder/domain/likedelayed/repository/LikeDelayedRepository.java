@@ -27,4 +27,7 @@ public interface LikeDelayedRepository extends JpaRepository<LikeDelayed, Long> 
     List<Long> findLikedDelayedItemIds(
         @Param("userId") Long userId,
         @Param("delayedItemIds") List<Long> delayedItemIds);
+
+    @Query("SELECT ld.delayedItem.id FROM LikeDelayed ld WHERE ld.user.id = :userId")
+    List<Long> findDelayedItemIdsByUserId(@Param("userId") Long userId);
 }

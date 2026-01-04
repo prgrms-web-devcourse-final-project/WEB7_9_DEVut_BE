@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -157,12 +158,18 @@ public class DelayedItemService {
     }
 
     @Transactional(readOnly = true)
-    public DelayedItemDetailResponse getDelayedItem(Long id) {
+    public DelayedItemDetailResponse getDelayedItem(Long id, Long userId) {
 
         DelayedItem delayedItem = delayedItemRepository.findDelayedItemWithImagesById(id)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
         long likeCount = likeDelayedService.countByDelayedItemId(id);
+
+        boolean isLiked = false;
+        if (userId != null) {
+            Set<Long> likeIds = likeDelayedService.findLikeDelayedItemIdsByUserId(userId);
+            isLiked = likeIds.contains(id);
+        }
 
         return new DelayedItemDetailResponse(
             delayedItem.getId(),
@@ -183,26 +190,37 @@ public class DelayedItemService {
                 .map(DelayedItemImage::getImageUrl)
                 .toList(),
             delayedItem.getSellerUserId(),
-            likeCount
+            likeCount,
+            isLiked
         );
     }
 
     @Transactional(readOnly = true)
     public DelayedItemListResponse getDelayedItems(
         DelayedItemSearchRequest reqBody,
-        Pageable pageable
+        Pageable pageable,
+        Long userId
     ) {
         Page<DelayedItem> page = delayedItemRepository.searchDelayedItems(
             reqBody.name(),
             reqBody.category(),
             reqBody.minCurrentPrice(),
             reqBody.maxCurrentPrice(),
+            reqBody.isSelling(),
+            AuctionStatus.ACTIVE_STATUSES,
             pageable
         );
 
+        Set<Long> likedItemIds = userId != null
+            ? likeDelayedService.findLikeDelayedItemIdsByUserId(userId)
+            : Set.of();
+
         List<DelayedItemResponse> dtoList =
             page.getContent().stream()
-                .map(DelayedItemResponse::new)
+                .map(item -> new DelayedItemResponse(
+                    item,
+                    likedItemIds.contains(item.getId())
+                ))
                 .toList();
 
         return new DelayedItemListResponse(dtoList, page.getTotalElements());
