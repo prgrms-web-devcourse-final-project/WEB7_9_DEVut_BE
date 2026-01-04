@@ -41,7 +41,7 @@ public class LiveBidService {
 
         long depositAmount = (long) Math.ceil(request.bidPrice() * 0.2);
 
-        long sessionTtlSeconds = 60L;
+        long sessionTtlSeconds = 35L;
         long balanceTtlSeconds = 600L;
 
         // redis 입찰가 갱신 시도
