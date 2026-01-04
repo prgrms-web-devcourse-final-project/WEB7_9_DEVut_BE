@@ -138,6 +138,25 @@ custom:
       expireMinutes: 10  # 인증 코드 유효 시간 (분)
       subject: "[BuzzerBidder] 이메일 인증 코드"
 
+# CircuitBreaker / Retry 설정
+resilience4j:
+  retry:
+    instances:
+      s3PresignRetry:
+        base-config: default
+        max-attempts: 2
+
+      s3DeleteRetry:
+        base-config: default
+        max-attempts: 1
+
+  circuitbreaker:
+    instances:
+      s3DeleteCircuit:
+        base-config: default
+        failure-rate-threshold: 40
+        wait-duration-in-open-state: 60s
+
 delivery:
   client-id: ${DELIVERY_CLIENT_ID}
   client-secret: ${DELIVERY_CLIENT_SECRET}
