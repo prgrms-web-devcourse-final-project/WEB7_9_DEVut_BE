@@ -87,7 +87,6 @@ public class DelayedDealServiceTest {
             .orElseGet(() -> {
                 Wallet newWallet = Wallet.builder()
                     .user(buyer)
-                    .bizz(0L)
                     .build();
                 return walletRepository.save(newWallet);
             });
@@ -97,7 +96,6 @@ public class DelayedDealServiceTest {
             .orElseGet(() -> {
                 Wallet newWallet = Wallet.builder()
                     .user(seller)
-                    .bizz(0L)
                     .build();
                 return walletRepository.save(newWallet);
             });

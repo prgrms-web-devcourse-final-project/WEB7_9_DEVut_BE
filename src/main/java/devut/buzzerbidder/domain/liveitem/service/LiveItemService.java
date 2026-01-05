@@ -409,7 +409,60 @@ public class LiveItemService {
             Long userId
     ) {
 
-        Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), reqBody.isSelling(), pageable);
+        Long min = reqBody.minBidPrice();
+        Long max = reqBody.maxBidPrice();
+
+        Page<LiveItemResponse> page;
+
+        // 가격필터 없는 경우: 기존 로직 그대로
+        if (min == null && max == null) {
+            page = liveItemRepository.searchLiveItems(
+                reqBody.name(),
+                reqBody.category(),
+                reqBody.isSelling(),
+                pageable
+            );
+        } else {
+            // 가격 필터가 있는 경우
+
+            long lo = (min != null) ? min : Long.MIN_VALUE;
+            long hi = (max != null) ? max : Long.MAX_VALUE;
+
+            // 1) Redis(ZSET): 입찰 있는 아이템 중 현재가 범위 통과 id 리스트
+            List<Long> a = liveBidRedisService.zRangeByScoreAsLong("liveItems:currentPrice", lo, hi);
+
+            // 2) DB(initPrice): 기본필터 + initPrice 범위 통과 후보
+            List<Long> b = liveItemRepository.findIdsByInitPriceRangeWithBaseFilters(
+                reqBody.name(),
+                reqBody.category(),
+                reqBody.isSelling(),
+                min,
+                max
+            );
+
+            // 3) b 중에서 hasBid=true 제거 (입찰 있는 애는 initPrice로 판단하면 안 됨)
+            List<Boolean> hasBidFlags = liveBidRedisService.sIsMemberBatch("liveItems:hasBid", b);
+
+            Set<Long> candidateIds = new HashSet<>(a);
+            for (int i = 0; i < b.size(); i++) {
+                if (!hasBidFlags.get(i)) {
+                    candidateIds.add(b.get(i));
+                }
+            }
+
+            if (candidateIds.isEmpty()) {
+                return new LiveItemListResponse(List.of(), 0);
+            }
+
+            // 4) candidateIds로 DB에서 정확한 페이징/정렬 + 기존 필터 재적용
+            page = liveItemRepository.searchLiveItemsWithinIds(
+                candidateIds,
+                reqBody.name(),
+                reqBody.category(),
+                reqBody.isSelling(),
+                pageable
+            );
+        }
 
         List<LiveItemResponse> baseList = page.getContent();
 
@@ -593,4 +646,5 @@ public class LiveItemService {
 
         liveBidRedisService.setHash(redisKey, initData);
     }
+
 }

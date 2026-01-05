@@ -6,6 +6,10 @@ import devut.buzzerbidder.domain.user.entity.User;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.user.entity.User;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -45,4 +49,5 @@ public interface LiveDealRepository extends JpaRepository<LiveDeal, Long> {
     Page<LiveDeal> findByBuyerId(Long buyerId, Pageable pageable);
     Page<LiveDeal> findByStatus(DealStatus status, Pageable pageable);
     Page<LiveDeal> findByBuyerIdAndStatus(Long buyerId, DealStatus status, Pageable pageable);
+    Optional<LiveDeal> findByItem(LiveItem item);
 }

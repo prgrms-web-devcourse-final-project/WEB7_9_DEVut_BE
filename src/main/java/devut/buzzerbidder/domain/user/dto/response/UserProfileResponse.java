@@ -39,14 +39,22 @@ public record UserProfileResponse(
         Long bizz
 ) {
     public static UserProfileResponse from(User user, Long bizz, DeliveryAddress deliveryAddress) {
+        String address = null;
+        String addressDetail = null;
+        String postalCode = null;
+        if (deliveryAddress != null) {
+            address = deliveryAddress.getAddress();
+            addressDetail = deliveryAddress.getAddressDetail();
+            postalCode = deliveryAddress.getPostalCode();
+        }
         return new UserProfileResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
                 user.getProfileImageUrl(),
-                deliveryAddress.getAddress(),
-                deliveryAddress.getAddressDetail(),
-                deliveryAddress.getPostalCode(),
+                address,
+                addressDetail,
+                postalCode,
                 user.getCreateDate() != null ? user.getCreateDate().toLocalDate() : null,
                 user.getModifyDate() != null ? user.getModifyDate().toLocalDate() : null,
                 bizz

@@ -12,7 +12,7 @@ import lombok.*;
 public class DeliveryAddress extends BaseEntity {
 
     @JoinColumn(nullable = false)
-    @OneToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private User user;
 
     @Column(nullable = false)
@@ -24,8 +24,11 @@ public class DeliveryAddress extends BaseEntity {
     @Column(nullable = false)
     private String postalCode;
 
+    @Column(nullable = false)
+    private Boolean isDefault = false;
+
     @Builder
-    private DeliveryAddress(User user, String address, String addressDetail, String postalCode) {
+    private DeliveryAddress(User user, String address, String addressDetail, String postalCode, Boolean isDefault) {
         if (user == null) {
             throw new BusinessException(ErrorCode.DELIVERY_ADDRESS_USER_NOT_NULL);
         }
@@ -42,6 +45,7 @@ public class DeliveryAddress extends BaseEntity {
         this.address = address;
         this.addressDetail = addressDetail;
         this.postalCode = postalCode;
+        this.isDefault = isDefault != null ? isDefault : false;
     }
 
     public void update(String address, String addressDetail, String postalCode) {
@@ -54,6 +58,10 @@ public class DeliveryAddress extends BaseEntity {
         if (postalCode != null && !postalCode.isBlank()) {
             this.postalCode = postalCode;
         }
+    }
+
+    public void setDefault(boolean isDefault) {
+        this.isDefault = isDefault;
     }
 
 }

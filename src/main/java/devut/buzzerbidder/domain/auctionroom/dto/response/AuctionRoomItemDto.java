@@ -5,6 +5,7 @@ import java.util.List;
 
 public record AuctionRoomItemDto(
 
+    Long id,
     String name,
     List<String> imageUrls,
     Long price,

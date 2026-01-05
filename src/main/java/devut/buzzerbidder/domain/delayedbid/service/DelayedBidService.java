@@ -9,9 +9,12 @@ import devut.buzzerbidder.domain.delayedbid.event.DelayedBidOutbidEvent;
 import devut.buzzerbidder.domain.delayedbid.event.DelayedBuyNowEvent;
 import devut.buzzerbidder.domain.delayedbid.event.DelayedFirstBidEvent;
 import devut.buzzerbidder.domain.delayedbid.repository.DelayedBidRepository;
+import devut.buzzerbidder.domain.delayeditem.dto.response.DelayedItemListResponse;
+import devut.buzzerbidder.domain.delayeditem.dto.response.DelayedItemResponse;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem.AuctionStatus;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
+import devut.buzzerbidder.domain.likedelayed.service.LikeDelayedService;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
@@ -20,6 +23,7 @@ import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -37,6 +41,7 @@ public class DelayedBidService {
     private final UserRepository userRepository;
     private final WalletService walletService;
     private final ApplicationEventPublisher eventPublisher;
+    private final LikeDelayedService likeDelayedService;
 
     @Transactional
     public DelayedBidResponse placeBid(Long delayedItemId, DelayedBidRequest request, User user) {
@@ -119,8 +124,8 @@ public class DelayedBidService {
             );
         }
 
-        // 9. 경매품의 현재가 업데이트
-        delayedItem.updateCurrentPrice(request.bidPrice());
+        // 9. 경매품의 현재가 및 현재 입찰자 업데이트
+        delayedItem.updateCurrentPriceAndBidder(request.bidPrice(), user.getId());
         delayedItemRepository.save(delayedItem);
 
         if (previousBidderUserId != null) {
@@ -239,8 +244,8 @@ public class DelayedBidService {
             .build();
         delayedBidRepository.save(buyNowBid);
 
-        // 8. 현재가 업데이트
-        item.updateCurrentPrice(item.getBuyNowPrice());
+        // 8. 현재가 및 현재 입찰자 업데이트
+        item.updateCurrentPriceAndBidder(item.getBuyNowPrice(), buyer.getId());
 
         // 9. 경매 즉시 종료 및 거래 생성
         item.changeAuctionStatus(AuctionStatus.IN_DEAL);
@@ -262,7 +267,38 @@ public class DelayedBidService {
             item.getId(),
             buyer.getNickname(),
             item.getBuyNowPrice(),
-            buyNowBid.getCreateDate()
+            buyNowBid.getBidTime() != null ? buyNowBid.getBidTime() : LocalDateTime.now()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public DelayedItemListResponse getMyBiddingItems(User user, Pageable pageable) {
+        // 사용자가 현재 최고가 입찰자인 상품 ID 목록 조회 (입찰 진행 중인 것만)
+        Page<Long> itemIdsPage = delayedBidRepository.findBiddingItemIdsByBidderUserId(
+            user.getId(),
+            List.of(AuctionStatus.IN_PROGRESS),
+            pageable
+        );
+
+        if (itemIdsPage.isEmpty()) {
+            return new DelayedItemListResponse(List.of(), 0);
+        }
+
+        // 상품 상세 정보 조회
+        List<Long> itemIds = itemIdsPage.getContent();
+        List<DelayedItem> items = delayedItemRepository.findDelayedItemsWithImages(itemIds);
+
+        // 찜 여부 확인
+        Set<Long> likedItemIds = likeDelayedService.findLikeDelayedItemIdsByUserId(user.getId());
+
+        // DelayedItemResponse로 변환
+        List<DelayedItemResponse> itemResponses = items.stream()
+            .map(item -> {
+                boolean isLiked = likedItemIds.contains(item.getId());
+                return new DelayedItemResponse(item, isLiked);
+            })
+            .toList();
+
+        return new DelayedItemListResponse(itemResponses, itemIdsPage.getTotalElements());
     }
 }

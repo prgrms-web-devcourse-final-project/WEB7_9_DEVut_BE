@@ -46,19 +46,16 @@ public class ChatRoomController {
         return ApiResponse.ok("채팅방 상세 조회 성공", response);
     }
 
-    @PostMapping("/dm/{delayedItemId}")
-    @Operation(summary = "DM 입장 처리", description = "구매자 <-> 판매자 간 지연 경매품에 대한 DM 채팅방 입장처리를 진행합니다.")
-    public ApiResponse<DirectMessageEnterResponse> enterDirectMessageChatRoom(
+    @GetMapping("/dm/{delayedItemId}")
+    @Operation(summary = "DM 채팅방 조회", description = "상품 ID로 DM 채팅방을 조회합니다. 기존 채팅방이 있으면 메시지 내역을, 없으면 상품 정보만 반환합니다. (채팅방 생성은 첫 메시지 전송 시점)")
+    public ApiResponse<DirectMessageEnterResponse> getDirectMessageChatRoom(
             @PathVariable Long delayedItemId
     ) {
-
         User user = requestContext.getCurrentUser();
 
-        ChatRoom chatRoom = chatRoomService.getOrCreateDMChatRoom(delayedItemId, user);
+        DirectMessageEnterResponse response = chatRoomService.getDmChatRoomByItemId(delayedItemId, user);
 
-        DirectMessageEnterResponse response = new DirectMessageEnterResponse(chatRoom.getId());
-
-        return ApiResponse.ok("구매자와 판매자 DM 채팅방 입장 완료", response);
+        return ApiResponse.ok("DM 채팅방 조회 성공", response);
     }
 
     @PutMapping("/auction/{auctionId}/enter")

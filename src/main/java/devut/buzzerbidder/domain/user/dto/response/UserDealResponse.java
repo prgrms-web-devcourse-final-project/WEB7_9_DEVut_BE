@@ -26,7 +26,16 @@ public record UserDealResponse(
     DealStatus status,
 
     @Schema(description = "이미지 URL", example = "https://cdn.example.com/items/delayed/1.jpg")
-    String image
+    String image,
+
+    @Schema(description = "배송지 주소", example = "서울시 중구 세종대로 135-5")
+    String deliveryAddress,
+
+    @Schema(description = "배송지 상세주소", example = "OO아파트 101동 101호")
+    String deliveryAddressDetail,
+
+    @Schema(description = "배송지 우편번호", example = "12345")
+    String deliveryPostalCode
 ) {
     public static UserDealResponse fromLiveDeal(LiveDeal liveDeal) {
         String imageUrl = liveDeal.getItem().getImages().isEmpty()
@@ -40,7 +49,10 @@ public record UserDealResponse(
             liveDeal.getBuyer().getNickname(),
             liveDeal.getWinningPrice(),
             liveDeal.getStatus(),
-            imageUrl
+            imageUrl,
+            liveDeal.getDeliveryAddress(),
+            liveDeal.getDeliveryAddressDetail(),
+            liveDeal.getDeliveryPostalCode()
         );
     }
 
@@ -56,7 +68,10 @@ public record UserDealResponse(
             delayedDeal.getBuyer().getNickname(),
             delayedDeal.getWinningPrice(),
             delayedDeal.getStatus(),
-            imageUrl
+            imageUrl,
+            delayedDeal.getDeliveryAddress(),
+            delayedDeal.getDeliveryAddressDetail(),
+            delayedDeal.getDeliveryPostalCode()
         );
     }
 }
