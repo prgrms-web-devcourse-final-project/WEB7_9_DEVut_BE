@@ -1,7 +1,9 @@
 package devut.buzzerbidder.domain.deal.service;
 
 import devut.buzzerbidder.domain.deal.entity.LiveDeal;
+import devut.buzzerbidder.domain.deal.enums.AuctionType;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
+import devut.buzzerbidder.domain.deal.event.ItemShippedEvent;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
 import devut.buzzerbidder.domain.deliveryTracking.service.DeliveryTrackingService;
@@ -9,6 +11,7 @@ import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +22,7 @@ public class LiveDealService {
 
     private final LiveDealRepository liveDealRepository;
     private final DeliveryTrackingService deliveryTrackingService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public LiveDeal findByIdOrThrow(Long dealId) {
         return liveDealRepository.findById(dealId)
@@ -29,10 +33,27 @@ public class LiveDealService {
 
     @Transactional
     public void patchDeliveryInfo(User currentUser, Long dealId, String carrierCode, String trackingNumber) {
-        // TODO: 권한 체크 로직 추가 (currentUser가 해당 deal에 접근할 수 있는지 확인)
         LiveDeal liveDeal = findByIdOrThrow(dealId);
+
+        // 판매자 권한 체크
+        if (!liveDeal.getItem().getSellerUserId().equals(currentUser.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
         liveDeal.updateDeliveryInfo(carrierCode, trackingNumber);
         liveDeal.updateStatus(DealStatus.SHIPPING);
+        eventPublisher.publishEvent(
+            new ItemShippedEvent(
+                liveDeal.getId(),
+                liveDeal.getBuyer().getId(),
+                liveDeal.getItem().getSellerUserId(),
+                liveDeal.getItem().getId(),
+                AuctionType.LIVE,
+                liveDeal.getItem().getName(),
+                liveDeal.getCarrier().getDisplayName(),
+                liveDeal.getTrackingNumber()
+            )
+        );
     }
 
     public DeliveryTrackingResponse track(User currentUser, Long dealId) {
