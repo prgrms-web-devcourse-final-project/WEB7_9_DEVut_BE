@@ -5,7 +5,6 @@ import devut.buzzerbidder.domain.deal.service.DelayedDealService;
 import devut.buzzerbidder.domain.deal.service.LiveDealService;
 import devut.buzzerbidder.domain.deliveryTracking.dto.request.DeliveryRequest;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
-import devut.buzzerbidder.domain.user.dto.request.DealAddressUpdateRequest;
 import devut.buzzerbidder.domain.user.dto.request.DeliveryAddressCreateRequest;
 import devut.buzzerbidder.domain.user.dto.request.DeliveryAddressUpdateRequest;
 import devut.buzzerbidder.domain.user.dto.request.UserUpdateRequest;
@@ -92,7 +91,7 @@ public class UserMeController {
     public ApiResponse<Void> updateDealAddress(
             @PathVariable String type,
             @PathVariable Long dealId,
-            @RequestBody @Valid DealAddressUpdateRequest request
+            @RequestBody @Valid DeliveryAddressUpdateRequest request
     ) {
         User currentUser = requestContext.getCurrentUser();
 
