@@ -57,13 +57,11 @@ public class DirectMessageSentNotificationListener {
             return;
         }
 
-        Long sellerUserId = delayedItem.getSellerUserId();
-
         String message = "%s님이 '%s' 상품에 대해 메시지를 보냈습니다."
             .formatted(event.senderNickname(), delayedItem.getName());
 
         notificationService.createAndSend(
-            sellerUserId,
+            delayedItem.getSellerUserId(),
             NotificationType.DM_FIRST_MESSAGE,
             message,
             "DELAYED_ITEM",
