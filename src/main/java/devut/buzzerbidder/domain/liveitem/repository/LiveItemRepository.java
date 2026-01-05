@@ -4,7 +4,6 @@ import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.Category;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -149,4 +148,8 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         Pageable pageable
     );
 
+    // 관리자 조회용
+    Page<LiveItem> findByCategory(LiveItem.Category category, Pageable pageable);
+    Page<LiveItem> findBySellerUserId(Long sellerUserId, Pageable pageable);
+    Page<LiveItem> findBySellerUserIdAndCategory(Long sellerUserId, LiveItem.Category category, Pageable pageable);
 }

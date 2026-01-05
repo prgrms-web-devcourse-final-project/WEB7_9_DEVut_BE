@@ -14,26 +14,26 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/withdrawals")
-@Tag(name = "Admin", description = "관리자 API")
+@Tag(name = "AdminWallet", description = "관리자 지갑 API")
 public class AdminWithdrawalController {
 
     private final AdminWithdrawalService adminWithdrawalService;
 
     @GetMapping()
-    @Operation(summary = "출금 요청 내역 조회")
+    @Operation(summary = "출금 요청 내역 조회(관리자)")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<AdminWithdrawalResponseDto> getRequestedWithdrawal(
+    public ApiResponse<AdminWithdrawalResponseDto> getRequestedWithdrawals(
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) WithdrawalStatus status,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "15") Integer size
             ) {
-        AdminWithdrawalResponseDto response = adminWithdrawalService.getRequestedWithdrawal(userId, status, page, size);
+        AdminWithdrawalResponseDto response = adminWithdrawalService.getRequestedWithdrawals(userId, status, page, size);
         return ApiResponse.ok("출금 요청 내역 조회에 성공했습니다", response);
     }
 
     @PostMapping("/{withdrawalId}/approve")
-    @Operation(summary = "출금 요청 승인")
+    @Operation(summary = "출금 요청 승인(관리자)")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> approveWithdrawal(
             @PathVariable Long withdrawalId
@@ -43,7 +43,7 @@ public class AdminWithdrawalController {
     }
 
     @PostMapping("/{withdrawalId}/reject")
-    @Operation(summary = "출금 요청 거절")
+    @Operation(summary = "출금 요청 거절(관리자)")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> rejectWithdrawal(
             @PathVariable Long withdrawalId,
