@@ -57,11 +57,7 @@ public class DirectMessageSentNotificationListener {
             return;
         }
 
-        // 판매자가 메시지 보낸 사람이 아니면 알림 전송
         Long sellerUserId = delayedItem.getSellerUserId();
-        if (sellerUserId.equals(event.senderId())) {
-            return;
-        }
 
         String message = "%s님이 '%s' 상품에 대해 메시지를 보냈습니다."
             .formatted(event.senderNickname(), delayedItem.getName());
