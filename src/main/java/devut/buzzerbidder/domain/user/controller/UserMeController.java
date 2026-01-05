@@ -14,10 +14,12 @@ import devut.buzzerbidder.domain.user.dto.response.UserDealListResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserDealResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserProfileResponse;
 import devut.buzzerbidder.domain.user.dto.response.UserUpdateResponse;
+import devut.buzzerbidder.domain.delayeditem.dto.response.DelayedItemListResponse;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.DeliveryAddressService;
 import devut.buzzerbidder.domain.user.service.UserDealService;
 import devut.buzzerbidder.domain.user.service.UserService;
+import devut.buzzerbidder.domain.delayedbid.service.DelayedBidService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
@@ -44,6 +46,7 @@ public class UserMeController {
     private final UserService userService;
     private final UserDealService userDealService;
     private final DeliveryAddressService deliveryAddressService;
+    private final DelayedBidService delayedBidService;
 
     @PatchMapping("/deals/{type}/{dealId}/delivery")
     @Operation(summary = "배송 송장 정보 입력")
@@ -223,5 +226,17 @@ public class UserMeController {
         User currentUser = requestContext.getCurrentUser();
         DeliveryAddressResponse response = deliveryAddressService.setDefaultAddress(currentUser, addressId);
         return ApiResponse.ok("기본 배송지가 설정되었습니다.", response);
+    }
+
+    @Operation(summary = "내가 입찰 중인 물품 목록 조회", description = "현재 진행 중인 경매 중 내가 입찰한 물품 목록을 조회합니다.")
+    @GetMapping("/biditems")
+    public ApiResponse<DelayedItemListResponse> getMyBiddingItems(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size
+    ) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        User currentUser = requestContext.getCurrentUser();
+        DelayedItemListResponse response = delayedBidService.getMyBiddingItems(currentUser, pageable);
+        return ApiResponse.ok("내가 입찰 중인 물품 목록 조회", response);
     }
 }
