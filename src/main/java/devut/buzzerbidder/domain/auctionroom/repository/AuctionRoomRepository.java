@@ -34,7 +34,7 @@ public interface AuctionRoomRepository extends JpaRepository<AuctionRoom, Long> 
         from AuctionRoom r
         left join fetch r.liveItems i
         where r.liveTime = :targetTime
-        order by r.roomIndex asc, i.id asc
+        order by r.roomIndex asc, i.initPrice asc, i.id asc
     """)
     List<AuctionRoom> findRoomsWithItemsByLiveTime(@Param("targetTime") LocalDateTime targetTime);
 
@@ -56,6 +56,7 @@ public interface AuctionRoomRepository extends JpaRepository<AuctionRoom, Long> 
         from AuctionRoom ar
         left join fetch ar.liveItems li
         where ar.id = :auctionRoomId
+        order by li.initPrice asc, li.id asc
     """)
     Optional<AuctionRoom> findRoomWithItems(@Param("auctionRoomId") Long auctionRoomId);
 }

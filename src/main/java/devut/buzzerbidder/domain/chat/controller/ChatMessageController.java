@@ -51,10 +51,10 @@ public class ChatMessageController {
         chatMessageService.sendAuctionMessage(auctionId, sender, request);
     }
 
-    // send/chat/dm/{chatRoomId}
-    @MessageMapping("/dm/{chatRoomId}")
+    // send/chat/dm/{itemId}
+    @MessageMapping("/dm/{itemId}")
     public void sendDirectMessage(
-            @DestinationVariable Long chatRoomId,
+            @DestinationVariable Long itemId,
             @Payload ChatMessageRequest request,
             Principal principal
     ) {
@@ -74,6 +74,6 @@ public class ChatMessageController {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
-        chatMessageService.sendDirectMessage(chatRoomId, sender, request);
+        chatMessageService.sendDirectMessage(itemId, sender, request);
     }
 }
