@@ -53,9 +53,6 @@ public class LiveBidRedisService {
         local depositsKey = liveKey .. ':deposits'
         
         local liveItemId = string.match(liveKey, '^liveItem:(.+)$')
-        if not liveItemId then
-            return -4  -- 키 포맷 이상
-        end
         
         local newBidderId = tostring(ARGV[1])
         local newPrice = tonumber(ARGV[2])
