@@ -1,8 +1,12 @@
 package devut.buzzerbidder.domain.liveBid.service;
 
 import io.micrometer.core.annotation.Timed;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
@@ -29,6 +33,8 @@ public class LiveBidRedisService {
 
     // 현재 최고가보다 높을 경우에만 갱신 (원자성 보장)
     // KEYS[1]: redisKey
+    // KEYS[2] 가격 필터용 ZSET 키
+    // KEYS[3] 입찰 존재 SET 키
     // ARGV[1]: newBidPrice (새로운 입찰 가격)
     // ARGV[2]: newBidderId (새로운 입찰자 ID)
     // ARGV[3]:
@@ -42,7 +48,14 @@ public class LiveBidRedisService {
     */
     private static final String LUA_BID_SCRIPT = """
         local liveKey = KEYS[1]
+        local bidZKey = KEYS[2]
+        local hasBidKey = KEYS[3]
         local depositsKey = liveKey .. ':deposits'
+        
+        local liveItemId = string.match(liveKey, '^liveItem:(.+)$')
+        if not liveItemId then
+            return -4  -- 키 포맷 이상
+        end
         
         local newBidderId = tostring(ARGV[1])
         local newPrice = tonumber(ARGV[2])
@@ -152,6 +165,15 @@ public class LiveBidRedisService {
         redis.call('HSET', liveKey, 'maxBidPrice', tostring(newPrice))
         redis.call('HSET', liveKey, 'currentBidderId', newBidderId)
         
+        -- 가격 필터링용 bidZKey, hasBidKey 갱신
+        if bidZKey and bidZKey ~= '' then
+            redis.call('ZADD', bidZKey, newPrice, liveItemId)
+        end
+        
+        if hasBidKey and hasBidKey ~= '' then
+            redis.call('SADD', hasBidKey, liveItemId)
+        end
+        
         -- TTL 연장
         if sessionTtl and sessionTtl > 0 then
           redis.call('EXPIRE', sesKey, sessionTtl)
@@ -184,7 +206,11 @@ public class LiveBidRedisService {
         try {
             return redisTemplate.execute(
                     script,
-                    Collections.singletonList(redisKey),
+                    Arrays.asList(
+                        redisKey,                       // KEYS[1] 기존 LiveItem 키
+                        "liveItems:currentPrice",       // KEYS[2] 가격 필터용 ZSET 키
+                        "liveItems:hasBid"              // KEYS[3] 입찰 존재 SET 키
+                    ),
                     bidderId.toString(),
                     bidPrice.toString(),
                     depositAmount.toString(),
@@ -195,6 +221,33 @@ public class LiveBidRedisService {
             // 레디스 연결/타임아웃/스크립트 실행 실패 등은 여기로 옴
             throw new IllegalStateException("Redis LUA 실행 실패. redisKey=" + redisKey + ", bidderId=" + bidderId, e);
         }
+    }
+
+    public List<Long> zRangeByScoreAsLong(String zsetKey, long min, long max) {
+        Set<String> members = redisTemplate.opsForZSet().rangeByScore(zsetKey, min, max);
+        if (members == null || members.isEmpty()) return List.of();
+        return members.stream().map(Long::valueOf).toList();
+    }
+
+    public List<Boolean> sIsMemberBatch(String setKey, List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+
+        @SuppressWarnings("unchecked")
+        List<Object> raw = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            byte[] key = redisTemplate.getStringSerializer().serialize(setKey);
+            for (Long id : ids) {
+                byte[] member = redisTemplate.getStringSerializer().serialize(id.toString());
+                connection.sIsMember(key, member);
+            }
+            return null;
+        });
+
+        // sIsMember는 Boolean(또는 0/1)로 돌아올 수 있음
+        return raw.stream().map(v -> {
+            if (v instanceof Boolean b) return b;
+            if (v instanceof Long l) return l == 1L;
+            return false;
+        }).toList();
     }
 
 }
