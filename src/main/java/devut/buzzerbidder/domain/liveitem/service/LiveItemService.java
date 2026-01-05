@@ -646,4 +646,5 @@ public class LiveItemService {
 
         liveBidRedisService.setHash(redisKey, initData);
     }
+
 }
