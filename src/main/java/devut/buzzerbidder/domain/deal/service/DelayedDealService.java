@@ -154,6 +154,7 @@ public class DelayedDealService {
         }
 
         deal.updateDeliveryAddress(address, addressDetail, postalCode);
+        delayedDealRepository.save(deal);
     }
 
     // 구매 확정

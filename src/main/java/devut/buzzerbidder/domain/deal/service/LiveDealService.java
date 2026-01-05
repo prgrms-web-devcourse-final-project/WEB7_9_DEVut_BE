@@ -61,6 +61,7 @@ public class LiveDealService {
         }
 
         deal.updateDeliveryAddress(address, addressDetail, postalCode);
+        liveDealRepository.save(deal);
     }
 
 }
