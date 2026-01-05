@@ -221,6 +221,7 @@ public class AuctionRoomService {
 
         List<AuctionRoomItemDto> response  = items.stream()
             .map(item -> new AuctionRoomItemDto(
+                item.getId(),
                 item.getName(),
                 item.getImages().stream()
                     .map(LiveItemImage::getImageUrl)
