@@ -25,6 +25,8 @@ public class LiveDealService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEAL_NOT_FOUND));
     }
 
+    // TODO: 라이브 딜 생성 시 기본 배송지 자동 설정 (나중에 구현)
+
     @Transactional
     public void patchDeliveryInfo(User currentUser, Long dealId, String carrierCode, String trackingNumber) {
         // TODO: 권한 체크 로직 추가 (currentUser가 해당 deal에 접근할 수 있는지 확인)
@@ -46,6 +48,20 @@ public class LiveDealService {
         }
 
         return deliveryTrackingService.track(carrierCode, trackingNumber);
+    }
+
+    // 거래 배송지 주소 수정
+    @Transactional
+    public void updateDeliveryAddress(User currentUser, Long dealId, String address, String addressDetail, String postalCode) {
+        LiveDeal deal = findByIdOrThrow(dealId);
+
+        // 구매자 권한 체크
+        if (!deal.getBuyer().getId().equals(currentUser.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
+        deal.updateDeliveryAddress(address, addressDetail, postalCode);
+        liveDealRepository.save(deal);
     }
 
 }

@@ -31,7 +31,16 @@ public record UserDealItemResponse(
     Boolean wish,
 
     @Schema(description = "경매 상태", example = "IN_DEAL")
-    String auctionStatus
+    String auctionStatus,
+
+    @Schema(description = "배송지 주소", example = "서울시 중구 세종대로 135-5")
+    String deliveryAddress,
+
+    @Schema(description = "배송지 상세주소", example = "OO아파트 101동 101호")
+    String deliveryAddressDetail,
+
+    @Schema(description = "배송지 우편번호", example = "12345")
+    String deliveryPostalCode
 ) {
     public static UserDealItemResponse fromLiveDeal(LiveDeal liveDeal, Boolean wish) {
         String imageUrl = liveDeal.getItem().getImages().isEmpty()
@@ -47,7 +56,10 @@ public record UserDealItemResponse(
             liveDeal.getWinningPrice(),
             imageUrl,
             wish,
-            liveDeal.getItem().getAuctionStatus() != null ? liveDeal.getItem().getAuctionStatus().name() : null
+            liveDeal.getItem().getAuctionStatus() != null ? liveDeal.getItem().getAuctionStatus().name() : null,
+            liveDeal.getDeliveryAddress(),
+            liveDeal.getDeliveryAddressDetail(),
+            liveDeal.getDeliveryPostalCode()
         );
     }
 
@@ -65,7 +77,10 @@ public record UserDealItemResponse(
             delayedDeal.getWinningPrice(),
             imageUrl,
             wish,
-            delayedDeal.getItem().getAuctionStatus() != null ? delayedDeal.getItem().getAuctionStatus().name() : null
+            delayedDeal.getItem().getAuctionStatus() != null ? delayedDeal.getItem().getAuctionStatus().name() : null,
+            delayedDeal.getDeliveryAddress(),
+            delayedDeal.getDeliveryAddressDetail(),
+            delayedDeal.getDeliveryPostalCode()
         );
     }
 
