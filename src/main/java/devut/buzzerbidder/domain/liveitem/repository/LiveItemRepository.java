@@ -48,36 +48,6 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         Pageable pageable
     );
 
-    @Query("""
-    SELECT new devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse(
-        li.id,
-        li.name,
-        li.thumbnail,
-        li.liveTime,
-        li.auctionStatus,
-        li.initPrice,
-        null
-    )
-    FROM LiveItem li
-    WHERE (:name IS NULL OR LOWER(li.name) LIKE %:name%)
-      AND (:category IS NULL OR li.category = :category)
-      AND (
-                  :isSelling IS NULL OR :isSelling = false
-                  OR li.auctionStatus IN (
-                      devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.BEFORE_BIDDING,
-                      devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.IN_PROGRESS
-                  )
-                )
-""")
-    Page<LiveItemResponse> searchLiveItemsWithPriceFilter(
-        @Param("name") String name,
-        @Param("category") Category category,
-        @Param("isSelling") Boolean isSelling,
-        @Param("minPrice") Long minPrice,
-        @Param("maxPrice") Long maxPrice,
-        Pageable pageable
-    );
-
 
     @Query("SELECT li FROM LiveItem li " +
         "LEFT JOIN FETCH li.images " + // LiveItemImage 목록 Fetch Join
