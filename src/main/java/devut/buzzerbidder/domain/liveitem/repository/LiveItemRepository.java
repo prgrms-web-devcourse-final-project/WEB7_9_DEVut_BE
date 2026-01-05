@@ -4,7 +4,6 @@ import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.Category;
-
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -42,18 +41,18 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
                 )
 """)
     Page<LiveItemResponse> searchLiveItems(
-        @Param("name") String name,
-        @Param("category") Category category,
-        @Param("isSelling") Boolean isSelling,
-        Pageable pageable
+            @Param("name") String name,
+            @Param("category") Category category,
+            @Param("isSelling") Boolean isSelling,
+            Pageable pageable
     );
 
 
     @Query("SELECT li FROM LiveItem li " +
-        "LEFT JOIN FETCH li.images " + // LiveItemImage 목록 Fetch Join
-        "WHERE li.id = :id")
+            "LEFT JOIN FETCH li.images " + // LiveItemImage 목록 Fetch Join
+            "WHERE li.id = :id")
     Optional<LiveItem> findLiveItemWithImagesById(
-        @Param("id") Long id
+            @Param("id") Long id
     );
 
     @Query("""
@@ -144,13 +143,18 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         )
   """)
     Page<LiveItemResponse> searchLiveItemsForAuction(
-        @Param("name") String name,
-        @Param("category") Category category,
-        @Param("minPrice") Long minPrice,
-        @Param("maxPrice") Long maxPrice,
-        @Param("isSelling") Boolean isSelling,
-        Pageable pageable
+            @Param("name") String name,
+            @Param("category") Category category,
+            @Param("minPrice") Long minPrice,
+            @Param("maxPrice") Long maxPrice,
+            @Param("isSelling") Boolean isSelling,
+            Pageable pageable
     );
+
+    // 관리자 조회용
+    Page<LiveItem> findByCategory(LiveItem.Category category, Pageable pageable);
+    Page<LiveItem> findBySellerUserId(Long sellerUserId, Pageable pageable);
+    Page<LiveItem> findBySellerUserIdAndCategory(Long sellerUserId, LiveItem.Category category, Pageable pageable);
 
     @Query("""
     SELECT li.id
@@ -167,13 +171,14 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
       AND (:minPrice IS NULL OR li.initPrice >= :minPrice)
       AND (:maxPrice IS NULL OR li.initPrice <= :maxPrice)
 """)
+
     List<Long> findIdsByInitPriceRangeWithBaseFilters(
         @Param("name") String name,
         @Param("category") Category category,
         @Param("isSelling") Boolean isSelling,
         @Param("minPrice") Long minPrice,
         @Param("maxPrice") Long maxPrice
-    );
+);
 
     @Query(
         value = """
@@ -212,11 +217,11 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
                 )
               )
         """
-    )
+)
     Page<LiveItemResponse> searchLiveItemsWithinIds(
         @Param("ids") Collection<Long> ids,
         @Param("name") String name,
         @Param("category") Category category,
         @Param("isSelling") Boolean isSelling,
         Pageable pageable
-    );}
+);}

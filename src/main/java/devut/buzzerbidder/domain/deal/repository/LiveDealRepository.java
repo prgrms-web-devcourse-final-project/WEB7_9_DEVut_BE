@@ -1,6 +1,11 @@
 package devut.buzzerbidder.domain.deal.repository;
 
 import devut.buzzerbidder.domain.deal.entity.LiveDeal;
+import devut.buzzerbidder.domain.deal.enums.DealStatus;
+import devut.buzzerbidder.domain.user.entity.User;
+import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.user.entity.User;
 import java.util.List;
@@ -39,5 +44,10 @@ public interface LiveDealRepository extends JpaRepository<LiveDeal, Long> {
         """)
     List<LiveDeal> findByIdsWithItemAndImages(@Param("ids") List<Long> ids);
 
+    // 관리자 조회용
+    Page<LiveDeal> findAll(Pageable pageable);
+    Page<LiveDeal> findByBuyerId(Long buyerId, Pageable pageable);
+    Page<LiveDeal> findByStatus(DealStatus status, Pageable pageable);
+    Page<LiveDeal> findByBuyerIdAndStatus(Long buyerId, DealStatus status, Pageable pageable);
     Optional<LiveDeal> findByItem(LiveItem item);
 }

@@ -99,4 +99,8 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
     @Query("SELECT di FROM DelayedItem di WHERE di.auctionStatus in :statuses")
     List<DelayedItem> findByAuctionStatusWithImages(@Param("statuses") List<AuctionStatus> statuses);
 
+    // 관리자 조회용
+    Page<DelayedItem> findByCategory(Category category, Pageable pageable);
+    Page<DelayedItem> findBySellerUserId(Long sellerUserId, Pageable pageable);
+    Page<DelayedItem> findBySellerUserIdAndCategory(Long sellerUserId, Category category, Pageable pageable);
 }
