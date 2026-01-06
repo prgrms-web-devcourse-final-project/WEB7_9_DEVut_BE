@@ -2,7 +2,6 @@ package devut.buzzerbidder.domain.liveBid.service;
 
 import devut.buzzerbidder.domain.liveBid.dto.BidAtomicResult;
 import io.micrometer.core.annotation.Timed;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +12,6 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -72,6 +70,45 @@ public class LiveBidRedisService {
         }
         return nowMs;
     }
+
+
+    /**
+     * liveItem:{liveItemId} 해시에서 endTime(ms epoch)을 가져옵니다.
+     * - 없으면 null 반환 (아직 initLiveItem 안 됐거나 키가 삭제된 상태)
+     */
+    public Long getLiveItemEndTimeMs(Long liveItemId) {
+        String liveKey = "liveItem:" + liveItemId;
+
+        Object v = redisTemplate.opsForHash().get(liveKey, "endTime");
+        if (v == null) return null;
+
+        String s = v.toString().trim();
+        if (s.isEmpty()) return null;
+
+        try {
+            return Long.parseLong(s);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException(
+                    "Redis endTime이 숫자가 아닙니다. liveKey=" + liveKey + ", endTime=" + s,
+                    e
+            );
+        }
+    }
+
+    /**
+     * Redis 서버 시간 기준으로 남은 시간(ms)을 계산합니다.
+     * - endTime 없으면 null
+     * - 이미 지났으면 0 반환
+     */
+    public Long getRemainingMs(Long liveItemId) {
+        Long endTimeMs = getLiveItemEndTimeMs(liveItemId);
+        if (endTimeMs == null) return null;
+
+        long nowMs = getRedisNowMs();
+        long remaining = endTimeMs - nowMs;
+        return Math.max(0L, remaining);
+    }
+
     // 현재 최고가보다 높을 경우에만 갱신 (원자성 보장)
     // KEYS[1]: redisKey
     // KEYS[2] 가격 필터용 ZSET 키

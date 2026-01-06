@@ -5,7 +5,9 @@ import java.util.List;
 
 public record AuctionRoomResponse(
 
-    List<AuctionRoomItemDto> items
+        Long remainingMs,
+
+        List<AuctionRoomItemDto> items
 
 ) {
 }
