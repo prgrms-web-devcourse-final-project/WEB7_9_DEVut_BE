@@ -73,9 +73,33 @@ public class Payment extends BaseEntity {
         this.status = PaymentStatus.FAILED;
     }
 
+    // 결제 승인 후, 내부 처리 실패
+    public void cancel(
+            String code,
+            String msg
+    ) {
+        this.failCode = code;
+        this.failReason = msg;
+        this.status = PaymentStatus.CANCELED;
+    }
+
+    // 결제 취소 요청 실패
+    public void cancelFailed(
+            String code,
+            String msg
+    ) {
+        this.failCode = code;
+        this.failReason = msg;
+        this.status = PaymentStatus.CANCEL_FAILED;
+    }
+
+    public void markLocked() {
+        this.status = PaymentStatus.LOCKED;
+    }
+
     public boolean isPending() { return PaymentStatus.PENDING.equals(status); }
 
-    public boolean isSuccess() { return PaymentStatus.SUCCESS.equals(status); }
+    public boolean isLocked() { return PaymentStatus.LOCKED.equals(status); }
 }
 
 
