@@ -142,7 +142,7 @@ public class ChatRoomService {
         chatRoomEnteredRepository.delete(entered);
 
         // Redis에서 참여자 수 감소 및 웹소켓 브로드캐스트
-        chatRoomParticipantService.decrementParticipant(auctionId);
+        chatRoomParticipantService.removeParticipant(auctionId, user.getId());
     }
 
     public void enterLiveAuctionProcess(User user, ChatRoom chatRoom) {
@@ -156,13 +156,12 @@ public class ChatRoomService {
         // Redis에서 세션 획득하고 보유 bizz 등록
         boolean acquired = walletRedisService.tryAcquireSessionAndInitBalance(userId, auctionId, userBizzFromDb, null);
 
-        if (acquired) {
-            // 새로운 세션 획득 시에만 참여자 수 증가 및 웹소켓 브로드캐스트
-            chatRoomParticipantService.incrementParticipant(auctionId);
-        } else {
+        if (!acquired) {
             // 이미 세션이 있으면 ttl만 연장
             walletRedisService.extendTtl(userId);
         }
+
+        chatRoomParticipantService.addParticipant(auctionId, userId);
     }
 
     // 채팅방에 입장한 유저들의 프로필 정보 조회
