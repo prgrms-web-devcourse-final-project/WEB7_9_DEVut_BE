@@ -43,6 +43,14 @@ public interface LiveDealRepository extends JpaRepository<LiveDeal, Long> {
         """)
     List<LiveDeal> findByIdsWithItemAndImages(@Param("ids") List<Long> ids);
 
+    @Query("""
+      SELECT ld FROM LiveDeal ld
+      JOIN FETCH ld.buyer
+      JOIN FETCH ld.item
+      WHERE ld.status = :status
+      """)
+    List<LiveDeal> findAllByStatusWithJoin(@Param("status") DealStatus status);
+
     // 관리자 조회용
     Page<LiveDeal> findAll(Pageable pageable);
     Page<LiveDeal> findByBuyerId(Long buyerId, Pageable pageable);
