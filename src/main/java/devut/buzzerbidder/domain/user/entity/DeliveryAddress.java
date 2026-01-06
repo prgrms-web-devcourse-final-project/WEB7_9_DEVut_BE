@@ -38,13 +38,11 @@ public class DeliveryAddress extends BaseEntity {
         if (addressDetail == null || addressDetail.isBlank()) {
             throw new BusinessException(ErrorCode.DELIVERY_ADDRESS_DETAIL_NOT_VALID);
         }
-        if (postalCode == null || postalCode.isBlank()) {
-            throw new BusinessException(ErrorCode.DELIVERY_POSTAL_CODE_NOT_VALID);
-        }
+        // postalCode는 선택적이므로 null이면 빈 문자열로 처리
         this.user = user;
         this.address = address;
         this.addressDetail = addressDetail;
-        this.postalCode = postalCode;
+        this.postalCode = postalCode != null ? postalCode : "";
         this.isDefault = isDefault != null ? isDefault : false;
     }
 
