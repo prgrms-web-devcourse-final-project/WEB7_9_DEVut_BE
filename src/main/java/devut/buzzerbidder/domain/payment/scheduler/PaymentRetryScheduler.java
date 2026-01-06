@@ -1,10 +1,11 @@
-package devut.buzzerbidder.domain.payment.service;
+package devut.buzzerbidder.domain.payment.scheduler;
 
 import devut.buzzerbidder.domain.payment.dto.request.PaymentCancelRequestDto;
 import devut.buzzerbidder.domain.payment.entity.Payment;
 import devut.buzzerbidder.domain.payment.entity.PaymentStatus;
 import devut.buzzerbidder.domain.payment.infrastructure.tosspayments.TossPaymentsClient;
 import devut.buzzerbidder.domain.payment.repository.PaymentRepository;
+import devut.buzzerbidder.domain.payment.service.PaymentTransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,7 +17,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class PaymentRetryService {
+public class PaymentRetryScheduler {
 
     private final PaymentRepository paymentRepository;
     private final TossPaymentsClient tossPaymentsClient;
