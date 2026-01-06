@@ -16,8 +16,8 @@ public record UserDealResponse(
     @Schema(description = "물품 이름", example = "물품 이름")
     String itemName,
 
-    @Schema(description = "구매자 이름", example = "구매자 이름")
-    String buyerName,
+    @Schema(description = "구매자인지 판매자인지", example = "SELLER")
+    Role role,
 
     @Schema(description = "낙찰가", example = "100000")
     Long winningPrice,
@@ -37,35 +37,39 @@ public record UserDealResponse(
     @Schema(description = "배송지 우편번호", example = "12345")
     String deliveryPostalCode
 ) {
-    public static UserDealResponse fromLiveDeal(LiveDeal liveDeal) {
+    public static UserDealResponse fromLiveDeal(LiveDeal liveDeal, boolean isBuyer) {
         String imageUrl = liveDeal.getItem().getImages().isEmpty()
             ? null
             : liveDeal.getItem().getImages().get(0).getImageUrl();
 
+        Role role = isBuyer ? Role.BUYER : Role.SELLER;
+
         return new UserDealResponse(
-            liveDeal.getId(),
-            liveDeal.getItem().getId(),
-            liveDeal.getItem().getName(),
-            liveDeal.getBuyer().getNickname(),
-            liveDeal.getWinningPrice(),
-            liveDeal.getStatus(),
-            imageUrl,
-            liveDeal.getDeliveryAddress(),
-            liveDeal.getDeliveryAddressDetail(),
-            liveDeal.getDeliveryPostalCode()
+                liveDeal.getId(),
+                liveDeal.getItem().getId(),
+                liveDeal.getItem().getName(),
+                role,
+                liveDeal.getWinningPrice(),
+                liveDeal.getStatus(),
+                imageUrl,
+                liveDeal.getDeliveryAddress(),
+                liveDeal.getDeliveryAddressDetail(),
+                liveDeal.getDeliveryPostalCode()
         );
     }
 
-    public static UserDealResponse fromDelayedDeal(DelayedDeal delayedDeal) {
+    public static UserDealResponse fromDelayedDeal(DelayedDeal delayedDeal, boolean isBuyer) {
         String imageUrl = delayedDeal.getItem().getImages().isEmpty()
             ? null
             : delayedDeal.getItem().getImages().get(0).getImageUrl();
+
+        Role role = isBuyer ? Role.BUYER : Role.SELLER;
 
         return new UserDealResponse(
             delayedDeal.getId(),
             delayedDeal.getItem().getId(),
             delayedDeal.getItem().getName(),
-            delayedDeal.getBuyer().getNickname(),
+            role,
             delayedDeal.getWinningPrice(),
             delayedDeal.getStatus(),
             imageUrl,
@@ -73,6 +77,10 @@ public record UserDealResponse(
             delayedDeal.getDeliveryAddressDetail(),
             delayedDeal.getDeliveryPostalCode()
         );
+    }
+
+    private enum Role {
+        SELLER, BUYER
     }
 }
 
