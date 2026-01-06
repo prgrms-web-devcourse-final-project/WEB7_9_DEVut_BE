@@ -49,9 +49,7 @@ public class StompHandler implements ChannelInterceptor {
                 }
             }
 
-            // 토큰이 없으면 익명 사용자로 연결 허용 (경매방 구경 가능)
             if (jwt == null) {
-                log.info("STOMP CONNECT: Anonymous user connected (no token provided)");
                 return message;
             }
 
