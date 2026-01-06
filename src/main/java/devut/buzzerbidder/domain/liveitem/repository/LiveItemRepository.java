@@ -30,7 +30,7 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.liveTime,
         li.auctionStatus,
         li.initPrice,
-        null,
+        li.currentPrice,
         null
     )
     FROM LiveItem li
@@ -67,7 +67,7 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.liveTime,
         li.auctionStatus,
         li.initPrice,
-        null,
+        li.currentPrice,
         null
         
     )
@@ -77,7 +77,7 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
             devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.BEFORE_BIDDING,
             devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus.IN_PROGRESS
         )
-    GROUP BY li.id, li.name, li.thumbnail, li.liveTime, li.auctionStatus, li.initPrice
+    GROUP BY li.id, li.name, li.thumbnail, li.liveTime, li.auctionStatus, li.initPrice, li.currentPrice
     ORDER BY COUNT(ll.id) DESC, li.id DESC
 """)
     List<LiveItemResponse> findHotLiveItems(Pageable pageable);
@@ -133,7 +133,7 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
           li.liveTime,
           li.auctionStatus,
           li.initPrice,
-          null,
+          li.currentPrice,
           null
       )
       FROM LiveItem li
@@ -196,7 +196,7 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
             li.liveTime,
             li.auctionStatus,
             li.initPrice,
-            null,
+            li.currentPrice,
             null
         )
         FROM LiveItem li
