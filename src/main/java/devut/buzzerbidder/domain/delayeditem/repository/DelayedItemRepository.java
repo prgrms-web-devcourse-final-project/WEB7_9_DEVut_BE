@@ -54,7 +54,7 @@ public interface DelayedItemRepository extends JpaRepository<DelayedItem, Long> 
 
     @Query("""
         SELECT di.id FROM DelayedItem di
-        LEFT JOIN LikeDelayed ld ON ld.delayedItem = di
+        JOIN LikeDelayed ld ON ld.delayedItem = di
         WHERE di.auctionStatus IN ('BEFORE_BIDDING', 'IN_PROGRESS')
         GROUP BY di.id
         ORDER BY COUNT(ld.id) DESC
