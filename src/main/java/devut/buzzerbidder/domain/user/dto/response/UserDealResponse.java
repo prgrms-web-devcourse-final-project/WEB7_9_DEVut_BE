@@ -35,7 +35,13 @@ public record UserDealResponse(
     String deliveryAddressDetail,
 
     @Schema(description = "배송지 우편번호", example = "12345")
-    String deliveryPostalCode
+    String deliveryPostalCode,
+
+    @Schema(description = "송장번호", example = "1234567890")
+    String trackingNumber,
+
+    @Schema(description = "택배사 코드", example = "kr.cjlogistics")
+    String carrierCode
 ) {
     public static UserDealResponse fromLiveDeal(LiveDeal liveDeal, boolean isBuyer) {
         String imageUrl = liveDeal.getItem().getImages().isEmpty()
@@ -54,7 +60,9 @@ public record UserDealResponse(
                 imageUrl,
                 liveDeal.getDeliveryAddress(),
                 liveDeal.getDeliveryAddressDetail(),
-                liveDeal.getDeliveryPostalCode()
+                liveDeal.getDeliveryPostalCode(),
+                liveDeal.getTrackingNumber(),
+                liveDeal.getCarrier() != null ? liveDeal.getCarrier().getCode() : null
         );
     }
 
@@ -75,7 +83,9 @@ public record UserDealResponse(
             imageUrl,
             delayedDeal.getDeliveryAddress(),
             delayedDeal.getDeliveryAddressDetail(),
-            delayedDeal.getDeliveryPostalCode()
+            delayedDeal.getDeliveryPostalCode(),
+            delayedDeal.getTrackingNumber(),
+            delayedDeal.getCarrier() != null ? delayedDeal.getCarrier().getCode() : null
         );
     }
 

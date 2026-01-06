@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.deal.entity.LiveDeal;
 import devut.buzzerbidder.domain.deal.enums.AuctionType;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.event.ItemShippedEvent;
+import devut.buzzerbidder.domain.deal.event.PaymentCompleteEvent;
 import devut.buzzerbidder.domain.deal.event.PaymentTimeoutEvent;
 import devut.buzzerbidder.domain.deal.event.TransactionCompleteEvent;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
@@ -14,6 +15,7 @@ import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.UserService;
+import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class LiveDealService {
     private final LiveItemRepository liveItemRepository;
     private final DeliveryTrackingService deliveryTrackingService;
     private final UserService userService;
+    private final WalletService walletService;
     private final ApplicationEventPublisher eventPublisher;
 
     public LiveDeal findByIdOrThrow(Long dealId) {
@@ -42,7 +45,7 @@ public class LiveDealService {
     // TODO: 라이브 딜 생성 시 기본 배송지 자동 설정 (나중에 구현)
 
     @Transactional
-    public void createDeal(Long liveItemId, Long buyerId, Long winningPrice) {
+    public void createDeal(Long liveItemId, Long buyerId, Long winningPrice, Long depositAmount) {
         LiveItem item = liveItemRepository.findByIdWithLock(liveItemId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
         User buyer = userService.findById(buyerId);
@@ -52,6 +55,7 @@ public class LiveDealService {
                 .item(item)
                 .buyer(buyer)
                 .winningPrice(winningPrice)
+                .depositAmount(depositAmount)
                 .status(DealStatus.PENDING)
                 .build();
 
@@ -110,6 +114,49 @@ public class LiveDealService {
 
         deal.updateDeliveryAddress(address, addressDetail, postalCode);
         liveDealRepository.save(deal);
+    }
+
+    @Transactional
+    public void completePayment(User currentUser, Long dealId) {
+        LiveDeal deal = findByIdOrThrow(dealId);
+
+        // 구매자 권한 체크
+        if (!deal.getBuyer().getId().equals(currentUser.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
+        // 상태 체크 - PENDING 상태여야 결제 가능
+        if (deal.getStatus() != DealStatus.PENDING) {
+            throw new BusinessException(ErrorCode.DEAL_INVALID_STATUS);
+        }
+
+        // 잔금 계산
+        Long remainingAmount = deal.getWinningPrice() - deal.getDepositAmount();
+
+        // 판매자 조회
+        User seller = userService.findById(deal.getItem().getSellerUserId());
+
+        // Wallet에서 잔금 이체 (구매자 -> 판매자)
+        walletService.transferBizz(currentUser, seller, remainingAmount);
+
+        // Deal 상태 변경
+        deal.updateStatus(DealStatus.PAID);
+
+        // LiveItem 상태 변경
+        deal.getItem().changeAuctionStatus(AuctionStatus.IN_DEAL);
+
+        eventPublisher.publishEvent(
+            new PaymentCompleteEvent(
+                deal.getId(),
+                deal.getBuyer().getId(),
+                deal.getItem().getSellerUserId(),
+                deal.getItem().getId(),
+                deal.getItem().getName(),
+                deal.getWinningPrice(),
+                deal.getDepositAmount(),
+                remainingAmount
+            )
+        );
     }
 
     @Transactional
@@ -174,5 +221,4 @@ public class LiveDealService {
             )
         );
     }
-
 }

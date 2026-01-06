@@ -48,6 +48,16 @@ public class UserMeController {
     private final DeliveryAddressService deliveryAddressService;
     private final DelayedBidService delayedBidService;
 
+    @PostMapping("/deals/live/{dealId}/payment")
+    @Operation(summary = "라이브 경매 잔금 결제")
+    public ApiResponse<Void> completePayment(
+        @PathVariable Long dealId
+    ) {
+        User currentUser = requestContext.getCurrentUser();
+        liveDealService.completePayment(currentUser, dealId);
+        return ApiResponse.ok("잔금 결제가 완료되었습니다.", null);
+    }
+
     @PatchMapping("/deals/{type}/{dealId}/delivery")
     @Operation(summary = "배송 송장 정보 입력")
     public ApiResponse<Void> patchDeliveryInfo(
