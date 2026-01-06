@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.deal.entity.DelayedDeal;
 import devut.buzzerbidder.domain.deal.enums.AuctionType;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.event.ItemShippedEvent;
+import devut.buzzerbidder.domain.deal.event.TransactionCompleteEvent;
 import devut.buzzerbidder.domain.deal.repository.DelayedDealRepository;
 import devut.buzzerbidder.domain.delayedbid.entity.DelayedBidLog;
 import devut.buzzerbidder.domain.delayedbid.repository.DelayedBidRepository;
@@ -194,6 +195,18 @@ public class DelayedDealService {
         // DelayedItem 상태 업데이트
         deal.getItem().changeAuctionStatus(
             AuctionStatus.PURCHASE_CONFIRMED
+        );
+
+        eventPublisher.publishEvent(
+            new TransactionCompleteEvent(
+                deal.getId(),
+                deal.getBuyer().getId(),
+                deal.getItem().getSellerUserId(),
+                deal.getItem().getId(),
+                AuctionType.DELAYED,
+                deal.getItem().getName(),
+                deal.getWinningPrice()
+            )
         );
     }
 

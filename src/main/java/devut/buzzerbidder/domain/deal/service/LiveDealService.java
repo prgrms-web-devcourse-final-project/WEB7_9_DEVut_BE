@@ -4,10 +4,12 @@ import devut.buzzerbidder.domain.deal.entity.LiveDeal;
 import devut.buzzerbidder.domain.deal.enums.AuctionType;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.event.ItemShippedEvent;
+import devut.buzzerbidder.domain.deal.event.TransactionCompleteEvent;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
 import devut.buzzerbidder.domain.deliveryTracking.service.DeliveryTrackingService;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.UserService;
@@ -107,6 +109,40 @@ public class LiveDealService {
 
         deal.updateDeliveryAddress(address, addressDetail, postalCode);
         liveDealRepository.save(deal);
+    }
+
+    // 구매 확정
+    @Transactional
+    public void confirmPurchase(User currentUser, Long dealId) {
+        LiveDeal deal = findByIdOrThrow(dealId);
+
+        // 구매자 권한 체크
+        if (!deal.getBuyer().getId().equals(currentUser.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
+        // 상태 체크 - PAID나 SHIPPING 상태여야 구매 확정 가능
+        if (deal.getStatus() != DealStatus.PAID && deal.getStatus() != DealStatus.SHIPPING) {
+            throw new BusinessException(ErrorCode.DEAL_INVALID_STATUS);
+        }
+
+        // Deal 상태 업데이트
+        deal.updateStatus(DealStatus.COMPLETED);
+
+        // LiveItem 상태 업데이트
+        deal.getItem().changeAuctionStatus(AuctionStatus.PURCHASE_CONFIRMED);
+
+        eventPublisher.publishEvent(
+            new TransactionCompleteEvent(
+                deal.getId(),
+                deal.getBuyer().getId(),
+                deal.getItem().getSellerUserId(),
+                deal.getItem().getId(),
+                AuctionType.LIVE,
+                deal.getItem().getName(),
+                deal.getWinningPrice()
+            )
+        );
     }
 
 }
