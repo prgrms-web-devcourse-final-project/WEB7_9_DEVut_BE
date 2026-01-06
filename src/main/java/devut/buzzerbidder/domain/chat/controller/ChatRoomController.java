@@ -65,7 +65,7 @@ public class ChatRoomController {
         // 사용자 정보 조회
         User user = requestContext.getCurrentUser();
 
-        // 채팅바 조회/생성
+        // 채팅방 조회/생성
         ChatRoom chatRoom = chatRoomService.getOrCreateAuctionChatRoom(auctionId);
 
         // 사용자 참여 상태 갱신

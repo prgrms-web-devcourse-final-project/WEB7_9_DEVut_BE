@@ -12,5 +12,4 @@ public record AuctionChatEnterResponse(
 
         @Schema(description = "현재 참여자 수")
         Long participantCount
-) {
-}
+) {}

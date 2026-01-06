@@ -22,26 +22,32 @@ public class ChatRoomParticipantService {
     /**
      * 사용자가 경매 채팅방에 입장할 때 호출
      */
-    public void incrementParticipant(Long auctionId) {
+    public void addParticipant(Long auctionId, Long userId) {
         String key = PARTICIPANT_COUNT_KEY_PREFIX + auctionId;
-        Long count = stringRedisTemplate.opsForValue().increment(key);
-        log.debug("{} 번 경매방 참여: 현재 참여자 수 = {}", auctionId, count);
+
+        // Redis Set에 userId 추가
+        stringRedisTemplate.opsForSet().add(key, userId.toString());
+
+        // 현재 Set의 크기(참여자 수) 조회
+        Long count = stringRedisTemplate.opsForSet().size(key);
+
+        log.debug("{} 번 경매방 참여: 사용자 {}, 현재 참여자 수 = {}", auctionId, userId, count);
         broadcastParticipantCount(auctionId, count);
     }
 
     /**
      * 사용자가 경매 채팅방에서 퇴장할 때 호출
      */
-    public void decrementParticipant(Long auctionId) {
+    public void removeParticipant(Long auctionId, Long userId) {
         String key = PARTICIPANT_COUNT_KEY_PREFIX + auctionId;
-        Long count = stringRedisTemplate.opsForValue().decrement(key);
 
-        if (count != null && count < 0) {
-            stringRedisTemplate.opsForValue().set(key, "0");
-            count = 0L;
-        }
+        // Redis Set에서 userId 제거
+        stringRedisTemplate.opsForSet().remove(key, userId.toString());
 
-        log.debug("{} 번 경매방 퇴장: 현재 참여자 수 = {}", auctionId, count);
+        // 현재 Set의 크기 조회
+        Long count = stringRedisTemplate.opsForSet().size(key);
+
+        log.debug("{} 번 경매방 퇴장: 사용자 {}, 현재 참여자 수 = {}", auctionId, userId, count);
         broadcastParticipantCount(auctionId, count);
     }
 
@@ -50,8 +56,8 @@ public class ChatRoomParticipantService {
      */
     public Long getParticipantCount(Long auctionId) {
         String key = PARTICIPANT_COUNT_KEY_PREFIX + auctionId;
-        String countStr = stringRedisTemplate.opsForValue().get(key);
-        return countStr != null ? Long.parseLong(countStr) : 0L;
+        Long count = stringRedisTemplate.opsForSet().size(key);
+        return count != null ? count : 0L;
     }
 
     /**
