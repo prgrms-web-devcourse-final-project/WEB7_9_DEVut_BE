@@ -55,7 +55,7 @@ public class LiveBidService {
         );
 
         // 입찰 시도 결과에 따른 분기 처리
-        return handleBidResult(result, request, bidder, liveItem.getSellerUserId(), redisKey, depositAmount);
+        return handleBidResult(result, request, bidder, liveItem, redisKey, depositAmount);
     }
 
     /**
@@ -83,7 +83,7 @@ public class LiveBidService {
             BidAtomicResult result,
             LiveBidRequest request,
             User bidder,
-            Long sellerId,
+            LiveItem liveItem,
             String redisKey,
             long depositAmount
     ) {
@@ -100,7 +100,7 @@ public class LiveBidService {
                 throw new BusinessException(ErrorCode.UNEXPECTED_REDIS_SCRIPT_RETURN);
             }
 
-            processSuccessfulBid(request, bidder, sellerId);
+            processSuccessfulBid(request, bidder, liveItem.getSellerUserId());
 
             walletHistoryService.recordWalletHistory(
                     bidder,

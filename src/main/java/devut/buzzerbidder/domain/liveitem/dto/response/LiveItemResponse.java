@@ -10,6 +10,7 @@ public record LiveItemResponse(
     String image,
     LocalDateTime startAt,
     AuctionStatus auctionStatus,
+    Long initPrice,
     Long currentPrice,
     Boolean isLiked
 ) {
@@ -21,6 +22,7 @@ public record LiveItemResponse(
             liveItem.getLiveTime(),
             liveItem.getAuctionStatus(),
             liveItem.getInitPrice(),
+            liveItem.getCurrentPrice(),
             isLiked
         );
     }
