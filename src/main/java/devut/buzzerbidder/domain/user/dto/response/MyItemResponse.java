@@ -16,9 +16,10 @@ public record MyItemResponse(
     String image,
     String auctionStatus,
     LocalDateTime endTime,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    Long dealId
 ) {
-    public static MyItemResponse fromLiveItem(LiveItem liveItem, Long currentPrice, Boolean wish) {
+    public static MyItemResponse fromLiveItem(LiveItem liveItem, Long currentPrice, Boolean wish, Long dealId) {
         String imageUrl = liveItem.getImages().isEmpty() 
             ? null 
             : liveItem.getImages().get(0).getImageUrl();
@@ -35,11 +36,12 @@ public record MyItemResponse(
             imageUrl,
             liveItem.getAuctionStatus() != null ? liveItem.getAuctionStatus().name() : null,
             liveItem.getLiveTime(), // 라이브 경매는 liveTime을 endTime으로 사용
-            liveItem.getCreateDate()
+            liveItem.getCreateDate(),
+            dealId
         );
     }
 
-    public static MyItemResponse fromDelayedItem(DelayedItem delayedItem, Boolean wish) {
+    public static MyItemResponse fromDelayedItem(DelayedItem delayedItem, Boolean wish, Long dealId) {
         String imageUrl = delayedItem.getImages().isEmpty() 
             ? null 
             : delayedItem.getImages().get(0).getImageUrl();
@@ -56,7 +58,8 @@ public record MyItemResponse(
             imageUrl,
             delayedItem.getAuctionStatus() != null ? delayedItem.getAuctionStatus().name() : null,
             delayedItem.getEndTime(), // 지연 경매는 endTime 사용
-            delayedItem.getCreateDate()
+            delayedItem.getCreateDate(),
+            dealId
         );
     }
 }

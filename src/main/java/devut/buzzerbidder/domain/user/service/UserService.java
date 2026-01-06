@@ -4,6 +4,10 @@ import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.likedelayed.entity.LikeDelayed;
 import devut.buzzerbidder.domain.likedelayed.repository.LikeDelayedRepository;
+import devut.buzzerbidder.domain.deal.entity.DelayedDeal;
+import devut.buzzerbidder.domain.deal.entity.LiveDeal;
+import devut.buzzerbidder.domain.deal.repository.DelayedDealRepository;
+import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
@@ -56,6 +60,8 @@ public class UserService {
     private final LikeLiveRepository likeLiveRepository;
     private final LikeDelayedRepository likeDelayedRepository;
     private final LiveBidRedisService liveBidRedisService;
+    private final LiveDealRepository liveDealRepository;
+    private final DelayedDealRepository delayedDealRepository;
 
     @Transactional
     public LoginResponse signUp(EmailSignUpRequest request) {
@@ -311,14 +317,26 @@ public class UserService {
                     
                     // 찜 여부 확인
                     Boolean wish = isLikedItems || likedLiveItemIds.contains(id);
-                    items.add(MyItemResponse.fromLiveItem(item, currentPrice, wish));
+                    
+                    // Deal 조회 및 dealId 설정
+                    Long dealId = liveDealRepository.findByItem(item)
+                            .map(LiveDeal::getId)
+                            .orElse(null);
+                    
+                    items.add(MyItemResponse.fromLiveItem(item, currentPrice, wish, dealId));
                 }
             } else if ("DELAYED".equals(type)) {
                 DelayedItem item = delayedItemMap.get(id);
                 if (item != null) {
                     // 찜 여부 확인
                     Boolean wish = isLikedItems || likedDelayedItemIds.contains(id);
-                    items.add(MyItemResponse.fromDelayedItem(item, wish));
+                    
+                    // Deal 조회 및 dealId 설정
+                    Long dealId = delayedDealRepository.findByItem(item)
+                            .map(DelayedDeal::getId)
+                            .orElse(null);
+                    
+                    items.add(MyItemResponse.fromDelayedItem(item, wish, dealId));
                 }
             }
         }
