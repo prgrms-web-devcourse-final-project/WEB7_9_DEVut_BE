@@ -111,6 +111,7 @@ public class LiveBidService {
             );
 
             liveItem.setCurrentPrice(Long.valueOf(request.bidPrice()));
+            liveItemRepository.save(liveItem);
 
             return new LiveBidResponse(true, "입찰 성공.", request.bidPrice());
         }
