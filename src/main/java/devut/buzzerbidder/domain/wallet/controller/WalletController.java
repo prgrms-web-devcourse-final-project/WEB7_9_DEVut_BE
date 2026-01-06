@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.wallet.dto.request.WithdrawalRequestDto;
 import devut.buzzerbidder.domain.wallet.dto.response.BizzResponseDto;
 import devut.buzzerbidder.domain.wallet.dto.response.HistoriesPageResponseDto;
 import devut.buzzerbidder.domain.wallet.dto.response.WithdrawalResponseDto;
+import devut.buzzerbidder.domain.wallet.service.WalletRedisService;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;
@@ -51,4 +52,17 @@ public class WalletController {
 
         return ApiResponse.ok("Bizz 조회 성공",  BizzResponseDto.from(bizz));
     }
+
+    // 임시
+    private final WalletRedisService walletRedisService;
+    @GetMapping("/isRedis")
+    public ApiResponse<Boolean> isRedis(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long redisBizz = walletRedisService.getBizzBalance(userDetails.getId());
+        boolean redis = redisBizz != null;
+
+        return ApiResponse.ok(redis);
+    }
+
 }
