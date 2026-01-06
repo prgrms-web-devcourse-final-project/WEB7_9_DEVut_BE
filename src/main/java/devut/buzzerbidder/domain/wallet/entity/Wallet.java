@@ -16,6 +16,7 @@ public class Wallet extends BaseEntity {
     @JoinColumn(nullable = false, unique = true)
     private User user;
 
+    @Setter
     @Column(nullable = false)
     private Long bizz;
 

@@ -11,7 +11,6 @@ import devut.buzzerbidder.domain.chat.entity.ChatRoomEntered;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
 import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;import devut.buzzerbidder.domain.user.dto.response.UserInfo;
 import devut.buzzerbidder.domain.chat.repository.ChatMessageRepository;
-import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
@@ -126,6 +125,8 @@ public class ChatRoomService {
     }
 
     public void exitAuctionChatRoom(Long auctionId, User user) {
+
+        walletRedisService.flushBalanceAndClearSession(user.getId(), null);
 
         ChatRoom chatRoom = chatRoomRepository.findByAuctionId(auctionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHATROOM_NOT_FOUND));

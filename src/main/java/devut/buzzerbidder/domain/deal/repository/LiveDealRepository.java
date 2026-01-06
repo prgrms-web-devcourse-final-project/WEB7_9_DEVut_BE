@@ -1,13 +1,18 @@
 package devut.buzzerbidder.domain.deal.repository;
 
 import devut.buzzerbidder.domain.deal.entity.LiveDeal;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.user.entity.User;
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface LiveDealRepository extends JpaRepository<LiveDeal, Long> {
+
+    Optional<LiveDeal> findByItem(LiveItem item);
 
     @Query("""
         SELECT ld FROM LiveDeal ld
