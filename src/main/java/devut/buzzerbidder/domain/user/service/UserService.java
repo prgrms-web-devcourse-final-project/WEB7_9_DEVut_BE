@@ -310,14 +310,14 @@ public class UserService {
                         : item.getInitPrice(); // Redis에 없으면 초기 가격 사용
                     
                     // 찜 여부 확인
-                    Boolean wish = isLikedItems ? true : likedLiveItemIds.contains(id);
+                    Boolean wish = isLikedItems || likedLiveItemIds.contains(id);
                     items.add(MyItemResponse.fromLiveItem(item, currentPrice, wish));
                 }
             } else if ("DELAYED".equals(type)) {
                 DelayedItem item = delayedItemMap.get(id);
                 if (item != null) {
                     // 찜 여부 확인
-                    Boolean wish = isLikedItems ? true : likedDelayedItemIds.contains(id);
+                    Boolean wish = isLikedItems || likedDelayedItemIds.contains(id);
                     items.add(MyItemResponse.fromDelayedItem(item, wish));
                 }
             }
@@ -357,7 +357,7 @@ public class UserService {
             return deliveryAddressRepository.save(deliveryAddress);
         }
 
-        //새 기본 배송지 생성
+        // 기본 배송지가 없으면 무조건 기본 배송지로 생성
         DeliveryAddress newAddress = DeliveryAddress.builder()
                 .user(user)
                 .address(address)

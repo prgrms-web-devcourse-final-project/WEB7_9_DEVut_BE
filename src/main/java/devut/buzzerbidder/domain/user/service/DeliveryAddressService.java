@@ -35,8 +35,14 @@ public class DeliveryAddressService {
     // 배송지 추가
     @Transactional
     public DeliveryAddressResponse createDeliveryAddress(User user, DeliveryAddressCreateRequest request) {
+        // 기본 배송지가 있는지 확인
+        boolean hasDefaultAddress = hasDefaultAddress(user);
+        
+        // 기본 배송지가 없으면 무조건 기본 배송지로 설정
+        boolean shouldSetAsDefault = !hasDefaultAddress || Boolean.TRUE.equals(request.isDefault());
+        
         // 기본 배송지로 설정하는 경우, 기존 기본 배송지 해제
-        if (Boolean.TRUE.equals(request.isDefault())) {
+        if (shouldSetAsDefault && hasDefaultAddress) {
             unsetDefaultAddress(user);
         }
 
@@ -45,7 +51,7 @@ public class DeliveryAddressService {
                 .address(request.address())
                 .addressDetail(request.addressDetail())
                 .postalCode(request.postalCode())
-                .isDefault(request.isDefault() != null ? request.isDefault() : false)
+                .isDefault(shouldSetAsDefault)
                 .build();
 
         DeliveryAddress savedAddress = deliveryAddressRepository.save(newAddress);
@@ -57,6 +63,17 @@ public class DeliveryAddressService {
         }
 
         return DeliveryAddressResponse.from(savedAddress);
+    }
+    
+    // 기본 배송지 존재 여부 확인
+    private boolean hasDefaultAddress(User user) {
+        // User의 defaultDeliveryAddressId로 확인
+        if (user.getDefaultDeliveryAddressId() != null) {
+            return deliveryAddressRepository.findByUserAndId(user, user.getDefaultDeliveryAddressId())
+                    .isPresent();
+        }
+        // isDefault=true인 배송지로 확인
+        return deliveryAddressRepository.findByUserAndIsDefaultTrue(user).isPresent();
     }
 
     // 배송지 수정
