@@ -110,6 +110,8 @@ public class LiveBidService {
                     balanceAfter
             );
 
+            liveItem.setCurrentPrice(Long.valueOf(request.bidPrice()));
+
             return new LiveBidResponse(true, "입찰 성공.", request.bidPrice());
         }
 
