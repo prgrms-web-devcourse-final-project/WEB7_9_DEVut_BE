@@ -233,7 +233,7 @@ public class ChatRoomService {
         return new ChatListResponse(items);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ChatRoomDetailResponse getChatRoomDetail(Long chatRoomId, User user) {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHATROOM_NOT_FOUND));
