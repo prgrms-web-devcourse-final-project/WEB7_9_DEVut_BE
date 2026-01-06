@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.deal.entity.LiveDeal;
 import devut.buzzerbidder.domain.deal.enums.AuctionType;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.event.ItemShippedEvent;
+import devut.buzzerbidder.domain.deal.event.PaymentCompleteEvent;
 import devut.buzzerbidder.domain.deal.event.TransactionCompleteEvent;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
@@ -142,6 +143,19 @@ public class LiveDealService {
 
         // LiveItem 상태 변경
         deal.getItem().changeAuctionStatus(AuctionStatus.IN_DEAL);
+
+        eventPublisher.publishEvent(
+            new PaymentCompleteEvent(
+                deal.getId(),
+                deal.getBuyer().getId(),
+                deal.getItem().getSellerUserId(),
+                deal.getItem().getId(),
+                deal.getItem().getName(),
+                deal.getWinningPrice(),
+                deal.getDepositAmount(),
+                remainingAmount
+            )
+        );
     }
 
     // 구매 확정
