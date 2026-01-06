@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -33,5 +34,10 @@ public class ChatMessage extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
-
+    @Builder
+    public ChatMessage(User sender, ChatRoom chatRoom, String message) {
+        this.sender = sender;
+        this.chatRoom = chatRoom;
+        this.message = message;
+    }
 }

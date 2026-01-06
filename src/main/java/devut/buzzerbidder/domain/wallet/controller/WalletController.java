@@ -1,6 +1,7 @@
 package devut.buzzerbidder.domain.wallet.controller;
 
 import devut.buzzerbidder.domain.wallet.dto.request.WithdrawalRequestDto;
+import devut.buzzerbidder.domain.wallet.dto.response.HistoriesPageResponseDto;
 import devut.buzzerbidder.domain.wallet.dto.response.WithdrawalResponseDto;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.response.ApiResponse;
@@ -10,14 +11,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/wallets")
+@RequestMapping("/api/v1/wallet")
 @Tag(name = "Wallet", description = "지갑 API")
 public class WalletController {
 
@@ -31,5 +29,15 @@ public class WalletController {
     ) {
         WithdrawalResponseDto response = walletService.withdrawal(userDetails.getId(), request);
         return ApiResponse.ok("출금요청이 완료되었습니다.", response);
+    }
+
+    @GetMapping("/histories")
+    @Operation(summary = "지갑 히스토리 목록 조회")
+    public ApiResponse<HistoriesPageResponseDto> getHistories(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "1") int page
+    ) {
+        HistoriesPageResponseDto response = walletService.getHistories(userDetails.getId(), page);
+        return ApiResponse.ok("지갑 히스토리 목록 조회 성공", response);
     }
 }

@@ -1,6 +1,7 @@
 package devut.buzzerbidder.global.exeption;
 
 import lombok.Getter;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 
 @Getter
@@ -29,6 +30,10 @@ public enum ErrorCode {
     USER_SOCIAL_ACCOUNT("M009", HttpStatus.BAD_REQUEST, "소셜 로그인으로 가입한 계정입니다. 소셜 로그인을 사용해주세요."),
     USER_INVALID_PROVIDER("M010", HttpStatus.BAD_REQUEST, "유효하지 않은 로그인 제공자입니다."),
     USER_EMAIL_NOT_VERIFIED("M011", HttpStatus.BAD_REQUEST, "이메일 인증이 완료되지 않았습니다."),
+    DELIVERY_ADDRESS_USER_NOT_NULL("M012", HttpStatus.BAD_REQUEST, "배송지의 주인(User)은 null일 수 없습니다."),
+    DELIVERY_ADDRESS_NOT_VALID("M013", HttpStatus.BAD_REQUEST,"주소는 null이거나 비어있을 수 없습니다."),
+    DELIVERY_ADDRESS_DETAIL_NOT_VALID("M014", HttpStatus.BAD_REQUEST, "상세주소는 null이거나 비어있을 수 없습니다."),
+    DELIVERY_POSTAL_CODE_NOT_VALID("M015", HttpStatus.BAD_REQUEST,"우편번호는 null이거나 비어있을 수 없습니다."),
 
     // ========== Deal 도메인 에러 ==========
     DEAL_NOT_FOUND("D001", HttpStatus.NOT_FOUND, "존재하지 않는 거래입니다."),
@@ -46,6 +51,9 @@ public enum ErrorCode {
     INVALID_TRANSFER("W006", HttpStatus.BAD_REQUEST, "자기 자신에게 지불할 수 없습니다."),
     WALLET_ALREADY_EXISTS("W007", HttpStatus.CONFLICT, "사용자 지갑이 이미 존재합니다."),
     WITHDRAWAL_NOT_FOUND("W008", HttpStatus.CONFLICT, "출금 내역이 존재하지 않습니다."),
+    REDIS_INVALID_BIZZ_VALUE("W009", HttpStatus.CONFLICT, "Redis의 Bizz 값이 숫자가 아닙니다."),
+    WALLET_USER_NOT_NULL("W010", HttpStatus.BAD_REQUEST, "User를 null로 하여 지갑을 생성할 수 없습니다."),
+    TRANSFER_ERROR("W011", HttpStatus.INTERNAL_SERVER_ERROR, "TransferBizz 처리 중 에러가 발생했습니다."),
 
     // ========== Payment 도메인 에러 ==========
     PAYMENT_NOT_FOUND("P001", HttpStatus.NOT_FOUND, "결제정보를 찾을 수 없습니다."),
@@ -69,7 +77,6 @@ public enum ErrorCode {
     AUCTION_NOT_LIVE("AR006", HttpStatus.BAD_REQUEST, "경매가 진행 중이 아닙니다."),
     AUCTION_STATUS_INVALID("AR007", HttpStatus.BAD_REQUEST, "잘못된 경매 상태입니다."),
     AUCTION_ROOM_ASSIGN_UNAVAILABLE("AR008", HttpStatus.CONFLICT, "할당 가능한 경매방이 없습니다."),
-
 
     // ========== LIVEITEM 도메인 에러 ==========
     CLOSE_LIVETIME("LI001", HttpStatus.BAD_REQUEST,"경매시작 시간은 최소 1시간 이후여야합니다."),
@@ -109,10 +116,12 @@ public enum ErrorCode {
     IMAGE_URL_NOT_ALLOWED("IMG005", HttpStatus.FORBIDDEN, "허용되지 않은 S3 버킷입니다."),
     IMAGE_UPLOAD_FAILED("IMG006", HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드에 실패했습니다."),
     IMAGE_FILE_EMPTY("IMG007", HttpStatus.NOT_FOUND, "이미지 파일이 비어있습니다."),
+    IMAGE_PRESIGNED_URL_FAILED("IMG008", HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드 URL 생성에 실패했습니다"),
 
     // ========== chat 도메인 에러 ==========
     CHATROOM_NOT_FOUND("C001", HttpStatus.NOT_FOUND, "채팅방을 찾을 수 없습니다."),
-    CHAT_NOT_PARTICIPANT("C002", HttpStatus.NOT_FOUND, "참여중이지 않은 채팅방입니다.");
+    CHAT_NOT_PARTICIPANT("C002", HttpStatus.NOT_FOUND, "참여중이지 않은 채팅방입니다."),
+    SELF_CHAT_NOT_ALLOWED("C003", HttpStatus.FORBIDDEN, "자기 자신과 채팅할 수 없습니다.");
 
     private final String code;
     private final HttpStatus status;

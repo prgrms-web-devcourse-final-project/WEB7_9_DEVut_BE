@@ -1,5 +1,6 @@
 package devut.buzzerbidder.domain.user.dto.response;
 
+import devut.buzzerbidder.domain.user.entity.DeliveryAddress;
 import devut.buzzerbidder.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -19,6 +20,15 @@ public record UserProfileResponse(
         @Schema(description = "프로필 이미지 URL", example = "https://example.com/image.jpg")
         String image,
 
+        @Schema(description = "주소", example = "서울시 중구 세종대로 135-5")
+        String address,
+
+        @Schema(description = "상세주소", example = "OO아파트 101동 101호")
+        String addressDetail,
+
+        @Schema(description = "우편번호", example = "12345")
+        String postalCode,
+
         @Schema(description = "생성일", example = "2025-12-08")
         LocalDate createDate,
 
@@ -28,12 +38,23 @@ public record UserProfileResponse(
         @Schema(description = "보유 Bizz 잔액", example = "38200")
         Long bizz
 ) {
-    public static UserProfileResponse from(User user, Long bizz) {
+    public static UserProfileResponse from(User user, Long bizz, DeliveryAddress deliveryAddress) {
+        String address = null;
+        String addressDetail = null;
+        String postalCode = null;
+        if (deliveryAddress != null) {
+            address = deliveryAddress.getAddress();
+            addressDetail = deliveryAddress.getAddressDetail();
+            postalCode = deliveryAddress.getPostalCode();
+        }
         return new UserProfileResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
                 user.getProfileImageUrl(),
+                address,
+                addressDetail,
+                postalCode,
                 user.getCreateDate() != null ? user.getCreateDate().toLocalDate() : null,
                 user.getModifyDate() != null ? user.getModifyDate().toLocalDate() : null,
                 bizz

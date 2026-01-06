@@ -65,6 +65,9 @@ public class DelayedItem extends BaseEntity {
     @Column(nullable = true)
     private Long buyNowPrice;
 
+    @Column(name = "current_bidder_user_id", nullable = true)
+    private Long currentBidderUserId;
+
     // 시간 정보
     @Column(name = "end_time", nullable = false)
     @NotNull
@@ -131,17 +134,25 @@ public class DelayedItem extends BaseEntity {
     }
 
     public enum AuctionStatus {
-        BEFORE_BIDDING,    // 입찰 전
-        IN_PROGRESS,       // 입찰 중
-        ENDED,             // 경매 종료 (낙찰)
-        FAILED,            // 유찰 (입찰자 없음)
-        IN_DEAL,           // 거래 중
-        PURCHASE_CONFIRMED // 구매 확정
+        BEFORE_BIDDING,        // 입찰 전
+        IN_PROGRESS,           // 입찰 중
+        FAILED,                // 유찰 (입찰자 없음)
+        IN_DEAL,               // 거래 중
+        PURCHASE_CONFIRMED;    // 구매 확정
+
+        // 판매중(입찰 가능) 상태 상수
+        public static final List<AuctionStatus> ACTIVE_STATUSES =
+            List.of(BEFORE_BIDDING, IN_PROGRESS);
     }
 
     // 비즈니스 메서드
     public void updateCurrentPrice(Long newPrice) {
         this.currentPrice = newPrice;
+    }
+
+    public void updateCurrentPriceAndBidder(Long newPrice, Long bidderUserId) {
+        this.currentPrice = newPrice;
+        this.currentBidderUserId = bidderUserId;
     }
 
     public void changeAuctionStatus(AuctionStatus newStatus) {
@@ -173,6 +184,7 @@ public class DelayedItem extends BaseEntity {
         this.category = request.category();
         this.description = request.description();
         this.startPrice = request.startPrice();
+        this.currentPrice = request.startPrice();
         this.buyNowPrice = request.buyNowPrice();
         this.endTime = request.endTime();
         this.itemStatus = request.itemStatus();

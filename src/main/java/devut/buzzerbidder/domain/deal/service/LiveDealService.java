@@ -1,16 +1,24 @@
 package devut.buzzerbidder.domain.deal.service;
 
 import devut.buzzerbidder.domain.deal.entity.LiveDeal;
+import devut.buzzerbidder.domain.deal.enums.AuctionType;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
+import devut.buzzerbidder.domain.deal.event.ItemShippedEvent;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
 import devut.buzzerbidder.domain.deliveryTracking.service.DeliveryTrackingService;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.service.UserService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,19 +26,58 @@ import org.springframework.transaction.annotation.Transactional;
 public class LiveDealService {
 
     private final LiveDealRepository liveDealRepository;
+    private final LiveItemRepository liveItemRepository;
     private final DeliveryTrackingService deliveryTrackingService;
+    private final UserService userService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public LiveDeal findByIdOrThrow(Long dealId) {
         return liveDealRepository.findById(dealId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEAL_NOT_FOUND));
     }
 
+    // TODO: 라이브 딜 생성 시 기본 배송지 자동 설정 (나중에 구현)
+
+    @Transactional
+    public void createDeal(Long liveItemId, Long buyerId, Long winningPrice) {
+        LiveItem item = liveItemRepository.findByIdWithLock(liveItemId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+        User buyer = userService.findById(buyerId);
+
+        // DelayedDeal 생성
+        LiveDeal deal = LiveDeal.builder()
+                .item(item)
+                .buyer(buyer)
+                .winningPrice(winningPrice)
+                .status(DealStatus.PENDING)
+                .build();
+
+        liveDealRepository.save(deal);
+    }
+
     @Transactional
     public void patchDeliveryInfo(User currentUser, Long dealId, String carrierCode, String trackingNumber) {
-        // TODO: 권한 체크 로직 추가 (currentUser가 해당 deal에 접근할 수 있는지 확인)
         LiveDeal liveDeal = findByIdOrThrow(dealId);
+
+        // 판매자 권한 체크
+        if (!liveDeal.getItem().getSellerUserId().equals(currentUser.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
         liveDeal.updateDeliveryInfo(carrierCode, trackingNumber);
         liveDeal.updateStatus(DealStatus.SHIPPING);
+        eventPublisher.publishEvent(
+            new ItemShippedEvent(
+                liveDeal.getId(),
+                liveDeal.getBuyer().getId(),
+                liveDeal.getItem().getSellerUserId(),
+                liveDeal.getItem().getId(),
+                AuctionType.LIVE,
+                liveDeal.getItem().getName(),
+                liveDeal.getCarrier().getDisplayName(),
+                liveDeal.getTrackingNumber()
+            )
+        );
     }
 
     public DeliveryTrackingResponse track(User currentUser, Long dealId) {
@@ -46,6 +93,20 @@ public class LiveDealService {
         }
 
         return deliveryTrackingService.track(carrierCode, trackingNumber);
+    }
+
+    // 거래 배송지 주소 수정
+    @Transactional
+    public void updateDeliveryAddress(User currentUser, Long dealId, String address, String addressDetail, String postalCode) {
+        LiveDeal deal = findByIdOrThrow(dealId);
+
+        // 구매자 권한 체크
+        if (!deal.getBuyer().getId().equals(currentUser.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
+        deal.updateDeliveryAddress(address, addressDetail, postalCode);
+        liveDealRepository.save(deal);
     }
 
 }

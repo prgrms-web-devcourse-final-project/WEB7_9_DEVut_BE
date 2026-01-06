@@ -8,7 +8,10 @@ import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.UserService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,5 +46,10 @@ public class LikeLiveService {
 
     public long countByLiveItemId(Long id) {
         return likeLiveRepository.countByLiveItemId(id);
+    }
+
+    public Set<Long> findLikedLiveItemIdsByUserId(Long userId) {
+        List<Long> ids = likeLiveRepository.findLiveItemIdsByUserId(userId);
+        return new HashSet<>(ids);
     }
 }

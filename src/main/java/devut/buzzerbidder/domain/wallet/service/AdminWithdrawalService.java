@@ -26,7 +26,7 @@ public class AdminWithdrawalService {
     private final WalletRepository walletRepository;
     private final WalletService walletService;
 
-    public AdminWithdrawalResponseDto getRequestedWithdrawal(Long userId, WithdrawalStatus status, Integer page, Integer size) {
+    public AdminWithdrawalResponseDto getRequestedWithdrawals(Long userId, WithdrawalStatus status, Integer page, Integer size) {
         int lastPage = (page == null || page < 0) ? 0 : page;
         int lastSize = (size == null || size <= 0) ? 15 : size;
 

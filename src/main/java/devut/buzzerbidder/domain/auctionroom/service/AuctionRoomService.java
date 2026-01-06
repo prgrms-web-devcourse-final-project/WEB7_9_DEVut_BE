@@ -4,7 +4,9 @@ import static reactor.netty.http.HttpConnectionLiveness.log;
 
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionDaysDto;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomDto;
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomItemDto;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomListResponse;
+import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomResponse;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomSlotDto;
 import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionScheduleResponse;
 import devut.buzzerbidder.domain.auctionroom.dto.response.LiveItemDto;
@@ -12,9 +14,12 @@ import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.AuctionStatus;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.RoomStatus;
 import devut.buzzerbidder.domain.auctionroom.entity.RoomCountByStartAtRow;
+import devut.buzzerbidder.domain.auctionroom.event.AuctionRoomStartedEvent;
 import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
+import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDate;
@@ -24,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +40,8 @@ public class AuctionRoomService {
 
     private final AuctionRoomRepository auctionRoomRepository;
     private final LiveBidRedisService liveBidRedisService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final LiveItemRepository liveItemRepository;
 
     public AuctionRoom assignRoom(LocalDateTime liveTime, long roomIndex) {
 
@@ -104,6 +112,18 @@ public class AuctionRoomService {
             room.startLive();
             auctionRoomRepository.save(room);
             log.info("경매방 상태 변경 완료: roomId={}, liveTime={}", roomId, room.getLiveTime());
+
+            List<Long> itemIds = room.getLiveItems().stream()
+                .map(LiveItem::getId)
+                .toList();
+
+            eventPublisher.publishEvent(
+                new AuctionRoomStartedEvent(
+                    roomId,
+                    room.getLiveTime(),
+                    itemIds
+                )
+            );
         } catch (Exception e) {
             log.error("경매방 상태 변경 실패: roomId={}", roomId, e);
             throw e;
@@ -189,6 +209,29 @@ public class AuctionRoomService {
             endHour,
             days
         );
+
+    }
+
+    public AuctionRoomResponse getAuctionRoom(Long auctionRoomId) {
+
+        AuctionRoom room = auctionRoomRepository.findRoomWithItems(auctionRoomId)
+            .orElseThrow(() -> new BusinessException(ErrorCode.AUCTION_ROOM_NOT_FOUND));
+
+        List<LiveItem> items = liveItemRepository.findItemsWithImagesByRoomId(auctionRoomId);
+
+        List<AuctionRoomItemDto> response  = items.stream()
+            .map(item -> new AuctionRoomItemDto(
+                item.getId(),
+                item.getName(),
+                item.getImages().stream()
+                    .map(LiveItemImage::getImageUrl)
+                    .toList(),
+                item.getInitPrice(),
+                item.getAuctionStatus()
+            ))
+            .toList();
+
+        return new AuctionRoomResponse(response);
 
     }
 }

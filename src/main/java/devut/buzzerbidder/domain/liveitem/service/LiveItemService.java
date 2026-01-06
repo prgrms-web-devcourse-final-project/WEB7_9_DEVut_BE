@@ -2,10 +2,10 @@ package devut.buzzerbidder.domain.liveitem.service;
 
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomService;
+import devut.buzzerbidder.domain.deal.service.LiveDealService;
+import devut.buzzerbidder.domain.likelive.repository.LikeLiveRepository;
 import devut.buzzerbidder.domain.likelive.service.LikeLiveService;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
-import devut.buzzerbidder.domain.liveBid.service.LiveBidService;
-import devut.buzzerbidder.domain.liveBid.service.LiveBidWebSocketService;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
@@ -19,15 +19,16 @@ import devut.buzzerbidder.domain.liveitem.dto.response.RoomDto;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
-import devut.buzzerbidder.domain.liveitem.event.LiveAuctionEndedEvent;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.service.UserService;
+import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.image.ImageService;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import io.micrometer.core.annotation.Timed;
+
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -35,13 +36,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -51,13 +59,22 @@ public class LiveItemService {
     private final LiveItemRepository liveItemRepository;
     private final LikeLiveService likeLiveService;
     private final AuctionRoomService auctionRoomService;
+    private final LiveDealService liveDealService;
+    private final WalletService walletService;
+    private final UserService userService;
     private final ImageService imageService;
     private final RedissonClient redissonClient;
     private final TransactionTemplate transactionTemplate;
     private final LiveBidRedisService  liveBidRedisService;
-    private final LiveBidWebSocketService liveBidWebSocketService;
-    private final ApplicationEventPublisher eventPublisher;
+    private final LikeLiveRepository likeLiveRepository;
 
+    private final RedisTemplate<String, String> redisTemplate;
+
+    @Timed(
+            value = "buzzerbidder.redis.liveitem",
+            extraTags = {"op", "write"},
+            histogram = true
+    )
     public LiveItemCreateResponse writeLiveItem(LiveItemCreateRequest reqBody, User user) {
 
         LocalDateTime now = LocalDateTime.now();
@@ -135,6 +152,11 @@ public class LiveItemService {
         }
     }
 
+    @Timed(
+            value = "buzzerbidder.redis.liveitem",
+            extraTags = {"op", "modify"},
+            histogram = true
+    )
     public LiveItemModifyResponse modifyLiveItem(Long id, LiveItemModifyRequest reqBody, User user) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
@@ -347,11 +369,16 @@ public class LiveItemService {
     }
 
     @Transactional(readOnly = true)
-    public LiveItemDetailResponse getLiveItem(Long id) {
+    public LiveItemDetailResponse getLiveItem(Long id, Long userId) {
 
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
+        boolean isLiked = false;
+        if (userId != null) {
+            isLiked = likeLiveRepository.existsByUserIdAndLiveItemId(userId, liveItem.getId());
+            // 또는 existsByUser_IdAndLiveItem_Id(userId, liveItem.getId());
+        }
         long likeCount = likeLiveService.countByLiveItemId(id);
 
         String redisKey = "liveItem:" + liveItem.getId();
@@ -376,20 +403,86 @@ public class LiveItemService {
                         .map(LiveItemImage::getImageUrl)
                         .toList(),
                 likeCount,
-                currentMaxPrice
+                currentMaxPrice,
+                isLiked
         );
     }
 
     // TODO: 레디스에서 현재 입찰가로 가격 필터링 로직 추가
     @Transactional(readOnly = true)
-    public LiveItemListResponse  getLiveItems(
+    public LiveItemListResponse getLiveItems(
             LiveItemSearchRequest reqBody,
-            Pageable pageable
+            Pageable pageable,
+            Long userId
     ) {
 
-        Page<LiveItemResponse> page = liveItemRepository.searchLiveItems(reqBody.name(),reqBody.category(), pageable);
+        Long min = reqBody.minBidPrice();
+        Long max = reqBody.maxBidPrice();
 
-        // 2. Redis에서 현재 입찰가 가져오기
+        Page<LiveItemResponse> page;
+
+        // 가격필터 없는 경우: 기존 로직 그대로
+        if (min == null && max == null) {
+            page = liveItemRepository.searchLiveItems(
+                reqBody.name(),
+                reqBody.category(),
+                reqBody.isSelling(),
+                pageable
+            );
+        } else {
+            // 가격 필터가 있는 경우
+
+            long lo = (min != null) ? min : Long.MIN_VALUE;
+            long hi = (max != null) ? max : Long.MAX_VALUE;
+
+            // 1) Redis(ZSET): 입찰 있는 아이템 중 현재가 범위 통과 id 리스트
+            List<Long> a = liveBidRedisService.zRangeByScoreAsLong("liveItems:currentPrice", lo, hi);
+
+            // 2) DB(initPrice): 기본필터 + initPrice 범위 통과 후보
+            List<Long> b = liveItemRepository.findIdsByInitPriceRangeWithBaseFilters(
+                reqBody.name(),
+                reqBody.category(),
+                reqBody.isSelling(),
+                min,
+                max
+            );
+
+            // 3) b 중에서 hasBid=true 제거 (입찰 있는 애는 initPrice로 판단하면 안 됨)
+            List<Boolean> hasBidFlags = liveBidRedisService.sIsMemberBatch("liveItems:hasBid", b);
+
+            Set<Long> candidateIds = new HashSet<>(a);
+            for (int i = 0; i < b.size(); i++) {
+                if (!hasBidFlags.get(i)) {
+                    candidateIds.add(b.get(i));
+                }
+            }
+
+            if (candidateIds.isEmpty()) {
+                return new LiveItemListResponse(List.of(), 0);
+            }
+
+            // 4) candidateIds로 DB에서 정확한 페이징/정렬 + 기존 필터 재적용
+            page = liveItemRepository.searchLiveItemsWithinIds(
+                candidateIds,
+                reqBody.name(),
+                reqBody.category(),
+                reqBody.isSelling(),
+                pageable
+            );
+        }
+
+        List<LiveItemResponse> baseList = page.getContent();
+
+        List<Long> liveItemIds = baseList.stream().map(LiveItemResponse::id).toList();
+
+        Set<Long> likedSet = Collections.emptySet();
+        if (userId != null && !liveItemIds.isEmpty()) {
+            likedSet = new HashSet<>(likeLiveRepository.findLikedLiveItemIds(userId, liveItemIds));
+        }
+
+        final Set<Long> finalLikedSet = likedSet;
+
+        // 2. Redis에서 현재 입찰가 가져오기 + 찜 여부 넣기
         List<LiveItemResponse> dtoList = page.getContent().stream()
                 .map(item -> {
                     String redisKey = "liveItem:" + item.id();
@@ -399,6 +492,8 @@ public class LiveItemService {
                             ? Long.parseLong(maxBidPriceStr)
                             : item.currentPrice();
 
+                    boolean isLiked = finalLikedSet.contains(item.id());
+
                     // DTO에 현재 입찰가 세팅
                     return new LiveItemResponse(
                             item.id(),
@@ -406,7 +501,8 @@ public class LiveItemService {
                             item.image(),
                             item.startAt(),
                             item.auctionStatus(),
-                            currentMaxBidPrice
+                            currentMaxBidPrice,
+                            isLiked
                     );
                 })
                 .toList();
@@ -431,10 +527,21 @@ public class LiveItemService {
     }
 
     @Transactional(readOnly = true)
-    public LiveItemListResponse getHotLiveItems(int limit) {
+    public LiveItemListResponse getHotLiveItems(
+        int limit,
+        Long userId) {
 
         Pageable pageable = PageRequest.of(0, limit);
         List<LiveItemResponse> beforeBidPrice = liveItemRepository.findHotLiveItems(pageable);
+
+        List<Long> liveItemIds = beforeBidPrice.stream().map(LiveItemResponse::id).toList();
+
+        Set<Long> likedSet = Collections.emptySet();
+        if (userId != null && !liveItemIds.isEmpty()) {
+            likedSet = new HashSet<>(likeLiveRepository.findLikedLiveItemIds(userId, liveItemIds));
+        }
+
+        final Set<Long> finalLikedSet = likedSet;
 
         List<LiveItemResponse> dtoList = beforeBidPrice.stream()
                 .map(item -> {
@@ -445,13 +552,17 @@ public class LiveItemService {
                             ? Long.parseLong(maxBidPriceStr)
                             : item.currentPrice(); // DB 값 fallback
 
+                    boolean isLiked = finalLikedSet.contains(item.id());
+
+
                     return new LiveItemResponse(
                             item.id(),
                             item.name(),
                             item.image(),
                             item.startAt(),
                             item.auctionStatus(),
-                            currentMaxBidPrice
+                            currentMaxBidPrice,
+                            isLiked
                     );
                 })
                 .toList();
@@ -462,7 +573,7 @@ public class LiveItemService {
 
     @Transactional
     public void startAuction(Long itemId) {
-        LiveItem liveItem = liveItemRepository.findById(itemId)
+        LiveItem liveItem = liveItemRepository.findByIdWithLock(itemId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.LIVEITEM_NOT_FOUND));
 
         // 이미 시작했으면 무시
@@ -491,8 +602,7 @@ public class LiveItemService {
 
     @Transactional
     public void endAuction(Long itemId) {
-        // 대상 아이템 조회
-        LiveItem liveItem = liveItemRepository.findById(itemId)
+        LiveItem liveItem = liveItemRepository.findByIdWithLock(itemId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.LIVEITEM_NOT_FOUND));
 
         if (liveItem.getAuctionStatus() != AuctionStatus.IN_PROGRESS) {
@@ -500,65 +610,80 @@ public class LiveItemService {
             return;
         }
 
-        // Redis에서 최종 입찰자 정보 확인
         String redisKey = "liveItem:" + itemId;
-        String currentBidderId = liveBidRedisService.getHashField(redisKey, "currentBidderId");
+
+        // ending ZSET pop 레이스 방지, Redis endTime을 재검증해서 아직 시간이 남았으면 종료하지 않음
+        String endTimeStr = liveBidRedisService.getHashField(redisKey, "endTime");
+        if (endTimeStr != null && !endTimeStr.isBlank()) {
+            long endTimeMs = Long.parseLong(endTimeStr);
+            long nowMs = liveBidRedisService.getRedisNowMs();
+
+            if (nowMs < endTimeMs) {
+                // 아직 종료 시각이 안 됐는데 스케줄러가 먼저 pop 해버린 케이스 → 다시 등록하고 종료하지 않음
+                liveBidRedisService.upsertEndingZset(itemId, endTimeMs);
+                return;
+            }
+        }
+
+        String currentBidderIdStr = liveBidRedisService.getHashField(redisKey, "currentBidderId");
         String maxBidPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
 
-        if (currentBidderId == null || currentBidderId.isEmpty()) {
-            // 유찰 처리
+        if (currentBidderIdStr == null || currentBidderIdStr.isEmpty()) { // 유찰
             liveItem.changeAuctionStatus(AuctionStatus.FAILED);
             log.info("경매 유찰 처리 완료 - Item ID: {}", itemId);
-
-            // WebSocket 브로드캐스트
-            liveBidWebSocketService.broadcastAuctionEnd(
-                liveItem.getAuctionRoom().getId(),
-                itemId,
-                false,
-                null,
-                null
-            );
-
-            // SSE 개인 알림
-            eventPublisher.publishEvent(new LiveAuctionEndedEvent(
-                itemId,
-                liveItem.getName(),
-                liveItem.getSellerUserId(),
-                false,
-                null,
-                null
-            ));
-
-        } else {
-
-            // 낙찰 처리 -> 결제 대기 상태로 변경
-            Long winnerId = Long.parseLong(currentBidderId);
-            Integer finalPrice = Integer.parseInt(maxBidPriceStr);
+        } else { // 낙찰
             liveItem.changeAuctionStatus(AuctionStatus.PAYMENT_PENDING);
+            log.info("경매 낙찰 - Item ID: {}, winnerId={}, price={}",
+                    itemId, currentBidderIdStr, maxBidPriceStr);
 
-            // WebSocket 브로드캐스트
-            liveBidWebSocketService.broadcastAuctionEnd(
-                liveItem.getAuctionRoom().getId(),
-                itemId,
-                true,
-                winnerId,
-                finalPrice
-            );
+            Long currentBidderId = Long.parseLong(currentBidderIdStr);
+            Long maxBidPrice = Long.parseLong(maxBidPriceStr);
 
-            // SSE 개인 알림
-            eventPublisher.publishEvent(new LiveAuctionEndedEvent(
-                itemId,
-                liveItem.getName(),
-                liveItem.getSellerUserId(),
-                true,
-                winnerId,
-                finalPrice
-            ));
+            liveDealService.createDeal(itemId, currentBidderId, maxBidPrice);
 
-            // TODO: 낙찰자에게 알림 발송 및 주문/결제 데이터 생성 로직 호출 LiveDeal 도메인에 구현
+            Long winnerDeposit = null;
+            if (currentBidderIdStr != null && !currentBidderIdStr.isBlank()) {
+                String depositsKey = "liveItem:" + itemId + ":deposits";
+                Object depObj = redisTemplate.opsForHash().get(depositsKey, currentBidderIdStr);
 
-            log.info("경매 낙찰 성공 - Item ID: {}, Winner: {}, Price: {}", itemId, finalPrice, winnerId);
+                if (depObj != null) {
+                    winnerDeposit = Long.parseLong(depObj.toString());
+                }
+            }
+
+            User fromUser = userService.findById(currentBidderId);
+            User toUser = userService.findById(liveItem.getSellerUserId());
+            walletService.transferBizz(fromUser, toUser, winnerDeposit);
         }
+
+        Long nextItemId = liveItemRepository
+                .findNextItemIds(liveItem.getAuctionRoom().getId(), liveItem.getId(), PageRequest.of(0, 1))
+                .stream().findFirst().orElse(null);
+
+
+        // 마지막 아이템이면 AuctionRoom을 ENDED로 변경
+        AuctionRoom room = liveItem.getAuctionRoom();
+        if (nextItemId == null) {
+            // endLive()는 LIVE 상태에서만 가능하니 멱등 방어
+            if (room.getAuctionStatus() == AuctionRoom.AuctionStatus.LIVE) {
+                room.endLive(); // AuctionRoom.auctionStatus = ENDED
+            }
+        }
+
+        long nextStartAtMs = liveBidRedisService.getRedisNowMs() + 10_000L;
+
+        // 커밋 성공한 경우에만 Redis 작업
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                if (nextItemId != null) {
+                    liveBidRedisService.upsertStartingZset(nextItemId, nextStartAtMs);
+                }
+
+                // 정산 후에 키 삭제해야 depositsKey가 먼저 사라지는 사고를 방지
+                liveBidRedisService.deleteLiveItemRedisKeys(itemId);
+            }
+        });
     }
 
     /**
@@ -570,9 +695,8 @@ public class LiveItemService {
 
         Map<String, String> initData = new HashMap<>();
 
-        // 종료 시간 설정 (경매 시작 시간 + 5분) luaScript에서 읽을 수 있도록 UNIX Timestamp로 변환
-        long endTime = LocalDateTime.now().plusMinutes(5)
-                .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        // 종료 시간 설정 (경매 시작 시간 + 40초) luaScript에서 읽을 수 있도록 UNIX Timestamp로 변환
+        long endTime = liveBidRedisService.getRedisNowMs() + 40_000L;
 
         // 초기화
         initData.put("maxBidPrice", String.valueOf(liveItem.getInitPrice()));
@@ -580,5 +704,9 @@ public class LiveItemService {
         initData.put("endTime", String.valueOf(endTime));
 
         liveBidRedisService.setHash(redisKey, initData);
+        redisTemplate.expire(redisKey, Duration.ofMinutes(30));
+
+        liveBidRedisService.upsertEndingZset(liveItem.getId(), endTime);
     }
+
 }

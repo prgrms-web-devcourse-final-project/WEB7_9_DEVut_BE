@@ -8,7 +8,9 @@ import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,12 +22,11 @@ public class WalletHistoryService {
 
     // 로그 확인
     @Transactional(readOnly = true)
-    public Page<WalletHistory> getWalletHistories(User user, Pageable pageable) {
-        if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
-        }
+    public Page<WalletHistory> getWalletHistoriesPage(Long userId, int page) {
+        if (page < 1) page = 1;
+        Pageable pageable = PageRequest.of(page - 1, 10, Sort.by("createDate").descending());
 
-        return walletHistoryRepository.findByUserId(user.getId(), pageable);
+        return walletHistoryRepository.findByUserId(userId, pageable);
     }
 
     // 지갑 히스토리 기록

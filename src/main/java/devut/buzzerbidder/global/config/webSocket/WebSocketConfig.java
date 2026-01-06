@@ -17,12 +17,14 @@ import org.springframework.web.socket.config.annotation.*;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final StompHandler stompHandler;
+    private final HttpHandshakeInterceptor httpHandshakeInterceptor;
 
     // 최초 웹소켓 연결을 위한 엔드포인트 설정
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws") // ws://localhost:8080/ws
                 .setAllowedOriginPatterns("*")
+                .addInterceptors(httpHandshakeInterceptor)
                 .withSockJS();
     }
 
