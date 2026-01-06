@@ -35,6 +35,12 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Provider> providers = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DeliveryAddress> deliveryAddresses = new ArrayList<>();
+
+    @Column(nullable = true)
+    private Long defaultDeliveryAddressId;
+
     @Column(nullable = false)
     private Boolean deleted = false;
 
@@ -85,6 +91,10 @@ public class User extends BaseEntity {
 
     public void changeRole(UserRole role) {
         this.role = role;
+    }
+
+    public void setDefaultDeliveryAddressId(Long defaultDeliveryAddressId) {
+        this.defaultDeliveryAddressId = defaultDeliveryAddressId;
     }
 
     public enum UserRole {

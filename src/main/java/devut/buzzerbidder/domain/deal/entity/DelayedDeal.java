@@ -46,9 +46,30 @@ public class DelayedDeal extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Carrier carrier;
 
+    @Column(length = 500)
+    private String deliveryAddress;
+
+    @Column(length = 500)
+    private String deliveryAddressDetail;
+
+    @Column(length = 10)
+    private String deliveryPostalCode;
+
     public void updateDeliveryInfo(String carrierCode, String trackingNumber) {
         this.carrier = Carrier.fromCode(carrierCode);
         this.trackingNumber = trackingNumber;
+    }
+
+    public void updateDeliveryAddress(String address, String addressDetail, String postalCode) {
+        if (address != null && !address.isBlank()) {
+            this.deliveryAddress = address;
+        }
+        if (addressDetail != null && !addressDetail.isBlank()) {
+            this.deliveryAddressDetail = addressDetail;
+        }
+        if (postalCode != null && !postalCode.isBlank()) {
+            this.deliveryPostalCode = postalCode;
+        }
     }
 
     public void updateStatus(DealStatus status) {

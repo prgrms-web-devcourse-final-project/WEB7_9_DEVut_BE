@@ -5,6 +5,7 @@ import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
 import devut.buzzerbidder.domain.chat.dto.DirectMessageDto;
 import devut.buzzerbidder.domain.chat.dto.response.ChatListResponse;
 import devut.buzzerbidder.domain.chat.dto.response.ChatRoomDetailResponse;
+import devut.buzzerbidder.domain.chat.dto.response.DirectMessageEnterResponse;
 import devut.buzzerbidder.domain.chat.entity.ChatMessage;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
 import devut.buzzerbidder.domain.chat.entity.ChatRoomEntered;
@@ -168,7 +169,6 @@ public class ChatRoomService {
                 .collect(Collectors.toList());
     }
 
-    // TODO: 1대1 채팅 inActive 활용
     public void validateAuctionRoomEntry(Long auctionId) {
         AuctionRoom auctionRoom = auctionRoomRepository.findById(auctionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.AUCTION_ROOM_NOT_FOUND));
@@ -212,6 +212,7 @@ public class ChatRoomService {
 
                     return new ChatListResponse.ChatRoomItem(
                             room.getId(),
+                            room.getReferenceEntityId(),
                             otherUser.getNickname(),
                             otherUser.getProfileImageUrl(),
                             room.getLastMessageContent(),
@@ -263,6 +264,65 @@ public class ChatRoomService {
                 )).toList();
 
         return new ChatRoomDetailResponse(itemInfo, messageResponses);
+    }
+
+    /**
+     * itemId로 DM 채팅방 조회
+     * - 채팅방이 있으면: 상품 정보 + 메시지 목록 반환
+     * - 채팅방이 없으면: 상품 정보만 반환
+     */
+    @Transactional
+    public DirectMessageEnterResponse getDmChatRoomByItemId(Long itemId, User user) {
+        DelayedItem item = delayedItemRepository.findDelayedItemWithImagesById(itemId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+
+        // 판매자가 자신의 물건에 채팅 시도 시 예외처리
+        if (user.getId().equals(item.getSellerUserId())) {
+            throw new BusinessException(ErrorCode.SELF_CHAT_NOT_ALLOWED);
+        }
+
+        String firstImageUrl = item.getImages().isEmpty() ? null : item.getImages().getFirst().getImageUrl();
+
+        DirectMessageEnterResponse.ItemInfo itemInfo = new DirectMessageEnterResponse.ItemInfo(
+                item.getId(),
+                item.getName(),
+                item.getCurrentPrice(),
+                firstImageUrl,
+                item.getAuctionStatus().name()
+        );
+
+        // 기존 채팅방 조회
+        Optional<ChatRoom> existingRoom = chatRoomRepository.findDmRoomByItemAndUser(itemId, user.getId());
+
+        if (existingRoom.isEmpty()) {
+            // 채팅방이 없으면 상품 정보만 반환
+            return DirectMessageEnterResponse.notExists(itemInfo);
+        }
+
+        ChatRoom chatRoom = existingRoom.get();
+
+        // 채팅방 조회 시 읽음 상태 업데이트
+        chatRoomEnteredRepository.findByUserAndChatRoom(user, chatRoom)
+                .ifPresent(entry -> {
+                    if (chatRoom.getLastMessageId() != null) {
+                        entry.updateReadStatus(chatRoom.getLastMessageId());
+                    }
+                });
+
+        // 메시지 내역 조회
+        List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomOrderByCreateDateAsc(chatRoom);
+
+        List<DirectMessageDto> messageResponses = chatMessages.stream()
+                .map(m -> new DirectMessageDto(
+                        m.getId(),
+                        m.getSender().getId(),
+                        m.getSender().getProfileImageUrl(),
+                        m.getSender().getNickname(),
+                        m.getMessage(),
+                        m.getCreateDate()
+                )).toList();
+
+        return DirectMessageEnterResponse.exists(chatRoom.getId(), itemInfo, messageResponses);
     }
 }
 

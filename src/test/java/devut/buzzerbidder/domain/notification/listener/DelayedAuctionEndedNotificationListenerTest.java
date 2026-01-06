@@ -2,9 +2,9 @@ package devut.buzzerbidder.domain.notification.listener;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -138,7 +138,7 @@ public class DelayedAuctionEndedNotificationListenerTest {
             contains("유찰되었습니다"),
             eq("DELAYED_ITEM"),
             eq(delayedItemId),
-            isNull()
+            anyMap()
         );
     }
 

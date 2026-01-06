@@ -3,6 +3,8 @@ package devut.buzzerbidder.global.image;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,11 +24,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.Delete;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
-import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -35,10 +32,10 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 class ImageServiceTest {
 
     @Mock
-    private S3Client s3Client;
+    private S3Presigner s3Presigner;
 
     @Mock
-    private S3Presigner s3Presigner;
+    private S3DeleteService s3DeleteService;
 
     @InjectMocks
     private ImageService imageService;
@@ -118,7 +115,7 @@ class ImageServiceTest {
         imageService.deleteFile(fileUrl);
 
         // then
-        verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
+        verify(s3DeleteService).deleteObject(anyString(), anyString());
     }
 
     @Test
@@ -184,7 +181,7 @@ class ImageServiceTest {
         imageService.deleteFiles(fileUrls);
 
         // then
-        verify(s3Client).deleteObjects(any(DeleteObjectsRequest.class));
+        verify(s3DeleteService).deleteObjects(anyString(), anyList());
     }
 
     @Test
@@ -197,7 +194,8 @@ class ImageServiceTest {
         imageService.deleteFiles(emptyList);
 
         // then
-        verify(s3Client, never()).deleteObjects(any(DeleteObjectsRequest.class));
+        verify(s3DeleteService, never()).deleteObjects(anyString(), anyList());
+        verify(s3DeleteService, never()).deleteObject(anyString(), anyString());
     }
 
     @Test
@@ -210,7 +208,8 @@ class ImageServiceTest {
         imageService.deleteFiles(nullList);
 
         // then
-        verify(s3Client, never()).deleteObjects(any(DeleteObjectsRequest.class));
+        verify(s3DeleteService, never()).deleteObjects(anyString(), anyList());
+        verify(s3DeleteService, never()).deleteObject(anyString(), anyString());
     }
 
     @Test

@@ -100,9 +100,11 @@ public class DelayedItemController {
     @GetMapping("/hot")
     @Operation(summary = "인기 지연 경매 조회")
     public ApiResponse<DelayedItemListResponse> getHotDelayedItems(
-        @RequestParam(defaultValue = "4") int limit
+        @RequestParam(defaultValue = "10") int limit,
+        @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        DelayedItemListResponse response = delayedItemService.getHotDelayedItems(limit);
+        Long userId = userDetails != null ? userDetails.getUser().getId() : null;
+        DelayedItemListResponse response = delayedItemService.getHotDelayedItems(limit, userId);
 
         return ApiResponse.ok("인기 지연 경매 조회", response);
     }
@@ -110,9 +112,11 @@ public class DelayedItemController {
     @GetMapping("/most-bidded")
     @Operation(summary = "입찰 경쟁 지연 경매 조회")
     public ApiResponse<DelayedItemListResponse> getMostBiddedDelayedItems(
-        @RequestParam(defaultValue = "4") int limit
+        @RequestParam(defaultValue = "10") int limit,
+        @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        DelayedItemListResponse response = delayedItemService.getMostBiddedDelayedItems(limit);
+        Long userId = userDetails != null ? userDetails.getUser().getId() : null;
+        DelayedItemListResponse response = delayedItemService.getMostBiddedDelayedItems(limit, userId);
 
         return ApiResponse.ok("입찰 경쟁 지연 경매 조회", response);
     }

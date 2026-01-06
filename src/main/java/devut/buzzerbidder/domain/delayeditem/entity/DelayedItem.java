@@ -65,6 +65,9 @@ public class DelayedItem extends BaseEntity {
     @Column(nullable = true)
     private Long buyNowPrice;
 
+    @Column(name = "current_bidder_user_id", nullable = true)
+    private Long currentBidderUserId;
+
     // 시간 정보
     @Column(name = "end_time", nullable = false)
     @NotNull
@@ -145,6 +148,11 @@ public class DelayedItem extends BaseEntity {
     // 비즈니스 메서드
     public void updateCurrentPrice(Long newPrice) {
         this.currentPrice = newPrice;
+    }
+
+    public void updateCurrentPriceAndBidder(Long newPrice, Long bidderUserId) {
+        this.currentPrice = newPrice;
+        this.currentBidderUserId = bidderUserId;
     }
 
     public void changeAuctionStatus(AuctionStatus newStatus) {
