@@ -70,9 +70,9 @@ public class LiveItemService {
     private final LiveBidRedisService  liveBidRedisService;
     private final LikeLiveRepository likeLiveRepository;
     private final ApplicationEventPublisher eventPublisher;
-
-    private final RedisTemplate<String, String> redisTemplate;
     private final LiveItemWebSocketService liveItemWebSocketService;
+    private final RedisTemplate<String, String> redisTemplate;
+
 
     @Timed(
             value = "buzzerbidder.redis.liveitem",
@@ -598,7 +598,6 @@ public class LiveItemService {
         try {
             initLiveItem(liveItem);
 
-            long endTimeMs = liveBidRedisService.getRedisNowMs() + 40_000L;
             liveItemWebSocketService.broadcastAuctionStart(
                 liveItem.getAuctionRoom().getId(),
                 liveItem.getId(),
