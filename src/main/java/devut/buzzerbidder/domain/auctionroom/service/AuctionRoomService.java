@@ -16,6 +16,7 @@ import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.RoomStatus;
 import devut.buzzerbidder.domain.auctionroom.entity.RoomCountByStartAtRow;
 import devut.buzzerbidder.domain.auctionroom.event.AuctionRoomStartedEvent;
 import devut.buzzerbidder.domain.auctionroom.repository.AuctionRoomRepository;
+import devut.buzzerbidder.domain.likelive.repository.LikeLiveRepository;
 import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
@@ -25,9 +26,12 @@ import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -42,6 +46,7 @@ public class AuctionRoomService {
     private final LiveBidRedisService liveBidRedisService;
     private final ApplicationEventPublisher eventPublisher;
     private final LiveItemRepository liveItemRepository;
+    private final LikeLiveRepository likeLiveRepository;
 
     public AuctionRoom assignRoom(LocalDateTime liveTime, long roomIndex) {
 
@@ -135,9 +140,21 @@ public class AuctionRoomService {
     }
 
     @Transactional(readOnly = true)
-    public AuctionRoomListResponse getAuctionRooms(LocalDateTime targetTime) {
+    public AuctionRoomListResponse getAuctionRooms(LocalDateTime targetTime, Long userId) {
 
         List<AuctionRoom> rooms = auctionRoomRepository.findRoomsWithItemsByLiveTime(targetTime);
+
+        // ========== 찜 여부 조회 준비 ==========
+        List<Long> liveItemIds = rooms.stream()
+            .flatMap(room -> room.getLiveItems().stream())
+            .map(LiveItem::getId)
+            .toList();
+
+        Set<Long> likedSet = Collections.emptySet();
+        if (userId != null && !liveItemIds.isEmpty()) {
+            likedSet = new HashSet<>(likeLiveRepository.findLikedLiveItemIds(userId, liveItemIds));
+        }
+        final Set<Long> finalLikedSet = likedSet;
 
         List<AuctionRoomDto> response = rooms.stream()
             .map(room -> {
@@ -151,11 +168,14 @@ public class AuctionRoomService {
                             ? Long.parseLong(maxBidPriceStr)
                             : item.getInitPrice();
 
+                        boolean isLiked = finalLikedSet.contains(item.getId());
+
                         return new LiveItemDto(
                             item.getId(),
                             item.getName(),              // title로 내려줄 값
                             currentMaxBidPrice,         // amount로 내려줄 값(원하면 currentPrice 등으로 교체)
-                            item.getThumbnail()          // thumbnail 컬럼
+                            item.getThumbnail(),          // thumbnail 컬럼
+                            isLiked
                         );
                     })
                     .toList();
