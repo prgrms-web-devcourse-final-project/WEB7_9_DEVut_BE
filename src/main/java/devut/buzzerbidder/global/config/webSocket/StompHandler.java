@@ -3,8 +3,6 @@ package devut.buzzerbidder.global.config.webSocket;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.domain.user.service.AuthTokenService;
-import devut.buzzerbidder.global.exeption.BusinessException;
-import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.security.CustomUserDetails;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -44,33 +42,34 @@ public class StompHandler implements ChannelInterceptor {
             }
 
             // 헤더에 없으면 세션 속성(쿠키)에서 토큰 찾기
-            if (jwt == null) {
+            if (jwt == null && accessor.getSessionAttributes() != null) {
                 Object tokenAttribute = accessor.getSessionAttributes().get("ACCESS_TOKEN");
                 if (tokenAttribute != null) {
                     jwt = tokenAttribute.toString();
-
-                    // 쿠키 값에 'Bearer '가 인코딩 되어 들어있다면 제거 로직 필요
-                    // 보통 쿠키에는 값만 넣으므로 그냥 쓰면 됩니다.
                 }
             }
 
+            // 토큰이 없으면 익명 사용자로 연결 허용 (경매방 구경 가능)
             if (jwt == null) {
-                throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+                log.info("STOMP CONNECT: Anonymous user connected (no token provided)");
+                return message;
             }
 
             // 토큰 검증 및 Payload 추출
             Map<String, Object> payload = authTokenService.payloadOrNull(jwt);
 
             if (payload == null) {
-                log.warn("STOMP CONNECT: JWT payload is null for token: {}", jwt);
-                throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+                return message;
             }
 
             // Payload에서 사용자 ID 추출
             Long userId = (Long) payload.get("id");
 
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+            User user = userRepository.findById(userId).orElse(null);
+
+            if (user == null) {
+                return message;
+            }
 
             CustomUserDetails userDetails = new CustomUserDetails(user);
 
