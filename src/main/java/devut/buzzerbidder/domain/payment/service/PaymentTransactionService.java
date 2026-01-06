@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class PaymentTransactionService {
@@ -21,6 +23,7 @@ public class PaymentTransactionService {
     private final UserRepository userRepository;
     private final WalletService walletService;
 
+    // 결제 승인 요청 시, 동시 요청 방지
     @Transactional
     public void markLocked(String orderId, Long amount) {
         Payment payment = paymentRepository.findByOrderIdForLock((orderId))
@@ -40,6 +43,7 @@ public class PaymentTransactionService {
         paymentRepository.save(payment);
     }
 
+    // 승인 요청 성공 시, 지갑 충전
     @Transactional
     public Payment confirmAndChargeWallet(Long userId, String orderId, String paymentKey, TossConfirmResponseDto response, Long amount) {
         Payment payment = paymentRepository.findByOrderIdForLock(orderId)
@@ -61,21 +65,22 @@ public class PaymentTransactionService {
         return payment;
     }
 
+    // 취소 요청 성공 시, CANCELED 상태 변경
     @Transactional
     public void markCanceled(String orderId, String code, String msg) {
         paymentRepository.findByOrderIdForLock(orderId)
-                .ifPresent(payment -> payment.cancel(code, msg));
+                .ifPresent(payment -> payment.canceled(code, msg));
     }
 
+    // 취소 요청 실패 시, CANCELED_PENDING 상태 변경 및 유지
     @Transactional
-    public void markCancelFailed(String orderId, String code, String msg) {
+    public void markCancelPending(String paymentKey, String orderId, String code, String msg, OffsetDateTime nextRetryAt) {
         paymentRepository.findByOrderIdForLock(orderId)
-                .ifPresent(payment -> payment.cancelFailed(code, msg));
-    }
-
-    @Transactional
-    public void markFailed(String orderId, String code, String msg) {
-        paymentRepository.findByOrderIdForLock(orderId)
-                .ifPresent(payment -> payment.fail(code, msg));
+                .ifPresent(payment -> {
+                    if (payment.getPaymentKey() == null || payment.getPaymentKey().isBlank()) {
+                        payment.setPaymentKey(paymentKey);
+                    }
+                        payment.cancelPending(code, msg, nextRetryAt);
+                });
     }
 }

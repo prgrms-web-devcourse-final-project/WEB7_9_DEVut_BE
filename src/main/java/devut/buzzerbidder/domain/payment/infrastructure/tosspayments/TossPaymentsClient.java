@@ -50,7 +50,6 @@ public class TossPaymentsClient {
     }
 
     public void cancelPayment(String paymentKey, PaymentCancelRequestDto requestDto) {
-
         String encodedSecretKey = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
 
         HttpHeaders headers = new HttpHeaders();

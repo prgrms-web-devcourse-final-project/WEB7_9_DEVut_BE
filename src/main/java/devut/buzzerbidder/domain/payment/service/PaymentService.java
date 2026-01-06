@@ -67,17 +67,19 @@ public class PaymentService {
         }
 
         try {
+            // 승인 요청 성공 시, 지갑 충전
             Payment payment = paymentTransactionService.confirmAndChargeWallet(userId, orderId, paymentKey, response, amount);
             return PaymentConfirmResponseDto.from(payment);
 
         } catch (Exception e) {
-            try {
             PaymentCancelRequestDto cancelRequest = new PaymentCancelRequestDto("결제 승인 후 내부 처리 실패로 인한 취소");
-            tossPaymentsClient.cancelPayment(paymentKey, cancelRequest);
-            paymentTransactionService.markCanceled(orderId, "INTERNAL_FAIL", cancelRequest.cancelReason());
-
+            try {
+                // DB 충전 중 오류 발생 시, 결제 취소 요청
+                tossPaymentsClient.cancelPayment(paymentKey, cancelRequest);
+                paymentTransactionService.markCanceled(orderId, "INTERNAL_FAIL", cancelRequest.cancelReason());
             } catch (Exception ex) {
-                paymentTransactionService.markCancelFailed(orderId, "CANCEL_FAIL", "결제 취소 실패");
+                // 취소 실패 시, CANCEL_PENDING 상태 유지(스케줄러로 재시도 최대 3번)
+                paymentTransactionService.markCancelPending(paymentKey, orderId, "CANCEL_FAIL", "결제 취소 실패", OffsetDateTime.now());
             }
                 throw new BusinessException(ErrorCode.INTERNAL_PAYMENT_ERROR);
         }

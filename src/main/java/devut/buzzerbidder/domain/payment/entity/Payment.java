@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -43,7 +44,12 @@ public class Payment extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private PaymentMethod method;
 
+    @Column(nullable = false)
+    private int cancelRetryCount;
+
     private OffsetDateTime approvedAt;
+    private OffsetDateTime nextCancelRetryAt;
+    private OffsetDateTime lastCancelTriedAt;
 
     public Payment(User user, String orderId, String orderName, Long amount) {
         this.user = user;
@@ -73,8 +79,8 @@ public class Payment extends BaseEntity {
         this.status = PaymentStatus.FAILED;
     }
 
-    // 결제 승인 후, 내부 처리 실패
-    public void cancel(
+    // 취소 요청 성공 시, 취소 완료 상태 변경
+    public void canceled(
             String code,
             String msg
     ) {
@@ -83,14 +89,33 @@ public class Payment extends BaseEntity {
         this.status = PaymentStatus.CANCELED;
     }
 
-    // 결제 취소 요청 실패
-    public void cancelFailed(
+    // 결제 취소 요청 싪패 시, 진행중으로 상태 변경
+    public void cancelPending(
+            String code,
+            String msg,
+            OffsetDateTime nextRetryAt
+    ) {
+        this.failCode = code;
+        this.failReason = msg;
+        this.status = PaymentStatus.CANCEL_PENDING;
+        this.nextCancelRetryAt = nextRetryAt;
+    }
+
+    // 결제 취소 요청 싪패 시, 진행중으로 상태 변경
+    public void failAfterThreeRetry(
             String code,
             String msg
     ) {
         this.failCode = code;
         this.failReason = msg;
         this.status = PaymentStatus.CANCEL_FAILED;
+    }
+
+    public void increaseCancelRetryCount(
+            OffsetDateTime nextRetryAt
+    ) {
+        this.cancelRetryCount += 1;
+        this.nextCancelRetryAt = nextRetryAt;
     }
 
     public void markLocked() {
