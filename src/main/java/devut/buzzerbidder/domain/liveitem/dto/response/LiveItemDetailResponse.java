@@ -23,7 +23,8 @@ public record LiveItemDetailResponse(
     Long likeCount,
     Long initPrice,
     Long currentPrice,
-    Boolean isLiked
+    Boolean isLiked,
+    Long auctionRoomId
 ) {
 
 }
