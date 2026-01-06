@@ -71,12 +71,11 @@ public class LiveBidRedisService {
         return nowMs;
     }
 
-
     /**
      * liveItem:{liveItemId} 해시에서 endTime(ms epoch)을 가져옵니다.
      * - 없으면 null 반환 (아직 initLiveItem 안 됐거나 키가 삭제된 상태)
      */
-    public Long getLiveItemEndTimeMs(Long liveItemId) {
+    public Long getCurrentItemEndTimeMs(Long liveItemId) {
         String liveKey = "liveItem:" + liveItemId;
 
         Object v = redisTemplate.opsForHash().get(liveKey, "endTime");
@@ -100,14 +99,44 @@ public class LiveBidRedisService {
      * - endTime 없으면 null
      * - 이미 지났으면 0 반환
      */
-    public Long getRemainingMs(Long liveItemId) {
-        Long endTimeMs = getLiveItemEndTimeMs(liveItemId);
+    public Long getCurrentItemRemainingMs(Long liveItemId) {
+        Long endTimeMs = getCurrentItemEndTimeMs(liveItemId);
         if (endTimeMs == null) return null;
 
         long nowMs = getRedisNowMs();
         long remaining = endTimeMs - nowMs;
         return Math.max(0L, remaining);
     }
+
+    /**
+     * auction:live:starting(ZSET)에서 liveItemId의 시작 예정 시각을 조회합니다.
+     */
+    public Long getStartingAtMs(Long liveItemId) {
+        Double score = redisTemplate.opsForZSet()
+                .score(getStartingZsetKey(), liveItemId.toString());
+
+        if (score == null) return null;
+
+        // Redis ZSET score는 Double로 오므로 ms 단위 long으로 변환
+        return score.longValue();
+    }
+
+    /**
+     * 다음 시작까지 남은 시간(ms)
+     * - starting score 없으면 null
+     * - 이미 시작 시각이 지났으면 null
+     */
+    public Long getRemainingToStartMs(Long liveItemId) {
+        Long startAtMs = getStartingAtMs(liveItemId);
+        if (startAtMs == null) return null;
+
+        long nowMs = getRedisNowMs();
+        long remaining = startAtMs - nowMs;
+
+        if (remaining <= 0L) return null;
+        return remaining;
+    }
+
 
     // 현재 최고가보다 높을 경우에만 갱신 (원자성 보장)
     // KEYS[1]: redisKey
