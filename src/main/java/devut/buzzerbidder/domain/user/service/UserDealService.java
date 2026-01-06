@@ -59,23 +59,29 @@ public class UserDealService {
         if (type == AuctionType.LIVE) {
             LiveDeal liveDeal = liveDealRepository.findByIdWithItemAndImages(dealId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
-            
-            // 구매자 검증
-            if (!liveDeal.getBuyer().getId().equals(user.getId())) {
+
+            boolean isBuyer = liveDeal.getBuyer().getId().equals(user.getId());
+            boolean isSeller = liveDeal.getItem().getSellerUserId().equals(user.getId());
+
+            // 구매자 or 판매자 검증
+            if (!isBuyer && !isSeller) {
                 throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
             }
             
-            return UserDealResponse.fromLiveDeal(liveDeal);
+            return UserDealResponse.fromLiveDeal(liveDeal, isBuyer);
         } else if (type == AuctionType.DELAYED) {
             DelayedDeal delayedDeal = delayedDealRepository.findByIdWithItemAndImages(dealId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
-            
-            // 구매자 검증
-            if (!delayedDeal.getBuyer().getId().equals(user.getId())) {
+
+            boolean isBuyer = delayedDeal.getBuyer().getId().equals(user.getId());
+            boolean isSeller = delayedDeal.getItem().getSellerUserId().equals(user.getId());
+
+            // 구매자 or 판매자 검증
+            if (!isBuyer && !isSeller) {
                 throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
             }
             
-            return UserDealResponse.fromDelayedDeal(delayedDeal);
+            return UserDealResponse.fromDelayedDeal(delayedDeal, isBuyer);
         } else {
             throw new BusinessException(ErrorCode.DEAL_INVALID_TYPE);
         }
