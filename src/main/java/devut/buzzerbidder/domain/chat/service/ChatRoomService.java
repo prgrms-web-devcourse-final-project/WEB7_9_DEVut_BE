@@ -262,6 +262,14 @@ public class ChatRoomService {
         // 메시지 내역 조회 (ChatMessageRepository에 별도 쿼리 필요)
         List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomOrderByCreateDateAsc(chatRoom);
 
+        // 채팅방 조회 시 읽음 상태 업데이트
+        chatRoomEnteredRepository.findByUserAndChatRoom(user, chatRoom)
+                .ifPresent(entry -> {
+                    if (chatRoom.getLastMessageId() != null) {
+                        entry.updateReadStatus(chatRoom.getLastMessageId());
+                    }
+                });
+
         List<DirectMessageDto> messageResponses = chatMessages.stream()
                 .map(m -> new DirectMessageDto(
                         m.getId(),
