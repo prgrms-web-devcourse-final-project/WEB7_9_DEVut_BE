@@ -193,8 +193,10 @@ public class UserService {
 
         // 배송지 처리
         DeliveryAddress deliveryAddress;
-        if (request.address() != null && request.addressDetail() != null && request.postalCode() != null) {
-            deliveryAddress = updateOrCreateDeliveryAddress(updatedUser, request.address(), request.addressDetail(), request.postalCode());
+        if (request.address() != null && request.addressDetail() != null) {
+            // postalCode가 null이면 빈 문자열로 처리
+            String postalCode = request.postalCode() != null ? request.postalCode() : "";
+            deliveryAddress = updateOrCreateDeliveryAddress(updatedUser, request.address(), request.addressDetail(), postalCode);
         } else {
             deliveryAddress = findDefaultDeliveryAddress(updatedUser);
         }
