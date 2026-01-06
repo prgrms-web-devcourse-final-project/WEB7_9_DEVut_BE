@@ -30,7 +30,6 @@ public class LiveBidWebSocketService {
         // 구독자들에게 메시지 전송
         messagingTemplate.convertAndSend(destination, update);
     }
-
 }
 
 

@@ -20,6 +20,7 @@ import devut.buzzerbidder.domain.liveitem.dto.response.RoomDto;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
+import devut.buzzerbidder.domain.liveitem.event.LiveAuctionEndedEvent;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.UserService;
@@ -37,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -69,8 +71,10 @@ public class LiveItemService {
     private final TransactionTemplate transactionTemplate;
     private final LiveBidRedisService  liveBidRedisService;
     private final LikeLiveRepository likeLiveRepository;
-
+    private final ApplicationEventPublisher eventPublisher;
+    private final LiveItemWebSocketService liveItemWebSocketService;
     private final RedisTemplate<String, String> redisTemplate;
+
 
     @Timed(
             value = "buzzerbidder.redis.liveitem",
@@ -594,6 +598,13 @@ public class LiveItemService {
         // 4. Redis 초기화
         try {
             initLiveItem(liveItem);
+
+            liveItemWebSocketService.broadcastAuctionStart(
+                liveItem.getAuctionRoom().getId(),
+                liveItem.getId(),
+                liveItem.getName(),
+                liveItem.getInitPrice().intValue()
+            );
         } catch (Exception e) {
             // Redis 실패 시 강제 예외 발생 -> DB 롤백 유도
             log.error("Redis 초기화 실패. Transaction Rollback. ItemId: {}", itemId, e);
@@ -664,6 +675,30 @@ public class LiveItemService {
             User toUser = userService.findById(liveItem.getSellerUserId());
             walletService.transferBizz(fromUser, toUser, winnerDeposit);
         }
+
+        boolean success = currentBidderIdStr != null && !currentBidderIdStr.isEmpty();
+        Long winnerId = success ? Long.parseLong(currentBidderIdStr) : null;
+        Integer finalPrice = success ? Integer.parseInt(maxBidPriceStr) : liveItem.getInitPrice().intValue();
+
+        eventPublisher.publishEvent(
+            new LiveAuctionEndedEvent(
+                liveItem.getId(),
+                liveItem.getName(),
+                liveItem.getSellerUserId(),
+                success,
+                winnerId,
+                finalPrice
+            )
+        );
+
+        liveItemWebSocketService.broadcastAuctionEnd(
+            liveItem.getAuctionRoom().getId(),
+            liveItem.getId(),
+            liveItem.getName(),
+            success,
+            winnerId,
+            finalPrice
+        );
 
         Long nextItemId = liveItemRepository
                 .findNextItemIds(liveItem.getAuctionRoom().getId(), liveItem.getId(), PageRequest.of(0, 1))
