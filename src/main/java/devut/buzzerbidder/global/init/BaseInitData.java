@@ -83,6 +83,7 @@ public class BaseInitData {
         if (userRepository.count() > 0) {
             return;
         }
+        // 첫 번째 유저 생성
         String email = "new@user.com";
         String password = "asdf1234!";
         String nickname = "gildong";
@@ -97,6 +98,22 @@ public class BaseInitData {
         String verifiedKey = "verified_email:" + email;
         redisTemplate.opsForValue().set(verifiedKey, "verified", 10, TimeUnit.SECONDS);
         userService.signUp(signUpRequest);
+
+        // 두 번째 유저 생성 (다른 사람 글 작성용)
+        String email2 = "other@user.com";
+        String password2 = "asdf1234!";
+        String nickname2 = "otheruser";
+
+        EmailSignUpRequest signUpRequest2 = new EmailSignUpRequest(
+                email2,
+                password2,
+                nickname2,
+                null
+        );
+
+        String verifiedKey2 = "verified_email:" + email2;
+        redisTemplate.opsForValue().set(verifiedKey2, "verified", 10, TimeUnit.SECONDS);
+        userService.signUp(signUpRequest2);
     }
 
     @Transactional
@@ -134,7 +151,7 @@ public class BaseInitData {
                 .deliveryInclude(false)
                 .itemStatus(LiveItem.ItemStatus.NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
-                .liveTime(LocalDateTime.of(2025, 12, 31, 21, 20, 0))
+                .liveTime(LocalDateTime.now().plusMinutes(10))
                 .directDealAvailable(true)
                 .region("서울시 강남구 역삼동")
                 .preferredPlace("역삼역 근처 카페")
@@ -235,7 +252,7 @@ public class BaseInitData {
                 .deliveryInclude(true)
                 .itemStatus(LiveItem.ItemStatus.USED_LIKE_NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
-                .liveTime(LocalDateTime.of(2025, 12, 15, 14, 0, 0))
+                .liveTime(LocalDateTime.now().plusMinutes(10))
                 .directDealAvailable(false)
                 .region("서울시 강남구")
                 .preferredPlace(null)
@@ -259,7 +276,7 @@ public class BaseInitData {
                 .description("내가 직접 등록한 지연 경매 상품입니다.")
                 .startPrice(200000L)
                 .currentPrice(200000L)
-                .endTime(LocalDateTime.of(2025, 12, 20, 23, 59, 59))
+                .endTime(LocalDateTime.now().plusMinutes(10))
                 .itemStatus(DelayedItem.ItemStatus.NEW)
                 .auctionStatus(DelayedItem.AuctionStatus.BEFORE_BIDDING)
                 .deliveryInclude(true)
@@ -281,11 +298,14 @@ public class BaseInitData {
         }
 
         User user = userRepository.findById(1L).orElseThrow();
+        // 두 번째 유저 조회 (다른 사람 글 작성용)
+        User otherUser = userRepository.findByEmail("other@user.com")
+                .orElseThrow(() -> new RuntimeException("다른 사용자를 찾을 수 없습니다. userInitData가 먼저 실행되어야 합니다."));
 
         // 다른 사용자가 작성한 LiveItem 생성 후 좋아요 추가
         List<LiveItemImage> likedLiveImages = new ArrayList<>();
         LiveItem likedLiveItem = LiveItem.builder()
-                .sellerUserId(999L) // 다른 사용자 ID (실제로는 존재하지 않지만 테스트용)
+                .sellerUserId(otherUser.getId())
                 .name("다른 사용자가 작성한 라이브 경매 상품")
                 .category(LiveItem.Category.ART)
                 .description("이 상품을 좋아요 했습니다.")
@@ -293,7 +313,7 @@ public class BaseInitData {
                 .deliveryInclude(true)
                 .itemStatus(LiveItem.ItemStatus.NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
-                .liveTime(LocalDateTime.of(2025, 12, 18, 16, 30, 0))
+                .liveTime(LocalDateTime.now().plusMinutes(10))
                 .directDealAvailable(false)
                 .region("서울시 종로구")
                 .preferredPlace(null)
@@ -314,13 +334,13 @@ public class BaseInitData {
         // 다른 사용자가 작성한 DelayedItem 생성 후 좋아요 추가
         List<DelayedItemImage> likedDelayedImages = new ArrayList<>();
         DelayedItem likedDelayedItem = DelayedItem.builder()
-                .sellerUserId(999L) // 다른 사용자 ID (실제로는 존재하지 않지만 테스트용)
+                .sellerUserId(otherUser.getId())
                 .name("다른 사용자가 작성한 지연 경매 상품")
                 .category(DelayedItem.Category.SPORTS)
                 .description("이 상품을 좋아요 했습니다.")
                 .startPrice(150000L)
                 .currentPrice(150000L)
-                .endTime(LocalDateTime.of(2025, 12, 25, 23, 59, 59))
+                .endTime(LocalDateTime.now().plusMinutes(10))
                 .itemStatus(DelayedItem.ItemStatus.USED_LIKE_NEW)
                 .auctionStatus(DelayedItem.AuctionStatus.BEFORE_BIDDING)
                 .deliveryInclude(false)
