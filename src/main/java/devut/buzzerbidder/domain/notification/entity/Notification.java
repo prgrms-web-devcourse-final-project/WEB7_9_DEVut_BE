@@ -20,6 +20,10 @@ import lombok.NoArgsConstructor;
         @Index(
             name = "idx_notification_user_check_date",
             columnList = "user_id, is_checked, create_date DESC"
+        ),
+        @Index(
+            name = "idx_notification_reminder_check",
+            columnList = "user_id, type, resource_id"
         )
     })
 @Getter

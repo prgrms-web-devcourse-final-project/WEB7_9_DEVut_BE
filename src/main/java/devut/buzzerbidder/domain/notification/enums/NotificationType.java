@@ -13,10 +13,8 @@ public enum NotificationType {
     LIVE_SUCCESS_BIDDER,            // 라이브 경매 낙찰자에게 낙찰 알림
     LIVE_SUCCESS_SELLER,            // 라이브 경매 판매자에게 낙찰 알림
     LIVE_FAILED_SELLER,             // 라이브 경매 판매자에게 유찰 알림
+    PAYMENT_REMINDER,               // 잔금 리마인더 알림
+    PAYMENT_COMPLETE,               // 결제 완료
     ITEM_SHIPPED,                   // 상품 배송 시작
     TRANSACTION_COMPLETE,           // 거래 완료
-
-
-    PAYMENT_COMPLETE,               // 결제 완료
-    PAYMENT_REMINDER                // 잔금 리마인더 알림
 }
