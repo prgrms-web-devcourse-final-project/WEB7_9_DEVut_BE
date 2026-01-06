@@ -1,20 +1,19 @@
 package devut.buzzerbidder.domain.liveBid.service;
 
+import devut.buzzerbidder.domain.liveBid.dto.BidAtomicResult;
 import devut.buzzerbidder.domain.liveBid.dto.LiveBidEvent;
 import devut.buzzerbidder.domain.liveBid.dto.request.LiveBidRequest;
 import devut.buzzerbidder.domain.liveBid.dto.response.LiveBidResponse;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.wallet.enums.WalletTransactionType;
+import devut.buzzerbidder.domain.wallet.service.WalletHistoryService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +23,7 @@ public class LiveBidService {
     private final LiveItemRepository liveItemRepository;
     private final LiveBidRedisService liveBidRedisService;
     private final LiveBidWebSocketService liveBidWebSocketService;
-    private final KafkaTemplate<String, LiveBidEvent> kafkaTemplate;
+    private final WalletHistoryService walletHistoryService;
 
     private static final String REDIS_KEY_PREFIX = "liveItem:";
     private static final String BID_TOPIC = "live-bid-events";
@@ -45,7 +44,7 @@ public class LiveBidService {
         long balanceTtlSeconds = 600L;
 
         // redis 입찰가 갱신 시도
-        Long result = liveBidRedisService.updateMaxBidPriceAtomicWithDeposit(
+        BidAtomicResult result = liveBidRedisService.updateMaxBidPriceAtomicWithDeposit(
                 redisKey,
                 request.liveItemId(),
                 bidder.getId(),
@@ -56,7 +55,7 @@ public class LiveBidService {
         );
 
         // 입찰 시도 결과에 따른 분기 처리
-        return handleBidResult(result, request, bidder, liveItem.getSellerUserId(), redisKey);
+        return handleBidResult(result, request, bidder, liveItem.getSellerUserId(), redisKey, depositAmount);
     }
 
     /**
@@ -80,30 +79,54 @@ public class LiveBidService {
      * 입찰 결과 분기 처리
      * @return result 값이 1인 경우 입찰 성공, -1 또는 0인 경우 입찰 실패
      */
-    private LiveBidResponse handleBidResult(Long result, LiveBidRequest request, User bidder, Long sellerId, String redisKey) {
+    private LiveBidResponse handleBidResult(
+            BidAtomicResult result,
+            LiveBidRequest request,
+            User bidder,
+            Long sellerId,
+            String redisKey,
+            long depositAmount
+    ) {
         if (result == null) {
             throw new BusinessException(ErrorCode.UNEXPECTED_REDIS_SCRIPT_RETURN);
         }
 
-        if (result == 1L) {
+        long code = result.code();
+
+        if (code == 1L) {
+            Long balanceBefore = result.balanceBefore();
+            Long balanceAfter = result.balanceAfter();
+            if (balanceBefore == null || balanceAfter == null) {
+                throw new BusinessException(ErrorCode.UNEXPECTED_REDIS_SCRIPT_RETURN);
+            }
+
             processSuccessfulBid(request, bidder, sellerId);
+
+            walletHistoryService.recordWalletHistory(
+                    bidder,
+                    depositAmount,
+                    WalletTransactionType.BID,
+                    balanceBefore,
+                    balanceAfter
+            );
+
             return new LiveBidResponse(true, "입찰 성공.", request.bidPrice());
         }
 
-        if (result == -1L) {
+        if (code == -1L) {
             // 본인이 이미 최고입찰자인 경우 입찰 실패
             throw new BusinessException(ErrorCode.LIVEBID_ALREADY_HIGHEST_BIDDER);
         }
 
-        if (result == -2L) {
+        if (code == -2L) {
             throw new BusinessException(ErrorCode.BIZZ_INSUFFICIENT_BALANCE);
         }
 
-        if (result == -3L) {
+        if (code == -3L) {
             throw new BusinessException(ErrorCode.AUCTION_SESSION_EXPIRED);
         }
 
-        if (result == -4L) {
+        if (code == -4L) {
             throw new BusinessException(ErrorCode.AUCTION_ENDED);
         }
 
@@ -121,8 +144,6 @@ public class LiveBidService {
                 request.bidPrice()
         );
 
-        // itemId를 키로 하여 각 경매품의 입찰 순서 보장. kafka에 이벤트 발행
-        kafkaTemplate.send(BID_TOPIC, String.valueOf(request.liveItemId()), event);
         // TODO: Redis Streams
 
         log.info("라이브 입찰 성공. Item: {} Price: {}", request.liveItemId(), request.bidPrice());
