@@ -8,7 +8,6 @@ import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemCreateResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemDetailResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemListResponse;
 import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemModifyResponse;
-import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
 import devut.buzzerbidder.domain.liveitem.service.LiveItemService;
 import devut.buzzerbidder.global.response.ApiResponse;
 import devut.buzzerbidder.global.security.CustomUserDetails;

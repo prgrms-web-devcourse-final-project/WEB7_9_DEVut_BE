@@ -15,10 +15,8 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 import org.hibernate.annotations.BatchSize;
 
 @Getter
@@ -63,6 +61,10 @@ public class LiveItem extends BaseEntity {
     @Max(1_000_000_000)
     @Column(name = "init_price", nullable = false)
     private Long initPrice;
+
+    @Setter
+    @Column(name = "current_price", nullable = false)
+    private Long currentPrice;
 
     @Column(name = "delivery_include")
     @NotNull(message = "배송비 포함 여부는 필수입니다.")
@@ -131,6 +133,7 @@ public class LiveItem extends BaseEntity {
         this.category = request.category();
         this.description = request.description();
         this.initPrice = request.initPrice();
+        this.currentPrice = request.initPrice();
         this.deliveryInclude = request.deliveryInclude();
         this.itemStatus = request.itemStatus();
         this.auctionStatus = AuctionStatus.BEFORE_BIDDING;

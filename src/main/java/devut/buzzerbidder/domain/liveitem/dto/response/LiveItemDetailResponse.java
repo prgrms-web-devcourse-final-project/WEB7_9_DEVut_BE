@@ -21,6 +21,7 @@ public record LiveItemDetailResponse(
     String preferredPlace,
     List<String> images,
     Long likeCount,
+    Long initPrice,
     Long currentPrice,
     Boolean isLiked
 ) {

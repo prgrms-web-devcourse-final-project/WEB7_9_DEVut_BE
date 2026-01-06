@@ -390,7 +390,7 @@ public class LiveItemService {
         String redisKey = "liveItem:" + liveItem.getId();
 
         String currentMaxPriceStr = liveBidRedisService.getHashField(redisKey, "maxBidPrice");
-        Long currentMaxPrice = (currentMaxPriceStr != null) ? Integer.parseInt(currentMaxPriceStr) : liveItem.getInitPrice();
+        Long currentMaxPrice = (currentMaxPriceStr != null) ? Integer.parseInt(currentMaxPriceStr) : liveItem.getCurrentPrice();
 
         return new LiveItemDetailResponse(
                 liveItem.getId(),
@@ -409,6 +409,7 @@ public class LiveItemService {
                         .map(LiveItemImage::getImageUrl)
                         .toList(),
                 likeCount,
+                liveItem.getInitPrice(),
                 currentMaxPrice,
                 isLiked
         );
@@ -506,6 +507,7 @@ public class LiveItemService {
                             item.image(),
                             item.startAt(),
                             item.auctionStatus(),
+                            item.initPrice(),
                             currentMaxBidPrice,
                             isLiked
                     );
@@ -566,6 +568,7 @@ public class LiveItemService {
                             item.image(),
                             item.startAt(),
                             item.auctionStatus(),
+                            item.initPrice(),
                             currentMaxBidPrice,
                             isLiked
                     );
@@ -660,6 +663,7 @@ public class LiveItemService {
             Long maxBidPrice = Long.parseLong(maxBidPriceStr);
 
             liveDealService.createDeal(itemId, currentBidderId, maxBidPrice);
+            liveItem.setCurrentPrice(maxBidPrice);
 
             Long winnerDeposit = null;
             if (currentBidderIdStr != null && !currentBidderIdStr.isBlank()) {
