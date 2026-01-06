@@ -176,7 +176,7 @@ public class UserMeController {
         return ApiResponse.ok("물품 목록 조회 성공", response);
     }
 
-    @Operation(summary = "거래 내역 목록 조회", description = "현재 로그인한 사용자의 거래 내역 목록을 조회합니다.")
+    @Operation(summary = "구매 목록 조회", description = "현재 로그인한 사용자의 구매 목록을 조회합니다.")
     @GetMapping("/deals")
     public ApiResponse<UserDealListResponse> getMyDeals(
             @RequestParam(defaultValue = "1") int page,
