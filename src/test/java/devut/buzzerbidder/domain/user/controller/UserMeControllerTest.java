@@ -124,6 +124,7 @@ public class UserMeControllerTest {
                 .category(LiveItem.Category.ELECTRONICS)
                 .description("샘플 설명입니다.")
                 .initPrice(1000000L)
+                .currentPrice(1000000L)
                 .deliveryInclude(false)
                 .itemStatus(LiveItem.ItemStatus.NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
@@ -142,6 +143,7 @@ public class UserMeControllerTest {
                 .category(LiveItem.Category.ELECTRONICS)
                 .description("샘플 설명입니다.")
                 .initPrice(1000000L)
+                .currentPrice(1000000L)
                 .deliveryInclude(false)
                 .itemStatus(LiveItem.ItemStatus.NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
@@ -200,6 +202,7 @@ public class UserMeControllerTest {
                 .category(LiveItem.Category.ART)
                 .description("이 상품을 좋아요 했습니다.")
                 .initPrice(300000L)
+                .currentPrice(300000L)
                 .deliveryInclude(true)
                 .itemStatus(LiveItem.ItemStatus.NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
@@ -451,7 +454,10 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "updated@example.com",
                     "updatedNickname",
-                    "https://example.com/updated.jpg"
+                    "https://example.com/updated.jpg",
+                    "서울시 중구 세종대로 135-5",
+                    "OO아파트 101동 101호",
+                    "12345"
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
 
@@ -483,7 +489,10 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     null, // email은 변경하지 않음
                     "newNickname",
-                    null  // image는 변경하지 않음
+                    null,  // image는 변경하지 않음
+                    "서울시 중구 세종대로 135-5",
+                    "OO아파트 101동 101호",
+                    "12345"
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
 
@@ -507,7 +516,10 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "updated@example.com",
                     "updatedNickname",
-                    null
+                    null,
+                    "서울시 중구 세종대로 135-5",
+                    "OO아파트 101동 101호",
+                    "12345"
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
 
@@ -528,7 +540,10 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "member2@user.com", // 이미 사용 중인 이메일
                     null,
-                    null
+                    null,
+                    "서울시 중구 세종대로 135-5",
+                    "OO아파트 101동 101호",
+                    "12345"
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
 
@@ -552,7 +567,10 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "member1@user.com",
                     "gilddong", // 이미 사용 중인 닉네임
-                    null
+                    null,
+                    "서울시 중구 세종대로 135-5",
+                    "OO아파트 101동 101호",
+                    "12345"
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
 
@@ -576,7 +594,10 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "invalid-email", // 잘못된 이메일 형식
                     null,
-                    null
+                    null,
+                    "서울시 중구 세종대로 135-5",
+                    "OO아파트 101동 101호",
+                    "12345"
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
 
@@ -598,7 +619,10 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "member1@user.com", // 자신의 기존 이메일
                     "newNickname",
-                    null
+                    null,
+                    "서울시 중구 세종대로 135-5",
+                    "OO아파트 101동 101호",
+                    "12345"
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
 
@@ -623,7 +647,10 @@ public class UserMeControllerTest {
             UserUpdateRequest updateRequest = new UserUpdateRequest(
                     "updated@example.com",
                     "gildong", // 자신의 기존 닉네임
-                    null
+                    null,
+                    "서울시 중구 세종대로 135-5",
+                    "OO아파트 101동 101호",
+                    "12345"
             );
             String requestBody = objectMapper.writeValueAsString(updateRequest);
 
