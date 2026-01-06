@@ -63,5 +63,4 @@ public class AuctionRoomController {
         return ApiResponse.ok("경매방 단건 조회", response);
     }
 
-
 }

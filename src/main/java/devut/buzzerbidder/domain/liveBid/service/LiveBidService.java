@@ -36,7 +36,7 @@ public class LiveBidService {
 
         String redisKey = REDIS_KEY_PREFIX + request.liveItemId();
 
-        // 입려값 검증
+        // 입력값 검증
         validateBidRequest(liveItem, bidder, redisKey);
 
         long depositAmount = (long) Math.ceil(request.bidPrice() * 0.2);
@@ -47,6 +47,7 @@ public class LiveBidService {
         // redis 입찰가 갱신 시도
         Long result = liveBidRedisService.updateMaxBidPriceAtomicWithDeposit(
                 redisKey,
+                request.liveItemId(),
                 bidder.getId(),
                 request.bidPrice(),
                 depositAmount,
@@ -72,15 +73,6 @@ public class LiveBidService {
             throw new BusinessException(ErrorCode.LIVEBID_NOT_IN_PROGRESS);
         }
 
-        // 마감 시간 체크
-        String endTimeStr = liveBidRedisService.getHashField(redisKey, "endTime");
-        if (endTimeStr != null) {
-            long endTime = Long.parseLong(endTimeStr);
-            if (System.currentTimeMillis() >= endTime) {
-                throw new BusinessException(ErrorCode.AUCTION_ENDED);
-            }
-        }
-
         // TODO: 지갑 잔고 검증
     }
 
@@ -89,12 +81,16 @@ public class LiveBidService {
      * @return result 값이 1인 경우 입찰 성공, -1 또는 0인 경우 입찰 실패
      */
     private LiveBidResponse handleBidResult(Long result, LiveBidRequest request, User bidder, Long sellerId, String redisKey) {
-        if (result == 1) {
+        if (result == null) {
+            throw new BusinessException(ErrorCode.UNEXPECTED_REDIS_SCRIPT_RETURN);
+        }
+
+        if (result == 1L) {
             processSuccessfulBid(request, bidder, sellerId);
             return new LiveBidResponse(true, "입찰 성공.", request.bidPrice());
         }
 
-        if (result == -1) {
+        if (result == -1L) {
             // 본인이 이미 최고입찰자인 경우 입찰 실패
             throw new BusinessException(ErrorCode.LIVEBID_ALREADY_HIGHEST_BIDDER);
         }
@@ -105,6 +101,10 @@ public class LiveBidService {
 
         if (result == -3L) {
             throw new BusinessException(ErrorCode.AUCTION_SESSION_EXPIRED);
+        }
+
+        if (result == -4L) {
+            throw new BusinessException(ErrorCode.AUCTION_ENDED);
         }
 
         // result가 0인 경우 (입찰가 낮음)

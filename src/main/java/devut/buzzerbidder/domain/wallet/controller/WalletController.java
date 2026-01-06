@@ -1,6 +1,7 @@
 package devut.buzzerbidder.domain.wallet.controller;
 
 import devut.buzzerbidder.domain.wallet.dto.request.WithdrawalRequestDto;
+import devut.buzzerbidder.domain.wallet.dto.response.BizzResponseDto;
 import devut.buzzerbidder.domain.wallet.dto.response.HistoriesPageResponseDto;
 import devut.buzzerbidder.domain.wallet.dto.response.WithdrawalResponseDto;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
@@ -39,5 +40,15 @@ public class WalletController {
     ) {
         HistoriesPageResponseDto response = walletService.getHistories(userDetails.getId(), page);
         return ApiResponse.ok("지갑 히스토리 목록 조회 성공", response);
+    }
+
+    @GetMapping("/bizz")
+    @Operation(summary = "보유 bizz 조회")
+    public ApiResponse<BizzResponseDto> getBizz(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long bizz = walletService.getBizzBalance(userDetails.getUser());
+
+        return ApiResponse.ok("Bizz 조회 성공",  BizzResponseDto.from(bizz));
     }
 }
