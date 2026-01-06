@@ -44,6 +44,7 @@ public class ChatRoomService {
     private final ChatMessageRepository chatMessageRepository;
     private final DelayedItemRepository delayedItemRepository;
     private final UserService userService;
+    private final ChatRoomParticipantService chatRoomParticipantService;
 
     // 특정 경매 ID에 해당하는 채팅방을 조회하거나, 존재하지 않으면 생성
     public ChatRoom getOrCreateAuctionChatRoom(Long auctionId) {
@@ -70,7 +71,7 @@ public class ChatRoomService {
 
         Optional<ChatRoom> existingRoom = chatRoomRepository.findDmRoomByItemAndUser(itemId, buyer.getId());
 
-        if(existingRoom.isPresent()) {
+        if (existingRoom.isPresent()) {
             return existingRoom.get();
         }
 
@@ -117,16 +118,19 @@ public class ChatRoomService {
             enterLiveAuctionProcess(user, chatRoom);
         }
 
+        // DB에 입장 기록 저장
         chatRoomEnteredRepository.findByUserAndChatRoom(user, chatRoom)
                 .orElseGet(() -> {
                     ChatRoomEntered newEntry = new ChatRoomEntered(user, chatRoom);
                     return chatRoomEnteredRepository.save(newEntry);
                 });
-
     }
 
     public void exitAuctionChatRoom(Long auctionId, User user) {
 
+        walletRedisService.flushBalanceAndClearSession(user.getId(), null);
+
+        // 퇴장 시 지갑 정보 초기화
         walletRedisService.flushBalanceAndClearSession(user.getId(), null);
 
         ChatRoom chatRoom = chatRoomRepository.findByAuctionId(auctionId)
@@ -137,20 +141,26 @@ public class ChatRoomService {
 
         chatRoomEnteredRepository.delete(entered);
 
+        // Redis에서 참여자 수 감소 및 웹소켓 브로드캐스트
+        chatRoomParticipantService.decrementParticipant(auctionId);
     }
 
-    public void enterLiveAuctionProcess (User user, ChatRoom chatRoom) {
-        Long userId =  user.getId();
-        Long chatRoomId = chatRoom.getReferenceEntityId();
+    public void enterLiveAuctionProcess(User user, ChatRoom chatRoom) {
+        Long userId = user.getId();
+        Long auctionId = chatRoom.getReferenceEntityId();
         Long userBizzFromDb = walletService.getBizzBalance(user);
 
         // 경매방 입장 가능 여부 검증 (LIVE 상태일 때만 입장 가능)
-        validateAuctionRoomEntry(chatRoomId);
+        validateAuctionRoomEntry(auctionId);
 
         // Redis에서 세션 획득하고 보유 bizz 등록
-        boolean acquired = walletRedisService.tryAcquireSessionAndInitBalance(userId, chatRoomId, userBizzFromDb, null);
-        // 이미 세션이 있으면 ttl만 연장
-        if (!acquired) {
+        boolean acquired = walletRedisService.tryAcquireSessionAndInitBalance(userId, auctionId, userBizzFromDb, null);
+
+        if (acquired) {
+            // 새로운 세션 획득 시에만 참여자 수 증가 및 웹소켓 브로드캐스트
+            chatRoomParticipantService.incrementParticipant(auctionId);
+        } else {
+            // 이미 세션이 있으면 ttl만 연장
             walletRedisService.extendTtl(userId);
         }
     }
@@ -159,10 +169,10 @@ public class ChatRoomService {
     public List<UserInfo> getEnteredUsers(ChatRoom chatRoom) {
         // findCounterparts를 활용하여 채팅방의 모든 유저 조회 (me를 null로 전달하여 모든 유저 조회)
         List<ChatRoomEntered> entries = chatRoomEnteredRepository.findCounterparts(
-                Collections.singletonList(chatRoom), 
+                Collections.singletonList(chatRoom),
                 null
         );
-        
+
         return entries.stream()
                 .map(ChatRoomEntered::getUser)
                 .map(UserInfo::from)
@@ -325,4 +335,3 @@ public class ChatRoomService {
         return DirectMessageEnterResponse.exists(chatRoom.getId(), itemInfo, messageResponses);
     }
 }
-
