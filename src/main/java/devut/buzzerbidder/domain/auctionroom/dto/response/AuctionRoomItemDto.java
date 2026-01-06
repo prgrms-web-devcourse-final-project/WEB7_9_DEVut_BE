@@ -8,7 +8,8 @@ public record AuctionRoomItemDto(
     Long id,
     String name,
     List<String> imageUrls,
-    Long price,
+    Long initPrice,
+    Long currentPrice,
     AuctionStatus auctionStatus
 ) {
 
