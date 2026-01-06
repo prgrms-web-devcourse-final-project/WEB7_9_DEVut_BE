@@ -30,7 +30,7 @@ public class LivePaymentTimeoutScheduler {
         LocalDateTime now = LocalDateTime.now();
 
         // PENDING 상태 거래 조회
-        List<LiveDeal> pendingDeals = liveDealRepository.findByStatusWithJoin(DealStatus.PENDING);
+        List<LiveDeal> pendingDeals = liveDealRepository.findAllByStatusWithJoin(DealStatus.PENDING);
 
         if (pendingDeals.isEmpty()) {
             return;
@@ -43,13 +43,17 @@ public class LivePaymentTimeoutScheduler {
                 Duration elapsed = Duration.between(deal.getCreateDate(), now);
                 long hours = elapsed.toHours();
 
-                // 48시 초과 체크
+                // 48시간 초과 체크
                 if (hours >= PAYMENT_DEADLINE_HOURS) {
                     liveDealService.cancelDueToPaymentTimeout(deal.getId());
+                    cancelledCount++;
                 }
             } catch (Exception e) {
                 log.error("결제 타임아웃 처리 실패: dealId = {}", deal.getId(), e);
             }
+        }
+        if (cancelledCount > 0) {
+            log.info("결제 타임아웃 처리 완료: {}건", cancelledCount);
         }
     }
 }
