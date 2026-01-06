@@ -377,6 +377,8 @@ public class LiveBidRedisService {
         // 멱등 정리
         redisTemplate.opsForZSet().remove(getEndingZsetKey(), liveItemId.toString());
         redisTemplate.opsForZSet().remove(getStartingZsetKey(), liveItemId.toString());
+    }
+
     public List<Long> zRangeByScoreAsLong(String zsetKey, long min, long max) {
         Set<String> members = redisTemplate.opsForZSet().rangeByScore(zsetKey, min, max);
         if (members == null || members.isEmpty()) return List.of();
