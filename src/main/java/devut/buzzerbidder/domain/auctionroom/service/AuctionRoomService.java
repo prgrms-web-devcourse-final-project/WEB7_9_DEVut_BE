@@ -227,6 +227,7 @@ public class AuctionRoomService {
                     .map(LiveItemImage::getImageUrl)
                     .toList(),
                 item.getInitPrice(),
+                item.getCurrentPrice(),
                 item.getAuctionStatus()
             ))
             .toList();
