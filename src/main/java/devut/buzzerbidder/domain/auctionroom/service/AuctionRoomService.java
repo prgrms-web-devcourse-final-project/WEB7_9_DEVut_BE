@@ -238,6 +238,15 @@ public class AuctionRoomService {
             .orElseThrow(() -> new BusinessException(ErrorCode.AUCTION_ROOM_NOT_FOUND));
 
         List<LiveItem> items = liveItemRepository.findItemsWithImagesByRoomId(auctionRoomId);
+        LiveItem progressItem = items.stream()
+                .filter(item -> item.getAuctionStatus() == LiveItem.AuctionStatus.IN_PROGRESS)
+                .findFirst()
+                .orElse(null);
+
+        Long remainingMs = null;
+        if(progressItem != null) {
+            remainingMs = liveBidRedisService.getRemainingMs(progressItem.getId());
+        }
 
         List<AuctionRoomItemDto> response  = items.stream()
             .map(item -> new AuctionRoomItemDto(
@@ -252,7 +261,7 @@ public class AuctionRoomService {
             ))
             .toList();
 
-        return new AuctionRoomResponse(response);
+        return new AuctionRoomResponse(remainingMs, response);
 
     }
 }
