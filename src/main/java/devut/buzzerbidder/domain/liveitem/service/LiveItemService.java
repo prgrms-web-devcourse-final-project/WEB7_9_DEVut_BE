@@ -662,7 +662,6 @@ public class LiveItemService {
             Long currentBidderId = Long.parseLong(currentBidderIdStr);
             Long maxBidPrice = Long.parseLong(maxBidPriceStr);
 
-            liveDealService.createDeal(itemId, currentBidderId, maxBidPrice);
             liveItem.setCurrentPrice(maxBidPrice);
 
             Long winnerDeposit = null;
@@ -678,6 +677,8 @@ public class LiveItemService {
             User fromUser = userService.findById(currentBidderId);
             User toUser = userService.findById(liveItem.getSellerUserId());
             walletService.transferBizz(fromUser, toUser, winnerDeposit);
+
+            liveDealService.createDeal(itemId, currentBidderId, maxBidPrice, winnerDeposit);
         }
 
         boolean success = currentBidderIdStr != null && !currentBidderIdStr.isEmpty();
