@@ -9,12 +9,8 @@ import java.util.List;
 public record AuctionChatEnterResponse(
         @Schema(description = "입장하려는 채팅방 ID")
         Long chatRoomId,
-        
-        @Schema(description = "입장한 유저들의 프로필 정보")
-        List<UserInfo> users
+
+        @Schema(description = "현재 참여자 수")
+        Long participantCount
 ) {
-    public AuctionChatEnterResponse(Long chatRoomId, List<UserInfo> users) {
-        this.chatRoomId = chatRoomId;
-        this.users = users;
-    }
 }

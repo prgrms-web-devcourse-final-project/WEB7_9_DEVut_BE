@@ -5,8 +5,8 @@ import devut.buzzerbidder.domain.chat.dto.response.ChatListResponse;
 import devut.buzzerbidder.domain.chat.dto.response.ChatRoomDetailResponse;
 import devut.buzzerbidder.domain.chat.dto.response.DirectMessageEnterResponse;
 import devut.buzzerbidder.domain.chat.entity.ChatRoom;
+import devut.buzzerbidder.domain.chat.service.ChatRoomParticipantService;
 import devut.buzzerbidder.domain.chat.service.ChatRoomService;
-import devut.buzzerbidder.domain.user.dto.response.UserInfo;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.requestcontext.RequestContext;
 import devut.buzzerbidder.global.response.ApiResponse;
@@ -14,8 +14,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 
 @RestController
@@ -25,6 +23,7 @@ import java.util.List;
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
+    private final ChatRoomParticipantService chatRoomParticipantService;
     private final RequestContext requestContext;
 
     @GetMapping("/dm")
@@ -59,7 +58,7 @@ public class ChatRoomController {
     }
 
     @PutMapping("/auction/{auctionId}/enter")
-    @Operation(summary = "경매방 채팅 입장", description = "특정 경매방의 채팅방에 입장합니다.")
+    @Operation(summary = "경매방 채팅 입장", description = "특정 경매방의 채팅방에 입장합니다. 경매방의 현재 참여자 수도 같이 반환합니다.")
     public ApiResponse<AuctionChatEnterResponse> enterAuctionChat(
             @PathVariable Long auctionId) {
 
@@ -72,10 +71,10 @@ public class ChatRoomController {
         // 사용자 참여 상태 갱신
         chatRoomService.enterChatRoom(user, chatRoom);
 
-        // 입장한 유저들의 프로필 정보 조회
-        List<UserInfo> enteredUsers = chatRoomService.getEnteredUsers(chatRoom);
+        // Redis에서 현재 참여자 수 조회
+        Long participantCount = chatRoomParticipantService.getParticipantCount(auctionId);
 
-        AuctionChatEnterResponse response = new AuctionChatEnterResponse(chatRoom.getId(), enteredUsers);
+        AuctionChatEnterResponse response = new AuctionChatEnterResponse(chatRoom.getId(), participantCount);
 
         return ApiResponse.ok("경매방 채팅 입장 처리 완료", response);
     }
