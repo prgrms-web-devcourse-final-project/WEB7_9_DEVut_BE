@@ -30,7 +30,7 @@ public class WalletHistoryService {
     }
 
     // 지갑 히스토리 기록
-    void recordWalletHistory(User user, Long amount, WalletTransactionType type,
+    public void recordWalletHistory(User user, Long amount, WalletTransactionType type,
                                      Long balanceBefore, Long balanceAfter) {
         WalletHistory walletHistory = WalletHistory.builder()
                 .user(user)

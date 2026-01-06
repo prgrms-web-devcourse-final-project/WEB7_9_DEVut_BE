@@ -1,5 +1,6 @@
 package devut.buzzerbidder.domain.liveBid.service;
 
+import devut.buzzerbidder.domain.liveBid.dto.BidAtomicResult;
 import io.micrometer.core.annotation.Timed;
 import java.util.Arrays;
 import java.util.List;
@@ -107,13 +108,13 @@ public class LiveBidRedisService {
         -- 추가: endTime 확인 (없으면 초기화 안 된 것)
         local endTimeStr = redis.call('HGET', liveKey, 'endTime')
         if (not endTimeStr) or (endTimeStr == false) then
-          return -3
+          return {-3}
         end
         local endTime = tonumber(endTimeStr)
                         
         -- 추가: 이미 종료 시간이 지났으면 입찰 거절
         if nowMs >= endTime then
-          return -4
+          return {-4}
         end
                         
         -- wallet keys
@@ -123,12 +124,12 @@ public class LiveBidRedisService {
         
         -- 세션 없으면 실패
         if redis.call('EXISTS', sesKey) == 0 then
-          return -3
+          return {-3}
         end
         
         -- verKey 없으면 실패 (TTL 꼬임/상태 이상 방지)
         if redis.call('EXISTS', verKey) == 0 then
-          return -3
+          return {-3}
         end
         
         local maxPriceStr = redis.call('HGET', liveKey, 'maxBidPrice')
@@ -138,12 +139,12 @@ public class LiveBidRedisService {
         
         -- 이미 본인이 최고입찰자면 실패
         if prevBidder == newBidderId then
-          return -1
+          return {-1}
         end
         
         -- deposits에 bidderId가 남아있으면(정상이라면 없어야 함) -1 반환
         if redis.call('HEXISTS', depositsKey, newBidderId) == 1 then
-          return -1
+          return {-1}
         end
         
         -- 현재 최고 입찰 금액이 최소 5% 이상, 5%가 100보다 작으면 100 이상
@@ -155,7 +156,7 @@ public class LiveBidRedisService {
         local minPrice = curMax + inc
         
         if newPrice < minPrice then
-          return 0
+          return {0}
         end
         
         -- 환불에 필요한 값은 쓰기(차감/HSET) 전에 미리 읽고 검증(부분반영 방지)
@@ -173,7 +174,7 @@ public class LiveBidRedisService {
             
                         local prevBalStr = redis.call('GET', prevBalKey)
                         if (not prevBalStr) or (redis.call('EXISTS', prevVerKey) == 0) then
-                          return -3
+                          return {-3}
                         end
                         prevBal = tonumber(prevBalStr)
                       end
@@ -182,15 +183,16 @@ public class LiveBidRedisService {
         -- deposit 차감: 잔액 체크 후 차감
         local balStr = redis.call('GET', balKey)
         if not balStr then
-          return -3
+          return {-3}
         end
         
         local bal = tonumber(balStr)
         if bal < deposit then
-          return -2
+          return {-2, bal, bal}
         end
         
-        redis.call('SET', balKey, bal - deposit)
+        local afterBal = bal - deposit
+        redis.call('SET', balKey, afterBal)
         redis.call('INCR', verKey)
         
         -- deposits에 deposit 기록
@@ -245,7 +247,7 @@ public class LiveBidRedisService {
           redis.call('EXPIRE', liveKey, balanceTtl)
         end
         
-        return 1
+        return {1, bal, afterBal}
 """;
 
     @Timed(
@@ -253,7 +255,7 @@ public class LiveBidRedisService {
             extraTags = {"op", "atomic_update"},
             histogram = true
     )
-    public Long updateMaxBidPriceAtomicWithDeposit(
+    public BidAtomicResult updateMaxBidPriceAtomicWithDeposit(
             String redisKey,
             Long liveItemId,
             Long bidderId,
@@ -262,10 +264,11 @@ public class LiveBidRedisService {
             Long sessionTtlSeconds,
             Long balanceTtlSeconds
     ) {
-        DefaultRedisScript<Long> script = new DefaultRedisScript<>(LUA_BID_SCRIPT, Long.class);
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        DefaultRedisScript<List> script = new DefaultRedisScript<>(LUA_BID_SCRIPT, List.class);
 
         try {
-            return redisTemplate.execute(
+            List<?> raw = redisTemplate.execute(
                     script,
                     List.of(
                             redisKey,                 // KEYS[1] 기존 LiveItem 키
@@ -273,18 +276,38 @@ public class LiveBidRedisService {
                             "liveItems:currentPrice",  // KEYS[3] 가격 필터용 ZSET 키
                             "liveItems:hasBid"         // KEYS[4] 입찰 존재 SET 키
                     ),
-                    bidderId.toString(),
-                    bidPrice.toString(),
-                    depositAmount.toString(),
-                    sessionTtlSeconds.toString(),
-                    balanceTtlSeconds.toString(),
-                    liveItemId.toString()
+                    bidderId.toString(),             // ARGV[1]
+                    bidPrice.toString(),             // ARGV[2]
+                    depositAmount.toString(),        // ARGV[3]
+                    sessionTtlSeconds.toString(),    // ARGV[4]
+                    balanceTtlSeconds.toString(),    // ARGV[5]
+                    liveItemId.toString()            // ARGV[6]
             );
+
+            if (raw == null || raw.isEmpty()) {
+                throw new IllegalStateException("Redis LUA 반환이 null/empty 입니다. redisKey=" + redisKey);
+            }
+
+            long code = Long.parseLong(String.valueOf(raw.get(0)));
+
+            Long before = null;
+            Long after = null;
+
+            if (raw.size() >= 3) {
+                before = Long.parseLong(String.valueOf(raw.get(1)));
+                after = Long.parseLong(String.valueOf(raw.get(2)));
+            }
+
+            return new BidAtomicResult(code, before, after);
+
         } catch (DataAccessException e) {
-            // 레디스 연결/타임아웃/스크립트 실행 실패 등은 여기로 옴
             throw new IllegalStateException("Redis LUA 실행 실패. redisKey=" + redisKey + ", bidderId=" + bidderId, e);
+        } catch (RuntimeException e) {
+            // 파싱 실패 등
+            throw new IllegalStateException("Redis LUA 반환 파싱 실패. redisKey=" + redisKey + ", bidderId=" + bidderId, e);
         }
     }
+
 
     /**
      * ending ZSET에서 (score <= nowMs) 인 liveItemId들을 limit 만큼 꺼냄
