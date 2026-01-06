@@ -69,7 +69,7 @@ public class ChatMessageService {
     @Transactional
     public void sendDirectMessage(Long itemId, User sender, ChatMessageRequest request) {
         // itemId로 채팅방 조회 또는 생성
-        ChatRoom chatRoom = chatRoomService.getOrCreateDMChatRoom(itemId, sender);
+        ChatRoom chatRoom = chatRoomService.getOrCreateDmChatRoom(itemId, sender);
 
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoom(chatRoom)

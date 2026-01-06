@@ -67,7 +67,7 @@ public class ChatRoomService {
     }
 
     // 지연경매용 1:1 채팅방 생성
-    public ChatRoom getOrCreateDMChatRoom(Long itemId, User buyer) {
+    public ChatRoom getOrCreateDmChatRoom(Long itemId, User buyer) {
 
         Optional<ChatRoom> existingRoom = chatRoomRepository.findDmRoomByItemAndUser(itemId, buyer.getId());
 
@@ -166,7 +166,7 @@ public class ChatRoomService {
 
     // 채팅방에 입장한 유저들의 프로필 정보 조회
     public List<UserInfo> getEnteredUsers(ChatRoom chatRoom) {
-        // findCounterparts를 활용하여 채팅방의 모든 유저 조회 (me를 null로 전달하여 모든 유저 조회)
+        // findCounterparts를 활용하여 채팅방의 모든 유저 조회
         List<ChatRoomEntered> entries = chatRoomEnteredRepository.findCounterparts(
                 Collections.singletonList(chatRoom),
                 null
@@ -259,7 +259,7 @@ public class ChatRoomService {
             );
         }
 
-        // 메시지 내역 조회 (ChatMessageRepository에 별도 쿼리 필요)
+        // 메시지 내역 조회
         List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomOrderByCreateDateAsc(chatRoom);
 
         // 채팅방 조회 시 읽음 상태 업데이트
