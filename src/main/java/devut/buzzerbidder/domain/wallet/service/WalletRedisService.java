@@ -1,5 +1,7 @@
 package devut.buzzerbidder.domain.wallet.service;
 
+import devut.buzzerbidder.domain.wallet.entity.Wallet;
+import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import io.micrometer.core.annotation.Timed;
@@ -8,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.List;
@@ -19,6 +22,7 @@ import java.util.Objects;
 public class WalletRedisService {
 
     private final StringRedisTemplate stringRedisTemplate;
+    private final WalletRepository walletRepository;
 
     /* ==================== Redis Key 규칙 ==================== */
 
@@ -294,6 +298,7 @@ public class WalletRedisService {
             extraTags = {"op", "flush"},
             histogram = true
     )
+    @Transactional
     public RedisFlushResult flushBalanceAndClearSession(Long userId, String traceId) {
         String sKey = SESSION_KEY_PREFIX + userId;
         String bKey = BAL_KEY_PREFIX + userId;
@@ -313,11 +318,12 @@ public class WalletRedisService {
             throw new BusinessException(ErrorCode.UNEXPECTED_REDIS_SCRIPT_RETURN);
         }
 
-
         boolean hit = "1".equals(result.get(0));
         if (!hit) {
             return new RedisFlushResult(false, null, null, null);
         }
+
+        saveBalanceToDb(userId, Long.parseLong(result.get(2)));
 
         return new RedisFlushResult(
                 true,
@@ -351,6 +357,12 @@ public class WalletRedisService {
         Boolean balanceExists = stringRedisTemplate.hasKey(bKey);
 
         return Boolean.TRUE.equals(sessionExists) && Boolean.TRUE.equals(balanceExists);
+    }
+
+    @Transactional
+    public void saveBalanceToDb(Long userId, Long amount) {
+        Wallet wallet = findByUserIdWithLockOrThrow(userId);
+        wallet.setBizz(amount);
     }
 
     /* ==================== execute 헬퍼 (unchecked 경고를 한 곳에만 모음) ==================== */
@@ -634,4 +646,11 @@ public class WalletRedisService {
 
         return script;
     }
+
+    // 지갑 조회(비관적 락 적용)
+    private Wallet findByUserIdWithLockOrThrow(Long userId) {
+        return walletRepository.findByUserIdWithLock(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.WALLET_NOT_FOUND));
+    }
+
 }

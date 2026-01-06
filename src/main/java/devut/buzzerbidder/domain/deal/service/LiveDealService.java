@@ -7,7 +7,10 @@ import devut.buzzerbidder.domain.deal.event.ItemShippedEvent;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
 import devut.buzzerbidder.domain.deliveryTracking.service.DeliveryTrackingService;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.service.UserService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -15,13 +18,17 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class LiveDealService {
 
     private final LiveDealRepository liveDealRepository;
+    private final LiveItemRepository liveItemRepository;
     private final DeliveryTrackingService deliveryTrackingService;
+    private final UserService userService;
     private final ApplicationEventPublisher eventPublisher;
 
     public LiveDeal findByIdOrThrow(Long dealId) {
@@ -30,6 +37,23 @@ public class LiveDealService {
     }
 
     // TODO: 라이브 딜 생성 시 기본 배송지 자동 설정 (나중에 구현)
+
+    @Transactional
+    public void createDeal(Long liveItemId, Long buyerId, Long winningPrice) {
+        LiveItem item = liveItemRepository.findByIdWithLock(liveItemId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+        User buyer = userService.findById(buyerId);
+
+        // DelayedDeal 생성
+        LiveDeal deal = LiveDeal.builder()
+                .item(item)
+                .buyer(buyer)
+                .winningPrice(winningPrice)
+                .status(DealStatus.PENDING)
+                .build();
+
+        liveDealRepository.save(deal);
+    }
 
     @Transactional
     public void patchDeliveryInfo(User currentUser, Long dealId, String carrierCode, String trackingNumber) {

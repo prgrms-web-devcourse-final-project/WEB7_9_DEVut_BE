@@ -8,11 +8,14 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+
+import jakarta.persistence.LockModeType;
 import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -224,4 +227,22 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         @Param("category") Category category,
         @Param("isSelling") Boolean isSelling,
         Pageable pageable
-);}
+    );
+
+    @Query("""
+    select li.id
+    from LiveItem li
+    where li.auctionRoom.id = :auctionRoomId
+      and li.id > :currentItemId
+    order by li.id asc
+""")
+    List<Long> findNextItemIds(
+            @Param("auctionRoomId") Long auctionRoomId,
+            @Param("currentItemId") Long currentItemId,
+            Pageable pageable
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select li from LiveItem li where li.id = :id")
+    Optional<LiveItem> findByIdWithLock(@Param("id") Long id);
+}
