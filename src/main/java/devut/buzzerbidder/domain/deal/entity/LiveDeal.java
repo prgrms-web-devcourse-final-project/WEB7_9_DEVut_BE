@@ -26,6 +26,9 @@ public class LiveDeal extends BaseEntity {
     @Column(nullable = false)
     private Long winningPrice;
 
+    @Column(name = "deposit_amount")
+    private Long depositAmount;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private DealStatus status;
