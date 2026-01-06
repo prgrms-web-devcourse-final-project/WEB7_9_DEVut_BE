@@ -88,9 +88,14 @@ public class LiveDealService {
     }
 
     public DeliveryTrackingResponse track(User currentUser, Long dealId) {
-        // TODO: 권한 체크 로직 추가 (currentUser가 해당 deal에 접근할 수 있는지 확인)
 
         LiveDeal liveDeal = findByIdOrThrow(dealId);
+
+        boolean isSeller = liveDeal.getItem().getSellerUserId().equals(currentUser.getId());
+        boolean isBuyer = liveDeal.getBuyer().getId().equals(currentUser.getId());
+        if (!isSeller && !isBuyer) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
+        }
 
         String carrierCode = liveDeal.getCarrier() != null ? liveDeal.getCarrier().getCode() : null;
         String trackingNumber = liveDeal.getTrackingNumber();
