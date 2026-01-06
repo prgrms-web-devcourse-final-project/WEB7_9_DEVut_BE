@@ -138,6 +138,14 @@ public class WalletService {
                     walletRedisService.transferBizzIfPresent(fromId, toId, amount, "TransferBizz", null);
 
             if  (!r.hit()) throw  new BusinessException(ErrorCode.TRANSFER_ERROR);
+
+            // 지갑 히스토리 남기기
+            Long fromBalanceBefore = r.fromBefore();
+            Long frombalanceAfter = r.fromAfter();
+            walletHistoryService.recordWalletHistory(fromUser, amount, WalletTransactionType.PAY_TO_USER, fromBalanceBefore, frombalanceAfter);
+            Long toBalanceBefore = r.toBefore();
+            Long tobalanceAfter = r.toAfter();
+            walletHistoryService.recordWalletHistory(toUser, amount, WalletTransactionType.RECEIVE_FROM_USER, toBalanceBefore, tobalanceAfter);
             return;
         }
 
@@ -180,6 +188,12 @@ public class WalletService {
                 }
                 throw e;
             }
+
+            // 히스토리
+            Long fromBalanceBefore = out.before();
+            Long fromBalanceAfter = out.after();
+            walletHistoryService.recordWalletHistory(fromUser, amount, WalletTransactionType.PAY_TO_USER, fromBalanceBefore, fromBalanceAfter);
+
             return;
         }
 
@@ -197,6 +211,10 @@ public class WalletService {
             if (!in.hit()) {
                 throw new BusinessException(ErrorCode.TRANSFER_ERROR);
             }
+
+            Long toBalanceBefore = in.before();
+            Long toBalanceAfter = in.after();
+            walletHistoryService.recordWalletHistory(toUser, amount, WalletTransactionType.RECEIVE_FROM_USER, toBalanceBefore, toBalanceAfter);
 
             // 롤백되면 Redis 입금 되돌리기
             runAfterRollback(() -> {
@@ -319,8 +337,13 @@ public class WalletService {
                         type.name(),    // reason
                         null    //traceId
                 );
-        // Redis에서 처리됐으면 그대로 함수 종료
-        if (redisResult.hit()) return;
+        // Redis에서 처리됐으면 히스토리 남긴 후 함수 종료
+        if (redisResult.hit()) {
+            Long balanceBefore = redisResult.before();
+            Long balanceAfter = redisResult.after();
+            walletHistoryService.recordWalletHistory(user, amount, type, balanceBefore, balanceAfter);
+            return;
+        }
 
         // Redis에 없으면 DB 처리
         Wallet wallet = findByUserIdWithLockOrThrow(user.getId());
