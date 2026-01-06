@@ -89,11 +89,9 @@ public class LiveBidRedisService {
     private static final String LUA_BID_SCRIPT = """
         local liveKey = KEYS[1]
         local endingZsetKey = KEYS[2]
-        local bidZKey = KEYS[2]
-        local hasBidKey = KEYS[3]
+        local bidZKey = KEYS[3]
+        local hasBidKey = KEYS[4]
         local depositsKey = liveKey .. ':deposits'
-        
-        local liveItemId = string.match(liveKey, '^liveItem:(.+)$')
         
         local newBidderId = tostring(ARGV[1])
         local newPrice = tonumber(ARGV[2])
@@ -269,11 +267,11 @@ public class LiveBidRedisService {
         try {
             return redisTemplate.execute(
                     script,
-                    List.of(redisKey, ENDING_ZSET_KEY),
-                    Arrays.asList(
-                        redisKey,                       // KEYS[1] 기존 LiveItem 키
-                        "liveItems:currentPrice",       // KEYS[2] 가격 필터용 ZSET 키
-                        "liveItems:hasBid"              // KEYS[3] 입찰 존재 SET 키
+                    List.of(
+                            redisKey,                 // KEYS[1] 기존 LiveItem 키
+                            ENDING_ZSET_KEY,           // KEYS[2] ending zset
+                            "liveItems:currentPrice",  // KEYS[3] 가격 필터용 ZSET 키
+                            "liveItems:hasBid"         // KEYS[4] 입찰 존재 SET 키
                     ),
                     bidderId.toString(),
                     bidPrice.toString(),

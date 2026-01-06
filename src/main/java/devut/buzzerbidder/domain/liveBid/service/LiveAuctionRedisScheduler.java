@@ -20,7 +20,7 @@ public class LiveAuctionRedisScheduler {
      * ending ZSET 기반 종료 처리
      * - score(endTimeMs) <= nowMs 인 itemId를 pop 해서 endAuction 호출
      */
-    @Scheduled(fixedDelay = 200) // 0.2초마다 (원하는대로 100~500ms)
+    @Scheduled(fixedDelay = 200) // 0.2초마다
     public void processEndings() {
         long nowMs = System.currentTimeMillis();
         List<Long> itemIds = liveBidRedisService.popDueEndingItems(nowMs, 50);
