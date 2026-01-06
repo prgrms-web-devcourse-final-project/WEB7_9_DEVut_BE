@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.liveitem.service;
 
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomService;
+import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomStatePushService;
 import devut.buzzerbidder.domain.deal.service.LiveDealService;
 import devut.buzzerbidder.domain.likelive.repository.LikeLiveRepository;
 import devut.buzzerbidder.domain.likelive.service.LikeLiveService;
@@ -63,6 +64,7 @@ public class LiveItemService {
     private final WalletService walletService;
     private final UserService userService;
     private final ImageService imageService;
+    private final AuctionRoomStatePushService auctionRoomStatePushService;
     private final RedissonClient redissonClient;
     private final TransactionTemplate transactionTemplate;
     private final LiveBidRedisService  liveBidRedisService;
@@ -680,6 +682,8 @@ public class LiveItemService {
                     liveBidRedisService.upsertStartingZset(nextItemId, nextStartAtMs);
                 }
 
+                auctionRoomStatePushService.pushRefresh(room.getId(), "낙찰/유찰 발생");
+
                 // 정산 후에 키 삭제해야 depositsKey가 먼저 사라지는 사고를 방지
                 liveBidRedisService.deleteLiveItemRedisKeys(itemId);
             }
@@ -696,7 +700,7 @@ public class LiveItemService {
         Map<String, String> initData = new HashMap<>();
 
         // 종료 시간 설정 (경매 시작 시간 + 40초) luaScript에서 읽을 수 있도록 UNIX Timestamp로 변환
-        long endTime = liveBidRedisService.getRedisNowMs() + 40_000L;
+        long endTime = liveBidRedisService.getRedisNowMs() + 10_000L; //TODO: 테스트 끝나면 40초로 변경
 
         // 초기화
         initData.put("maxBidPrice", String.valueOf(liveItem.getInitPrice()));
