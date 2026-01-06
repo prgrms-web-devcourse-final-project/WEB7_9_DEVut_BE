@@ -111,6 +111,28 @@ public class UserMeController {
         return ApiResponse.ok("배송지 주소가 수정되었습니다.", null);
     }
 
+    @PatchMapping("/deals/{type}/{dealId}/confirm")
+    @Operation(summary = "구매 확정")
+    public ApiResponse<Void> confirmPurchase(
+        @PathVariable String type,
+        @PathVariable Long dealId
+    ) {
+        User currentUser = requestContext.getCurrentUser();
+
+        AuctionType auctionType = AuctionType.fromString(type);
+        if (auctionType != AuctionType.LIVE && auctionType != AuctionType.DELAYED) {
+            throw new BusinessException(ErrorCode.DEAL_INVALID_TYPE);
+        }
+
+        if (auctionType.equals(AuctionType.LIVE)) {
+            liveDealService.confirmPurchase(currentUser, dealId);
+        } else if (auctionType.equals(AuctionType.DELAYED)) {
+            delayedDealService.confirmPurchase(currentUser, dealId);
+        }
+
+        return ApiResponse.ok("구매 확정이 완료되었습니다.", null);
+    }
+
     @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 정보를 조회합니다.")
     @GetMapping
     public ApiResponse<UserProfileResponse> getMyProfile() {
