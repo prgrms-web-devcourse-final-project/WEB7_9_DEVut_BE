@@ -410,7 +410,6 @@ public class LiveItemService {
         );
     }
 
-    // TODO: 레디스에서 현재 입찰가로 가격 필터링 로직 추가
     @Transactional(readOnly = true)
     public LiveItemListResponse getLiveItems(
             LiveItemSearchRequest reqBody,
