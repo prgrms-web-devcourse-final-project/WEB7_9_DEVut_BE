@@ -4,6 +4,7 @@ import devut.buzzerbidder.domain.deal.entity.LiveDeal;
 import devut.buzzerbidder.domain.deal.enums.AuctionType;
 import devut.buzzerbidder.domain.deal.enums.DealStatus;
 import devut.buzzerbidder.domain.deal.event.ItemShippedEvent;
+import devut.buzzerbidder.domain.deal.event.PaymentTimeoutEvent;
 import devut.buzzerbidder.domain.deal.event.TransactionCompleteEvent;
 import devut.buzzerbidder.domain.deal.repository.LiveDealRepository;
 import devut.buzzerbidder.domain.deliveryTracking.dto.response.DeliveryTrackingResponse;
@@ -109,6 +110,35 @@ public class LiveDealService {
 
         deal.updateDeliveryAddress(address, addressDetail, postalCode);
         liveDealRepository.save(deal);
+    }
+
+    @Transactional
+    public void cancelDueToPaymentTimeout(Long dealId) {
+        LiveDeal deal = findByIdOrThrow(dealId);
+
+        // 상태 검증 - PENDING 상태만 취소 가능
+        if (deal.getStatus() != DealStatus.PENDING) {
+            return;
+        }
+
+        // Deal 상태 변경
+        deal.updateStatus(DealStatus.CANCELLED);
+
+        // LiveItem 상태 변경
+        deal.getItem().changeAuctionStatus(AuctionStatus.FAILED);
+
+        // 보증금은 이미 낙찰 시점에 판매자에게 이체되었으므로 추가 처리 불필요
+
+        eventPublisher.publishEvent(
+            new PaymentTimeoutEvent(
+                deal.getId(),
+                deal.getBuyer().getId(),
+                deal.getItem().getSellerUserId(),
+                deal.getItem().getId(),
+                deal.getItem().getName(),
+                deal.getWinningPrice()
+            )
+        );
     }
 
     // 구매 확정
