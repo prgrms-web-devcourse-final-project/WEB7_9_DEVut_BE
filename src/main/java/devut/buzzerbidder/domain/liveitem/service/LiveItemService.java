@@ -599,6 +599,14 @@ public class LiveItemService {
             log.error("Redis 초기화 실패. Transaction Rollback. ItemId: {}", itemId, e);
             throw new BusinessException(ErrorCode.LIVEBID_INITIALIZATION_FAILED);
         }
+
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                auctionRoomStatePushService.pushRefresh(liveItem.getAuctionRoom().getId(), "경매 시작");
+            }
+        });
     }
 
     @Transactional
