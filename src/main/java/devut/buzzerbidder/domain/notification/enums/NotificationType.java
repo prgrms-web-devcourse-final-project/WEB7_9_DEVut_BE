@@ -14,6 +14,8 @@ public enum NotificationType {
     LIVE_SUCCESS_SELLER,            // 라이브 경매 판매자에게 낙찰 알림
     LIVE_FAILED_SELLER,             // 라이브 경매 판매자에게 유찰 알림
     PAYMENT_REMINDER,               // 잔금 리마인더 알림
+    PAYMENT_TIMEOUT_BUYER,          // 잔금 결제 기한 초과로 구매자에게 거래 취소 알림
+    PAYMENT_TIMEOUT_SELLER,         // 잔금 결제 미완료로 판매자에게 거래 취소 알림
     PAYMENT_COMPLETE,               // 잔금 결제 완료
     ITEM_SHIPPED,                   // 상품 배송 시작
     TRANSACTION_COMPLETE,           // 거래 완료
