@@ -100,12 +100,12 @@ public class WalletService {
         changeBizz(user, amount, WalletTransactionType.ADMIN_DEDUCT);
     }
 
-    // 입찰 시 코인 차감
+    // 입찰 시 차감
     public void bidBizz(User user, Long amount) {
         changeBizz(user, amount, WalletTransactionType.BID);
     }
 
-    // 입찰 실패 시 코인 환불
+    // 입찰 실패 시 환불
     public void refundBidBizz(User user, Long amount) {
         changeBizz(user, amount, WalletTransactionType.BID_REFUND);
     }
