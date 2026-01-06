@@ -30,6 +30,7 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.liveTime,
         li.auctionStatus,
         li.initPrice,
+        null,
         null
     )
     FROM LiveItem li
@@ -66,7 +67,9 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
         li.liveTime,
         li.auctionStatus,
         li.initPrice,
+        null,
         null
+        
     )
     FROM LiveItem li
     LEFT JOIN LikeLive ll ON ll.liveItem = li
@@ -130,6 +133,7 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
           li.liveTime,
           li.auctionStatus,
           li.initPrice,
+          null,
           null
       )
       FROM LiveItem li
@@ -192,6 +196,7 @@ public interface LiveItemRepository extends JpaRepository<LiveItem, Long> {
             li.liveTime,
             li.auctionStatus,
             li.initPrice,
+            null,
             null
         )
         FROM LiveItem li

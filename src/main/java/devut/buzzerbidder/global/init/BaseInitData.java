@@ -131,6 +131,7 @@ public class BaseInitData {
                 .category(LiveItem.Category.ELECTRONICS)
                 .description("샘플 설명입니다.")
                 .initPrice(1000000L)
+                .currentPrice(1000000L)
                 .deliveryInclude(false)
                 .itemStatus(LiveItem.ItemStatus.NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
@@ -232,6 +233,7 @@ public class BaseInitData {
                 .category(LiveItem.Category.CLOTHES)
                 .description("내가 직접 등록한 라이브 경매 상품입니다.")
                 .initPrice(50000L)
+                .currentPrice(50000L)
                 .deliveryInclude(true)
                 .itemStatus(LiveItem.ItemStatus.USED_LIKE_NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
@@ -290,6 +292,7 @@ public class BaseInitData {
                 .category(LiveItem.Category.ART)
                 .description("이 상품을 좋아요 했습니다.")
                 .initPrice(300000L)
+                .currentPrice(300000L)
                 .deliveryInclude(true)
                 .itemStatus(LiveItem.ItemStatus.NEW)
                 .auctionStatus(LiveItem.AuctionStatus.BEFORE_BIDDING)
@@ -298,6 +301,7 @@ public class BaseInitData {
                 .region("서울시 종로구")
                 .preferredPlace(null)
                 .images(likedLiveImages)
+
                 .build();
 
         likedLiveItem.addImage(new LiveItemImage("https://example.com/liked-live-item.jpg", likedLiveItem));
