@@ -46,7 +46,7 @@ public class ChatRoomController {
         return ApiResponse.ok("채팅방 상세 조회 성공", response);
     }
 
-    @GetMapping("/dm/{delayedItemId}")
+    @GetMapping("/dm/item/{delayedItemId}")
     @Operation(summary = "DM 채팅방 조회", description = "상품 ID로 DM 채팅방을 조회합니다. 기존 채팅방이 있으면 메시지 내역을, 없으면 상품 정보만 반환합니다. (채팅방 생성은 첫 메시지 전송 시점)")
     public ApiResponse<DirectMessageEnterResponse> getDirectMessageChatRoom(
             @PathVariable Long delayedItemId
