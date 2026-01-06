@@ -80,6 +80,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
         String method = request.getMethod();
         boolean isAuctionLiveGet = method.equals("GET") && requestURI.startsWith("/api/v1/auction/live");
+        boolean isAuctionRoomsGet = method.equals("GET") && requestURI.startsWith("/api/v1/auction/rooms");
         boolean isPersonalApi = requestURI.endsWith("/my-bids");
         boolean isAuctionGet = method.equals("GET") && requestURI.startsWith("/api/v1/auction/") && !isPersonalApi && !isAuctionLiveGet;
 
@@ -94,7 +95,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // GET 경매 조회는 토큰 없으면 익명 통과 (isLiked는 false로 표시됨)
-        if ((isAuctionGet || isAuctionLiveGet) && (accessToken == null || accessToken.isBlank())) {
+        if ((isAuctionGet || isAuctionLiveGet || isAuctionRoomsGet) && (accessToken == null || accessToken.isBlank())) {
             filterChain.doFilter(request, response);
             return;
         }

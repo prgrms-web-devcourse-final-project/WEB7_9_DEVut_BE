@@ -4,6 +4,7 @@ public record LiveItemDto(
     Long id,
     String title,
     Long amount,
-    String image
+    String image,
+    Boolean isLiked
 ) {
 }
