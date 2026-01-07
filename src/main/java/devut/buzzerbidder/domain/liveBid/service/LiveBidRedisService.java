@@ -1,18 +1,20 @@
 package devut.buzzerbidder.domain.liveBid.service;
 
 import devut.buzzerbidder.domain.liveBid.dto.BidAtomicResult;
+import devut.buzzerbidder.domain.liveBid.dto.LiveBidEvent;
 import io.micrometer.core.annotation.Timed;
-import java.util.List;
-import java.util.Set;
+
+import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.stream.RecordId;
+import org.springframework.data.redis.connection.stream.StreamRecords;
+import org.springframework.data.redis.connection.stream.StringRecord;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor()
@@ -25,6 +27,9 @@ public class LiveBidRedisService {
 
     // 시작 감지용 ZSET 키
     private static final String STARTING_ZSET_KEY = "auction:live:starting";
+
+    // 입찰 로그용 Stream Key
+    private static final String BID_LOG_STREAM_KEY = "auction:bid:log:stream";
 
     /** 경매 종료 시각 등록/갱신 (score=endTimeMs, member=liveItemId) */
     public void upsertEndingZset(Long liveItemId, long endTimeMs) {
@@ -493,4 +498,20 @@ public class LiveBidRedisService {
         }).toList();
     }
 
+
+    /**
+     * 입찰 성공 로그를 Redis Stream에 적재
+     */
+    public RecordId saveBidLogToStream(LiveBidEvent event) {
+        Map<String, String> logData = new HashMap<>();
+        logData.put("auctionId", String.valueOf(event.auctionRoomId()));
+        logData.put("liveItemId", String.valueOf(event.liveItemId()));
+        logData.put("bidderId", String.valueOf(event.bidderId()));
+        logData.put("sellerId", String.valueOf(event.sellerId()));
+        logData.put("bidPrice", String.valueOf(event.bidPrice()));
+        logData.put("occurredAt", String.valueOf(System.currentTimeMillis()));
+
+        StringRecord record = StreamRecords.string(logData).withStreamKey(BID_LOG_STREAM_KEY);
+        return redisTemplate.opsForStream().add(record);
+    }
 }
