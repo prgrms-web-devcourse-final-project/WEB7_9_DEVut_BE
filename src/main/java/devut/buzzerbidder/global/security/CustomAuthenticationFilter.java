@@ -55,6 +55,12 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     private void authenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String requestURI = request.getRequestURI();
 
+        // OPTIONS 프리플라이트 요청은 무조건 통과
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // OAuth2 관련 경로는 통과 (OAuth2 로그인 플로우)
         if(requestURI.startsWith("/oauth2/") || requestURI.startsWith("/login/oauth2/")) {
             filterChain.doFilter(request, response);
@@ -67,13 +73,14 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 허용된 API 경로들 (회원가입, 로그인, 토큰 재발급, 이메일 인증)
+        // 허용된 API 경로들 (회원가입, 로그인, 토큰 재발급, 이메일 인증, SSE 구독)
         if(requestURI.equals("/api/v1/users/signup") ||
             requestURI.equals("/api/v1/users/signin") ||
             requestURI.equals("/api/v1/users/refresh") ||
             requestURI.equals("/api/v1/users/oauth/signin") ||
             requestURI.equals("/api/v1/users/email/verification") ||
-            requestURI.equals("/api/v1/users/email/verification/verify")) {
+            requestURI.equals("/api/v1/users/email/verification/verify") ||
+            requestURI.equals("/api/v1/notifications/subscribe")) {
             filterChain.doFilter(request, response);
             return;
         }

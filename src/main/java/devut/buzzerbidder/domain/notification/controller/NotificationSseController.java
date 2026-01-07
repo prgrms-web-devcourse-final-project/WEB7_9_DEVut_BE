@@ -23,7 +23,9 @@ public class NotificationSseController {
     /**
      * 개인 알림 구독
      */
-    @GetMapping("/subscribe")
+    @GetMapping(
+        value = "/subscribe",
+        produces = "text/event-stream")
     @Operation(summary = "알림 구독", description = "SSE를 통해 실시간 알림을 구독합니다.")
     public SseEmitter subscribe() {
         User user = requestContext.getCurrentUser();

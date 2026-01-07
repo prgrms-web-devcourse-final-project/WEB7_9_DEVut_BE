@@ -5,7 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -14,6 +16,8 @@ public class SseEmitterPool {
 
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60;
     private final Map<String, Set<SseEmitter>> channelEmitters = new ConcurrentHashMap<>();
+
+    private static final long HEARTBEAT_INTERVAL = 30_000L;
 
     // 개인 채널 : "user:{userId}"
     // 경매 채널 : "auction:{auctionId}"
@@ -34,14 +38,41 @@ public class SseEmitterPool {
         emitter.onError((e) -> removeEmitter(channel, emitter));
 
         try {
-            emitter.send(SseEmitter.event()
-                .name("connected")
-                .data("SSE connection established to channel: " + channel));
+            emitter.send(SseEmitter.event().comment("connected"));
         } catch (IOException e) {
             removeEmitter(channel, emitter);
         }
 
         return emitter;
+    }
+
+    @Scheduled(fixedRate = HEARTBEAT_INTERVAL)
+    public void heartbeat() {
+        List<SseEmitter> deadEmitters = new ArrayList<>();
+
+        channelEmitters.values().forEach(emitters ->
+            emitters.forEach(emitter -> {
+                try {
+                    emitter.send(SseEmitter.event().comment("ping"));
+                } catch (Exception e) {
+                    deadEmitters.add(emitter);
+                }
+            })
+        );
+
+        deadEmitters.forEach(emitter -> {
+            emitter.complete();
+            removeEmitterByEmitter(emitter);
+        });
+    }
+
+    private void removeEmitterByEmitter(SseEmitter emitter) {
+        channelEmitters.forEach((channel, emitters) -> {
+            emitters.remove(emitter);
+            if (emitters.isEmpty()) {
+                channelEmitters.remove(channel);
+            }
+        });
     }
 
     /**
@@ -56,6 +87,7 @@ public class SseEmitterPool {
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event()
+                    .id(UUID.randomUUID().toString())
                     .name("notification")
                     .data(data));
             } catch (IOException e) {
