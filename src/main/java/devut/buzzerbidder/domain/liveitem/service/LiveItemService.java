@@ -87,23 +87,23 @@ public class LiveItemService {
 
         LocalDateTime now = LocalDateTime.now();
 
-//        // 1. 현재 시간과 liveTime 차이 확인
-//        if (reqBody.startAt().isBefore(now.plusHours(1))) {
-//            throw new BusinessException(ErrorCode.CLOSE_LIVETIME);
-//        }
-//
-//        LocalTime liveTimeOnly = reqBody.startAt().toLocalTime();
-//        // 2. 허용 시간 범위 체크 (09:00 ~ 23:00)
-//        if (liveTimeOnly.isBefore(LocalTime.of(9, 0)) || liveTimeOnly.isAfter(LocalTime.of(23, 0))) {
-//            throw new BusinessException(ErrorCode.INVALID_LIVETIME);
-//        }
-//
-//        // 3. 30분 단위 체크 + 초 체크
-//        int minute = liveTimeOnly.getMinute();
-//        int second = liveTimeOnly.getSecond();
-//        if ((minute != 0 && minute != 30)|| second !=0) {
-//            throw new BusinessException(ErrorCode.INVALID_LIVETIME);
-//        }
+        // 1. 현재 시간과 liveTime 차이 확인
+        if (reqBody.startAt().isBefore(now.plusHours(1))) {
+            throw new BusinessException(ErrorCode.CLOSE_LIVETIME);
+        }
+
+        LocalTime liveTimeOnly = reqBody.startAt().toLocalTime();
+        // 2. 허용 시간 범위 체크 (09:00 ~ 23:00)
+        if (liveTimeOnly.isBefore(LocalTime.of(9, 0)) || liveTimeOnly.isAfter(LocalTime.of(23, 0))) {
+            throw new BusinessException(ErrorCode.INVALID_LIVETIME);
+        }
+
+        // 3. 30분 단위 체크 + 초 체크
+        int minute = liveTimeOnly.getMinute();
+        int second = liveTimeOnly.getSecond();
+        if ((minute != 0 && minute != 30)|| second !=0) {
+            throw new BusinessException(ErrorCode.INVALID_LIVETIME);
+        }
 
         // 4. 이미지 있는지 체크
         if (reqBody.images() == null || reqBody.images().isEmpty()) {
