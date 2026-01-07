@@ -193,10 +193,12 @@ public class UserService {
 
         // 배송지 처리
         DeliveryAddress deliveryAddress;
-        if (request.address() != null && request.addressDetail() != null) {
-            // postalCode가 null이면 빈 문자열로 처리
+        // address, addressDetail, postalCode 중 하나라도 null이 아니면 배송지 업데이트 (빈 문자열도 허용)
+        if (request.address() != null || request.addressDetail() != null || request.postalCode() != null) {
+            String address = request.address() != null ? request.address() : "";
+            String addressDetail = request.addressDetail() != null ? request.addressDetail() : "";
             String postalCode = request.postalCode() != null ? request.postalCode() : "";
-            deliveryAddress = updateOrCreateDeliveryAddress(updatedUser, request.address(), request.addressDetail(), postalCode);
+            deliveryAddress = updateOrCreateDeliveryAddress(updatedUser, address, addressDetail, postalCode);
         } else {
             deliveryAddress = findDefaultDeliveryAddress(updatedUser);
         }
@@ -377,7 +379,8 @@ public class UserService {
             return deliveryAddressRepository.save(deliveryAddress);
         }
 
-        // 기본 배송지가 없으면 무조건 기본 배송지로 생성
+        // 기본 배송지가 없으면 기본 배송지로 생성
+        // 빈 문자열도 허용하여 생성
         DeliveryAddress newAddress = DeliveryAddress.builder()
                 .user(user)
                 .address(address)

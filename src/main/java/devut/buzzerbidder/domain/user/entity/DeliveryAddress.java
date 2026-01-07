@@ -32,10 +32,11 @@ public class DeliveryAddress extends BaseEntity {
         if (user == null) {
             throw new BusinessException(ErrorCode.DELIVERY_ADDRESS_USER_NOT_NULL);
         }
-        if (address == null || address.isBlank()) {
+        // address와 addressDetail은 null만 체크 (빈 문자열 허용)
+        if (address == null) {
             throw new BusinessException(ErrorCode.DELIVERY_ADDRESS_NOT_VALID);
         }
-        if (addressDetail == null || addressDetail.isBlank()) {
+        if (addressDetail == null) {
             throw new BusinessException(ErrorCode.DELIVERY_ADDRESS_DETAIL_NOT_VALID);
         }
         // postalCode는 선택적이므로 null이면 빈 문자열로 처리
@@ -47,13 +48,14 @@ public class DeliveryAddress extends BaseEntity {
     }
 
     public void update(String address, String addressDetail, String postalCode) {
-        if (address != null && !address.isBlank()) {
+        // 빈 문자열도 허용하여 업데이트
+        if (address != null) {
             this.address = address;
         }
-        if (addressDetail != null && !addressDetail.isBlank()) {
+        if (addressDetail != null) {
             this.addressDetail = addressDetail;
         }
-        if (postalCode != null && !postalCode.isBlank()) {
+        if (postalCode != null) {
             this.postalCode = postalCode;
         }
     }
