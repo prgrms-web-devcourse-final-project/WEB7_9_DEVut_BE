@@ -22,6 +22,8 @@ import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ChatRoomService {
 
     private final WalletRedisService walletRedisService;
@@ -113,17 +116,27 @@ public class ChatRoomService {
     )
     public void enterChatRoom(User user, ChatRoom chatRoom) {
 
+        boolean isAlreadyEntered = chatRoomEnteredRepository.existsByUserAndChatRoom(user, chatRoom);
+
+        if (isAlreadyEntered) {
+            return; // 이미 입장 상태면 종료
+        }
+
         // 입장하는 채팅방의 종류가 경매방일 시 별도의 프로세스 진행
         if (chatRoom.getReferenceType() == ChatRoom.ReferenceEntityType.AUCTION_ROOM) {
             enterLiveAuctionProcess(user, chatRoom);
         }
 
         // DB에 입장 기록 저장
-        chatRoomEnteredRepository.findByUserAndChatRoom(user, chatRoom)
-                .orElseGet(() -> {
-                    ChatRoomEntered newEntry = new ChatRoomEntered(user, chatRoom);
-                    return chatRoomEnteredRepository.save(newEntry);
-                });
+        try {
+            ChatRoomEntered newEntry = new ChatRoomEntered(user, chatRoom);
+            chatRoomEnteredRepository.save(newEntry);
+
+        } catch (DataIntegrityViolationException e) {
+            log.warn("이미 입장 처리된 유저 (동시 요청 감지): userId={}, chatRoomId={}",
+                    user.getId(), chatRoom.getId());
+        }
+
     }
 
     public void exitAuctionChatRoom(Long auctionId, User user) {
