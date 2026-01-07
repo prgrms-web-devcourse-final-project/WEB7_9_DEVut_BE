@@ -38,7 +38,11 @@ public class SseEmitterPool {
         emitter.onError((e) -> removeEmitter(channel, emitter));
 
         try {
-            emitter.send(SseEmitter.event().comment("connected"));
+            emitter.send(
+                SseEmitter.event()
+                    .name("connect")
+                    .data("connected")
+            );
         } catch (IOException e) {
             removeEmitter(channel, emitter);
         }
@@ -48,29 +52,18 @@ public class SseEmitterPool {
 
     @Scheduled(fixedRate = HEARTBEAT_INTERVAL)
     public void heartbeat() {
-        List<SseEmitter> deadEmitters = new ArrayList<>();
-
-        channelEmitters.values().forEach(emitters ->
-            emitters.forEach(emitter -> {
-                try {
-                    emitter.send(SseEmitter.event().comment("ping"));
-                } catch (Exception e) {
-                    deadEmitters.add(emitter);
-                }
-            })
-        );
-
-        deadEmitters.forEach(emitter -> {
-            emitter.complete();
-            removeEmitterByEmitter(emitter);
-        });
-    }
-
-    private void removeEmitterByEmitter(SseEmitter emitter) {
         channelEmitters.forEach((channel, emitters) -> {
-            emitters.remove(emitter);
-            if (emitters.isEmpty()) {
-                channelEmitters.remove(channel);
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(
+                        SseEmitter.event()
+                            .name("heartbeat")
+                            .data("ping")
+                    );
+                } catch (Exception e) {
+                    emitter.complete();
+                    removeEmitter(channel, emitter);
+                }
             }
         });
     }
