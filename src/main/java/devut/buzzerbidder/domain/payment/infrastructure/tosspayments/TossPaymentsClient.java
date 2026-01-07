@@ -1,6 +1,8 @@
 package devut.buzzerbidder.domain.payment.infrastructure.tosspayments;
 
+import devut.buzzerbidder.domain.payment.dto.request.PaymentCancelRequestDto;
 import devut.buzzerbidder.domain.payment.dto.request.PaymentConfirmRequestDto;
+import devut.buzzerbidder.domain.payment.infrastructure.tosspayments.dto.request.TossCancelRequestDto;
 import devut.buzzerbidder.domain.payment.infrastructure.tosspayments.dto.request.TossConfirmRequestDto;
 import devut.buzzerbidder.domain.payment.infrastructure.tosspayments.dto.response.TossConfirmResponseDto;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +40,6 @@ public class TossPaymentsClient {
         );
         HttpEntity<TossConfirmRequestDto> request = new HttpEntity<>(body, headers);
 
-        // TODO: 토스 에러응답 추가
         ResponseEntity<TossConfirmResponseDto> response = restTemplate.postForEntity(
                 "https://api.tosspayments.com/v1/payments/confirm",
                 request,
@@ -48,28 +49,20 @@ public class TossPaymentsClient {
         return response.getBody();
     }
 
-//    public TossCancelResponseDto cancelPayment(String paymentKey, PaymentCancelRequestDto requestDto) {
-//
-//        String encodedSecretKey = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_JSON);
-//        headers.set("Authorization", "Basic " + encodedSecretKey);
-//
-//        TossCancelRequestDto body = new TossCancelRequestDto(
-//                requestDto.cancelReason()
-//        );
-//
-//        String url = "https://api.tosspayments.com/v1/payments/" + paymentKey + "/cancel";
-//        HttpEntity<TossCancelRequestDto> request = new HttpEntity<>(body, headers);
-//
-//        // TODO: 토스 에러응답 추가
-//        ResponseEntity<TossCancelResponseDto> response = restTemplate.postForEntity(
-//                url,
-//                request,
-//                TossCancelResponseDto.class
-//        );
-//
-//        return response.getBody();
-//    }
+    public void cancelPayment(String paymentKey, PaymentCancelRequestDto requestDto) {
+        String encodedSecretKey = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Basic " + encodedSecretKey);
+
+        TossCancelRequestDto body = new TossCancelRequestDto(
+                requestDto.cancelReason()
+        );
+
+        String url = "https://api.tosspayments.com/v1/payments/" + paymentKey + "/cancel";
+        HttpEntity<TossCancelRequestDto> request = new HttpEntity<>(body, headers);
+
+        restTemplate.postForEntity(url, request, void.class);
+    }
 }

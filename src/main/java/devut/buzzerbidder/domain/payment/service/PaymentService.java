@@ -1,10 +1,7 @@
 package devut.buzzerbidder.domain.payment.service;
 
 import devut.buzzerbidder.domain.payment.dto.PaymentHistoryItemDto;
-import devut.buzzerbidder.domain.payment.dto.request.PaymentConfirmRequestDto;
-import devut.buzzerbidder.domain.payment.dto.request.PaymentCreateRequestDto;
-import devut.buzzerbidder.domain.payment.dto.request.PaymentFailRequestDto;
-import devut.buzzerbidder.domain.payment.dto.request.PaymentHistoryRequestDto;
+import devut.buzzerbidder.domain.payment.dto.request.*;
 import devut.buzzerbidder.domain.payment.dto.response.PaymentConfirmResponseDto;
 import devut.buzzerbidder.domain.payment.dto.response.PaymentCreateResponseDto;
 import devut.buzzerbidder.domain.payment.dto.response.PaymentFailResponseDto;
@@ -17,7 +14,6 @@ import devut.buzzerbidder.domain.payment.infrastructure.tosspayments.dto.respons
 import devut.buzzerbidder.domain.payment.repository.PaymentRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.UserRepository;
-import devut.buzzerbidder.domain.wallet.entity.Wallet;
 import devut.buzzerbidder.domain.wallet.repository.WalletRepository;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
@@ -35,14 +31,12 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final TossPaymentsClient tossPaymentsClient;
-    private final WalletRepository walletRepository;
-    private final WalletService walletService;
+    private final PaymentTransactionService paymentTransactionService;
 
     @Transactional
     public PaymentCreateResponseDto create(Long userId, PaymentCreateRequestDto request) {
@@ -57,23 +51,13 @@ public class PaymentService {
         return PaymentCreateResponseDto.from(payment);
     }
 
+
     public PaymentConfirmResponseDto confirm(Long userId, PaymentConfirmRequestDto request) {
         String paymentKey = request.paymentKey();
         String orderId = request.orderId();
         Long amount = request.amount();
 
-        Payment payment = paymentRepository.findByOrderId((orderId))
-                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
-
-        // 이미 처리된 결제에 대해서 중복 승인 방지용
-        if (!payment.isPending()) {
-            throw new BusinessException(ErrorCode.NOT_PENDING_PAYMENT);
-        }
-
-        // 요청 금액과 결제 생성금액 동일한지 확인용
-        if (!payment.getAmount().equals(amount)) {
-            throw new BusinessException(ErrorCode.INVALID_AMOUNT);
-        }
+        paymentTransactionService.markLocked(orderId, amount);
 
         TossConfirmResponseDto response = tossPaymentsClient.confirmPayment(request);
 
@@ -82,19 +66,23 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.PAYMENT_CONFIRM_FAILED);
         }
 
-        payment.confirm(
-                paymentKey,
-                PaymentMethod.fromToss(response.method()),
-                response.approvedAt()
-        );
-        paymentRepository.save(payment);
+        try {
+            // 승인 요청 성공 시, 지갑 충전
+            Payment payment = paymentTransactionService.confirmAndChargeWallet(userId, orderId, paymentKey, response, amount);
+            return PaymentConfirmResponseDto.from(payment);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        walletService.chargeBizz(user, amount);
-
-        return PaymentConfirmResponseDto.from(payment);
+        } catch (Exception e) {
+            PaymentCancelRequestDto cancelRequest = new PaymentCancelRequestDto("결제 승인 후 내부 처리 실패로 인한 취소");
+            try {
+                // DB 충전 중 오류 발생 시, 결제 취소 요청
+                tossPaymentsClient.cancelPayment(paymentKey, cancelRequest);
+                paymentTransactionService.markCanceled(orderId, "INTERNAL_FAIL", cancelRequest.cancelReason());
+            } catch (Exception ex) {
+                // 취소 실패 시, CANCEL_PENDING 상태 유지(스케줄러로 재시도 최대 3번)
+                paymentTransactionService.markCancelPending(paymentKey, orderId, "CANCEL_FAIL", "결제 취소 실패", OffsetDateTime.now());
+            }
+                throw new BusinessException(ErrorCode.INTERNAL_PAYMENT_ERROR);
+        }
     }
 
     public PaymentFailResponseDto fail(PaymentFailRequestDto request) {
@@ -167,5 +155,4 @@ public class PaymentService {
     private String genOrderId() {
         return "ORDER_" + System.currentTimeMillis();
     }
-
 }

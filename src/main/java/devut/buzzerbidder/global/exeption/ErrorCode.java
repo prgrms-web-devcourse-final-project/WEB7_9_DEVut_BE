@@ -66,6 +66,7 @@ public enum ErrorCode {
     PAYMENT_CANCELED_FAILED("P008", HttpStatus.BAD_REQUEST, "결제취소 요청이 실패했습니다."),
     INVALID_PAGE_ERROR("P009", HttpStatus.BAD_REQUEST, "요청한 페이지가 허용범위를 초과했습니다."),
     INVALID_PAGE_SIZE("P010", HttpStatus.BAD_REQUEST, "조회 건수는 최대 30건까지 가능합니다."),
+    INTERNAL_PAYMENT_ERROR("P011", HttpStatus.INTERNAL_SERVER_ERROR, "결제 서버 내부처리 중 오류가 발생했습니다."),
 
     // ========== AuctionRoom 도메인 에러 ==========
     FULL_AUCTION_ROOM("AR001", HttpStatus.CONFLICT, "경매방이 가득 찼습니다."),
