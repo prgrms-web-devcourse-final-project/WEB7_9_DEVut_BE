@@ -452,8 +452,8 @@ public class WalletRedisService {
 
             --세션이 없으면 MISS
             if redis.call('EXISTS', sesKey) == 0 then
-              redis.call('DEL', balKey)
-              redis.call('DEL', verKey)
+              redis.call('EXPIRE', balKey, 60)
+            redis.call('EXPIRE', verKey, 60)
               return { %d, %d, 0 }
             end
 
@@ -528,13 +528,13 @@ public class WalletRedisService {
 
         -- 1) 세션 검증: 둘 중 하나라도 세션이 없으면 MISS (그리고 해당 유저 키 정리)
         if redis.call('EXISTS', fromSesKey) == 0 then
-          redis.call('DEL', fromBalKey)
-          redis.call('DEL', fromVerKey)
+          redis.call('EXPIRE', fromBalKey, 60)
+          redis.call('EXPIRE', fromVerKey, 60)
           return { %d, %d, 0, %d, %d, 0 }
         end
         if redis.call('EXISTS', toSesKey) == 0 then
-          redis.call('DEL', toBalKey)
-          redis.call('DEL', toVerKey)
+          redis.call('EXPIRE', toBalKey, 60)
+          redis.call('EXPIRE', toVerKey, 60)
           return { %d, %d, 0, %d, %d, 0 }
         end
 
