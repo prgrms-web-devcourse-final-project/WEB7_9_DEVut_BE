@@ -3,6 +3,7 @@ package devut.buzzerbidder.domain.liveitem.service;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomService;
 import devut.buzzerbidder.domain.auctionroom.service.AuctionRoomStatePushService;
+import devut.buzzerbidder.domain.chat.service.ChatRoomParticipantService;
 import devut.buzzerbidder.domain.deal.service.LiveDealService;
 import devut.buzzerbidder.domain.likelive.repository.LikeLiveRepository;
 import devut.buzzerbidder.domain.likelive.service.LikeLiveService;
@@ -74,6 +75,7 @@ public class LiveItemService {
     private final ApplicationEventPublisher eventPublisher;
     private final LiveItemWebSocketService liveItemWebSocketService;
     private final RedisTemplate<String, String> redisTemplate;
+    private final ChatRoomParticipantService chatRoomParticipantService;
 
 
     @Timed(
@@ -717,6 +719,8 @@ public class LiveItemService {
             // endLive()는 LIVE 상태에서만 가능하니 멱등 방어
             if (room.getAuctionStatus() == AuctionRoom.AuctionStatus.LIVE) {
                 room.endLive(); // AuctionRoom.auctionStatus = ENDED
+                // 경매 종료 시 redis의 참여자 수 초기화
+                chatRoomParticipantService.resetParticipantCount(room.getId());
             }
         }
 
