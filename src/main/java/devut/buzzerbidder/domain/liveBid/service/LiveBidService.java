@@ -72,7 +72,6 @@ public class LiveBidService {
             throw new BusinessException(ErrorCode.LIVEBID_NOT_IN_PROGRESS);
         }
 
-        // TODO: 지갑 잔고 검증
     }
 
     /**
@@ -147,7 +146,7 @@ public class LiveBidService {
                 request.bidPrice()
         );
 
-        // TODO: Redis Streams
+        liveBidRedisService.saveBidLogToStream(event);
 
         log.info("라이브 입찰 성공. Item: {} Price: {}", request.liveItemId(), request.bidPrice());
 

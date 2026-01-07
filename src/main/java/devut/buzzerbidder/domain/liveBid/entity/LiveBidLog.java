@@ -13,6 +13,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -36,12 +38,15 @@ public class LiveBidLog extends BaseEntity {
 
     private int bidPrice;
 
+    private LocalDateTime bidTime;
+
     @Builder
-    public LiveBidLog(User bidder, LiveItem liveItem, User seller, AuctionRoom auctionRoom, int bidPrice) {
+    public LiveBidLog(User bidder, LiveItem liveItem, User seller, AuctionRoom auctionRoom, int bidPrice, LocalDateTime bidTime) {
         this.bidder = bidder;
         this.liveItem = liveItem;
         this.seller = seller;
         this.auctionRoom = auctionRoom;
         this.bidPrice = bidPrice;
+        this.bidTime = bidTime;
     }
 }
