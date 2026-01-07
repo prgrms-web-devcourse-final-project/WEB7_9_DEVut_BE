@@ -130,9 +130,6 @@ public class ChatRoomService {
 
         walletRedisService.flushBalanceAndClearSession(user.getId(), null);
 
-        // 퇴장 시 지갑 정보 초기화
-        walletRedisService.flushBalanceAndClearSession(user.getId(), null);
-
         ChatRoom chatRoom = chatRoomRepository.findByAuctionId(auctionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHATROOM_NOT_FOUND));
 
