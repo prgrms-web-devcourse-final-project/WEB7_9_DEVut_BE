@@ -73,14 +73,13 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 허용된 API 경로들 (회원가입, 로그인, 토큰 재발급, 이메일 인증, SSE 구독)
+        // 허용된 API 경로들 (회원가입, 로그인, 토큰 재발급, 이메일 인증)
         if(requestURI.equals("/api/v1/users/signup") ||
             requestURI.equals("/api/v1/users/signin") ||
             requestURI.equals("/api/v1/users/refresh") ||
             requestURI.equals("/api/v1/users/oauth/signin") ||
             requestURI.equals("/api/v1/users/email/verification") ||
-            requestURI.equals("/api/v1/users/email/verification/verify") ||
-            requestURI.equals("/api/v1/notifications/subscribe")) {
+            requestURI.equals("/api/v1/users/email/verification/verify")) {
             filterChain.doFilter(request, response);
             return;
         }
