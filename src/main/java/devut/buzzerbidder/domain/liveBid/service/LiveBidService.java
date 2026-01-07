@@ -167,7 +167,7 @@ public class LiveBidService {
 
         return new LiveBidResponse(
                 false,
-                "입찰 실패. 현재 최고가보다 낮은 가격입니다. 현재가: " + currentMaxPrice,
+                "입찰 실패. 현재 최고가보다 5% 이상, 100bizz 이상 입력해주세요. 현재가: " + currentMaxPrice,
                 currentMaxPrice
         );
     }
