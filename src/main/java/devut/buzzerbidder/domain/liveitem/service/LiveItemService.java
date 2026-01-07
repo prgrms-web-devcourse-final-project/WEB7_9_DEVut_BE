@@ -411,7 +411,8 @@ public class LiveItemService {
                 likeCount,
                 liveItem.getInitPrice(),
                 currentMaxPrice,
-                isLiked
+                isLiked,
+                liveItem.getAuctionRoom().getId()
         );
     }
 
