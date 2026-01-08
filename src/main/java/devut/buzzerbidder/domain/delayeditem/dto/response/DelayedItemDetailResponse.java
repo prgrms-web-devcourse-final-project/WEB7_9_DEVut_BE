@@ -23,8 +23,10 @@ public record DelayedItemDetailResponse(
     String preferredPlace,
     List<String> images,
     Long sellerUserId,
+    String sellerNickname,
     Long likeCount,
-    Boolean isLiked
+    Boolean isLiked,
+    LocalDateTime createdAt
 ) {
 
 }

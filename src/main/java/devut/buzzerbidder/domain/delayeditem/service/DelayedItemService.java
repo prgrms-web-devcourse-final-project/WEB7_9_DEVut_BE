@@ -13,6 +13,7 @@ import devut.buzzerbidder.domain.delayeditem.entity.DelayedItemImage;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
 import devut.buzzerbidder.domain.likedelayed.service.LikeDelayedService;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.UserRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.image.ImageService;
@@ -36,6 +37,7 @@ public class DelayedItemService {
     private final DelayedItemRepository delayedItemRepository;
     private final LikeDelayedService likeDelayedService;
     private final DelayedBidRepository delayedBidRepository;
+    private final UserRepository userRepository;
     private final ImageService imageService;
 
     @Transactional
@@ -163,6 +165,9 @@ public class DelayedItemService {
         DelayedItem delayedItem = delayedItemRepository.findDelayedItemWithImagesById(id)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
+        User user = userRepository.findById(delayedItem.getSellerUserId())
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
         long likeCount = likeDelayedService.countByDelayedItemId(id);
 
         boolean isLiked = false;
@@ -190,8 +195,10 @@ public class DelayedItemService {
                 .map(DelayedItemImage::getImageUrl)
                 .toList(),
             delayedItem.getSellerUserId(),
+            user.getNickname(),
             likeCount,
-            isLiked
+            isLiked,
+            delayedItem.getCreateDate()
         );
     }
 
