@@ -452,7 +452,9 @@ public class DelayedItemServiceTest {
         assertThat(response.name()).isEqualTo("테스트 상품");
         assertThat(response.category()).isEqualTo(Category.ELECTRONICS);
         assertThat(response.images()).hasSize(2);
+        assertThat(response.sellerNickname()).isEqualTo("seller");
         assertThat(response.likeCount()).isEqualTo(0L);
+        assertThat(response.createdAt()).isNotNull();
     }
 
     @Test
@@ -542,7 +544,7 @@ public class DelayedItemServiceTest {
         delayedItemService.writeDelayedItem(request, seller);
 
         // when
-        DelayedItemListResponse response = delayedItemService.getHotDelayedItems(10);
+        DelayedItemListResponse response = delayedItemService.getHotDelayedItems(10, null);
 
         // then
         assertThat(response).isNotNull();
