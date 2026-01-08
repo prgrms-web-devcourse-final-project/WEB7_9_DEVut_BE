@@ -12,6 +12,7 @@ import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class DirectMessageSentNotificationListener {
     private final ChatMessageRepository chatMessageRepository;
     private final DelayedItemRepository delayedItemRepository;
 
+    @Async("notificationExecutor")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFirstSent(DirectMessageSentEvent event) {

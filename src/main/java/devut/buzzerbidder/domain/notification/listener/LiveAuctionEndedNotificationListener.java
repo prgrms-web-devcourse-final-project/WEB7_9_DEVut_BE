@@ -5,6 +5,7 @@ import devut.buzzerbidder.domain.notification.enums.NotificationType;
 import devut.buzzerbidder.domain.notification.service.NotificationService;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ public class LiveAuctionEndedNotificationListener {
 
     private final NotificationService notificationService;
 
+    @Async("notificationExecutor")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(LiveAuctionEndedEvent event) {
