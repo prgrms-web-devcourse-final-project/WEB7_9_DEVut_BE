@@ -24,7 +24,9 @@ public record LiveItemDetailResponse(
     Long initPrice,
     Long currentPrice,
     Boolean isLiked,
-    Long auctionRoomId
+    Long auctionRoomId,
+    String sellerNickname,
+    LocalDateTime createdAt
 ) {
 
 }

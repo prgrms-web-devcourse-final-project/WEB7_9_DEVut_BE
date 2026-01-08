@@ -382,6 +382,8 @@ public class LiveItemService {
         LiveItem liveItem = liveItemRepository.findLiveItemWithImagesById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
+        String sellerNickname = userService.findById(liveItem.getId()).getNickname();
+
         boolean isLiked = false;
         if (userId != null) {
             isLiked = likeLiveRepository.existsByUserIdAndLiveItemId(userId, liveItem.getId());
@@ -414,7 +416,9 @@ public class LiveItemService {
                 liveItem.getInitPrice(),
                 currentMaxPrice,
                 isLiked,
-                liveItem.getAuctionRoom().getId()
+                liveItem.getAuctionRoom().getId(),
+                sellerNickname,
+                liveItem.getCreateDate()
         );
     }
 
