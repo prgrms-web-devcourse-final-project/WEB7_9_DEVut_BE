@@ -2,6 +2,7 @@ package devut.buzzerbidder.domain.notification.repository;
 
 import devut.buzzerbidder.domain.notification.entity.Notification;
 import devut.buzzerbidder.domain.notification.enums.NotificationType;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -30,6 +31,22 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
         @Param("type") NotificationType type,
         @Param("resourceId") Long resourceId,
         @Param("keyword") String keyword
+    );
+
+    /**
+     * TTL 기반 알림 삭제 (타입별 보관 기간 적용)
+     * 읽은 알림: type별 readRetentionDays 기준
+     * 안 읽은 알림: type별 unreadRetentionDays 기준
+     */
+    @Modifying
+    @Query("DELETE FROM Notification n " +
+           "WHERE n.type = :type " +
+           "AND ((n.isChecked = true AND n.createDate < :readThreshold) " +
+           "OR (n.isChecked = false AND n.createDate < :unreadThreshold))")
+    int deleteExpiredNotificationsByType(
+        @Param("type") NotificationType type,
+        @Param("readThreshold") LocalDateTime readThreshold,
+        @Param("unreadThreshold") LocalDateTime unreadThreshold
     );
 
 }
