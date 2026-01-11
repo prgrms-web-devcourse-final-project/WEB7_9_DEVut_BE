@@ -66,10 +66,13 @@ public class ChatMessageService {
         messagingTemplate.convertAndSend(destination, response);
     }
 
+    /**
+     * DM 메시지 전송 (지연경매/라이브경매 공용)
+     */
     @Transactional
-    public void sendDirectMessage(Long itemId, User sender, ChatMessageRequest request) {
-        // itemId로 채팅방 조회 또는 생성
-        ChatRoom chatRoom = chatRoomService.getOrCreateDmChatRoom(itemId, sender);
+    public void sendDirectMessage(Long itemId, User sender, ChatMessageRequest request, ChatRoom.ReferenceEntityType referenceType) {
+        // itemId와 타입으로 채팅방 조회 또는 생성
+        ChatRoom chatRoom = chatRoomService.getOrCreateDmChatRoom(itemId, sender, referenceType);
 
         ChatMessage chatMessage = ChatMessage.builder()
                 .chatRoom(chatRoom)
@@ -112,5 +115,17 @@ public class ChatMessageService {
 
         String destination = DM_DESTINATION_PREFIX + chatRoom.getId();
         messagingTemplate.convertAndSend(destination, response);
+    }
+
+    // 지연경매 DM 메시지 전송
+    @Transactional
+    public void sendDirectMessage(Long itemId, User sender, ChatMessageRequest request) {
+        sendDirectMessage(itemId, sender, request, ChatRoom.ReferenceEntityType.ITEM);
+    }
+
+    // 라이브 경매 DM 메시지 전송
+    @Transactional
+    public void sendLiveItemDirectMessage(Long liveItemId, User sender, ChatMessageRequest request) {
+        sendDirectMessage(liveItemId, sender, request, ChatRoom.ReferenceEntityType.LIVE_ITEM);
     }
 }

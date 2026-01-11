@@ -59,8 +59,9 @@ public class ChatRoom extends BaseEntity {
 
     // 참조 엔티티
     public enum ReferenceEntityType {
-        ITEM, // 경매품 엔티티 참조 (1:1 채팅의 경우 참조)
-        AUCTION_ROOM // 경매방 엔티티 참조 (경매방 채팅의 경우 참조)
+        ITEM, // 지연 경매품 엔티티 참조 (지연 경매 1:1 채팅의 경우 참조)
+        AUCTION_ROOM, // 경매방 엔티티 참조 (경매방 채팅의 경우 참조)
+        LIVE_ITEM // 라이브 경매품 엔티티 참조 (라이브 경매 1:1 DM 채팅의 경우 참조)
     }
 
     public void updateLastMessage(Long messageId, String content, LocalDateTime time) {

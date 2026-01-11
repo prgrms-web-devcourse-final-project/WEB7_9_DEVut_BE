@@ -38,6 +38,21 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
                                                @Param("userId") Long userId);
 
     /**
+     * 라이브 경매 아이템에 대해 특정 유저(구매자)가 참여 중인 1:1 채팅방 조회
+     * @param liveItemId 라이브 경매 상품 ID
+     * @param userId 유저 ID
+     */
+    @Query("""
+    SELECT cre.chatRoom FROM ChatRoomEntered cre
+     WHERE cre.chatRoom.roomType = 'DM'
+       AND cre.chatRoom.referenceType = 'LIVE_ITEM'
+       AND cre.chatRoom.referenceEntityId = :liveItemId
+       AND cre.user.id = :userId
+    """)
+    Optional<ChatRoom> findDmRoomByLiveItemAndUser(@Param("liveItemId") Long liveItemId,
+                                                   @Param("userId") Long userId);
+
+    /**
      * 동시성 방지를 위해 현재 저장된 ID보다 더 큰(최신) ID가 들어올 때만 업데이트
      */
     @Modifying(clearAutomatically = true)

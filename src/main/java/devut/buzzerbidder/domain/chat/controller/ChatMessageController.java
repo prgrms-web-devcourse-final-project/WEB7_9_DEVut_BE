@@ -76,4 +76,30 @@ public class ChatMessageController {
 
         chatMessageService.sendDirectMessage(itemId, sender, request);
     }
+
+    // send/chat/dm/live/{liveItemId}
+    @MessageMapping("/dm/live/{liveItemId}")
+    public void sendLiveItemDirectMessage(
+            @DestinationVariable Long liveItemId,
+            @Payload ChatMessageRequest request,
+            Principal principal
+    ) {
+        // Principal 타입이 아닐 경우 예외처리
+        if (!(principal instanceof Authentication authentication)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        Object principalObj = authentication.getPrincipal();
+        if (!(principalObj instanceof CustomUserDetails userDetails)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        User sender = userDetails.getUser();
+
+        if (sender == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        chatMessageService.sendLiveItemDirectMessage(liveItemId, sender, request);
+    }
 }
