@@ -43,10 +43,10 @@ public class LiveItemWebSocketService {
      * @param finalPrice    낙찰가 (유찰시 null)
      */
     public void broadcastAuctionEnd(Long auctionRoomId, Long liveItemId,
-        String liveItemName, boolean success, Long winnerId, Integer finalPrice) {
+        String liveItemName, boolean success, Long winnerId, Integer finalPrice, String winnerNickname) {
         // 전송할 메시지 구조
         String result = success ? "SUCCESS" : "FAILED";
-        AuctionEndMessage message = new AuctionEndMessage(liveItemId, liveItemName, result, winnerId, finalPrice);
+        AuctionEndMessage message = new AuctionEndMessage(liveItemId, liveItemName, result, winnerId, finalPrice, winnerNickname);
 
         String destination = AUCTION_PREFIX + auctionRoomId;
 

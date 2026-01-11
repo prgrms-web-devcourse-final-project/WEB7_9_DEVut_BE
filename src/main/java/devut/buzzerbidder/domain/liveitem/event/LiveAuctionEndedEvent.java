@@ -6,7 +6,8 @@ public record LiveAuctionEndedEvent(
     Long sellerUserId,
     boolean success,
     Long winnerUserId,
-    Integer finalPrice
+    Integer finalPrice,
+    String winnerNickname
 ) {
 
 }
