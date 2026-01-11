@@ -229,27 +229,33 @@ public class LiveBidRedisService {
           return {0}
         end
         
+        -- 환불 실패 플래그 (0=정상, 1=환불 실패)
+        local refundFailed = 0
+        
         -- 환불에 필요한 값은 쓰기(차감/HSET) 전에 미리 읽고 검증(부분반영 방지)
-                    local prevDep = nil
-                    local prevBalKey = nil
-                    local prevVerKey = nil
-                    local prevBal = nil
-            
-                    if prevBidder ~= '' then
-                      local prevDepStr = redis.call('HGET', depositsKey, prevBidder)
-                      if prevDepStr and prevDepStr ~= false then
-                        prevDep = tonumber(prevDepStr)
-                        prevBalKey = 'auction:bizz:' .. prevBidder
-                        prevVerKey = 'auction:bizzver:' .. prevBidder
-            
-                        local prevBalStr = redis.call('GET', prevBalKey)
-                        if (not prevBalStr) or (redis.call('EXISTS', prevVerKey) == 0) then
-                          return {-3}
-                        end
-                        prevBal = tonumber(prevBalStr)
-                      end
-                    end
-            
+        local prevDep = nil
+        local prevBalKey = nil
+        local prevVerKey = nil
+        local prevBal = nil
+        
+        if prevBidder ~= '' then
+          local prevDepStr = redis.call('HGET', depositsKey, prevBidder)
+          if prevDepStr and prevDepStr ~= false then
+            prevDep = tonumber(prevDepStr)
+            prevBalKey = 'auction:bizz:' .. prevBidder
+            prevVerKey = 'auction:bizzver:' .. prevBidder
+        
+            local prevBalStr = redis.call('GET', prevBalKey)
+            -- 여기서는 리턴하지 않고 "환불 실패"로만 표시하고 계속 진행
+            if (not prevBalStr) or (redis.call('EXISTS', prevVerKey) == 0) then
+              refundFailed = 1
+              prevDep = nil
+            else
+              prevBal = tonumber(prevBalStr)
+            end
+          end
+        end
+        
         -- deposit 차감: 잔액 체크 후 차감
         local balStr = redis.call('GET', balKey)
         if not balStr then
@@ -268,19 +274,39 @@ public class LiveBidRedisService {
         -- deposits에 deposit 기록
         redis.call('HSET', depositsKey, newBidderId, tostring(deposit))
         
-        -- 이전 최고입찰자 환불: 위에서 미리 읽어둔 값(prevDep/prevBal)만 사용
-       if prevDep ~= nil then
-         redis.call('SET', prevBalKey, prevBal + prevDep)
-         redis.call('INCR', prevVerKey)
-
-         if balanceTtl and balanceTtl > 0 then
-           redis.call('EXPIRE', prevBalKey, balanceTtl)
-           redis.call('EXPIRE', prevVerKey, balanceTtl)
-         end
-
-         redis.call('HDEL', depositsKey, prevBidder)
-       end
-
+        -- 이전 최고입찰자 환불: 실패해도 전체 작업은 진행하고 refundFailed=1만 세팅
+        if prevDep ~= nil then
+          local ok1, err1 = pcall(function()
+            redis.call('SET', prevBalKey, prevBal + prevDep)
+          end)
+          if not ok1 then
+            refundFailed = 1
+          end
+        
+          local ok2, err2 = pcall(function()
+            redis.call('INCR', prevVerKey)
+          end)
+          if not ok2 then
+            refundFailed = 1
+          end
+        
+          -- TTL은 부가 처리(실패해도 플래그만)
+          if balanceTtl and balanceTtl > 0 then
+            local ok3, err3 = pcall(function()
+              redis.call('EXPIRE', prevBalKey, balanceTtl)
+              redis.call('EXPIRE', prevVerKey, balanceTtl)
+            end)
+            if not ok3 then
+              refundFailed = 1
+            end
+          end
+        
+          -- 이전 입찰자 deposits 키 정리
+          local ok4, err4 = pcall(function()
+            redis.call('HDEL', depositsKey, prevBidder)
+          end)
+          if not ok4 then refundFailed = 1 end
+        end
         
         -- 최고가 갱신
         redis.call('HSET', liveKey, 'maxBidPrice', tostring(newPrice))
@@ -317,8 +343,10 @@ public class LiveBidRedisService {
           redis.call('EXPIRE', liveKey, balanceTtl)
         end
         
-        return {1, bal, afterBal}
+        -- ✅ 성공 + 환불 실패 여부 같이 반환
+        return {1, bal, afterBal, refundFailed}
 """;
+
 
     @Timed(
             value = "buzzerbidder.redis.livebid",
@@ -362,13 +390,15 @@ public class LiveBidRedisService {
 
             Long before = null;
             Long after = null;
+            Long refundFailed = null;
 
-            if (raw.size() >= 3) {
+            if (raw.size() >= 4) {
                 before = Long.parseLong(String.valueOf(raw.get(1)));
                 after = Long.parseLong(String.valueOf(raw.get(2)));
+                refundFailed = Long.parseLong(String.valueOf(raw.get(3)));
             }
 
-            return new BidAtomicResult(code, before, after);
+            return new BidAtomicResult(code, before, after, refundFailed);
 
         } catch (DataAccessException e) {
             throw new IllegalStateException("Redis LUA 실행 실패. redisKey=" + redisKey + ", bidderId=" + bidderId, e);

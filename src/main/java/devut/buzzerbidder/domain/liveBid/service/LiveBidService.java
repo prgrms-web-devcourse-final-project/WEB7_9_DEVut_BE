@@ -9,6 +9,7 @@ import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.wallet.enums.WalletTransactionType;
 import devut.buzzerbidder.domain.wallet.service.WalletHistoryService;
+import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class LiveBidService {
     private final LiveBidRedisService liveBidRedisService;
     private final LiveBidWebSocketService liveBidWebSocketService;
     private final WalletHistoryService walletHistoryService;
+    private final WalletService walletService;
 
     private static final String REDIS_KEY_PREFIX = "liveItem:";
     private static final String BID_TOPIC = "live-bid-events";
@@ -100,7 +102,19 @@ public class LiveBidService {
             }
 
             processSuccessfulBid(request, bidder, liveItem.getSellerUserId());
+            if(result.refundFailed() != null && result.refundFailed() > 0) {
+                log.warn("이전 최고 입찰자 환불 실패. refundBidBizz로 환불 진행: {}bizz",
+                        depositAmount);
+                walletService.refundBidBizz(bidder, depositAmount);
+            }
 
+            walletHistoryService.recordWalletHistory(
+                    bidder,
+                    depositAmount,
+                    WalletTransactionType.BID,
+                    balanceBefore,
+                    balanceAfter
+            );
             walletHistoryService.recordWalletHistory(
                     bidder,
                     depositAmount,
@@ -170,4 +184,5 @@ public class LiveBidService {
                 currentMaxPrice
         );
     }
+
 }
