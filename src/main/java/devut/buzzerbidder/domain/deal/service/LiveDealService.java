@@ -13,7 +13,9 @@ import devut.buzzerbidder.domain.deliveryTracking.service.DeliveryTrackingServic
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
+import devut.buzzerbidder.domain.user.entity.DeliveryAddress;
 import devut.buzzerbidder.domain.user.entity.User;
+import devut.buzzerbidder.domain.user.repository.DeliveryAddressRepository;
 import devut.buzzerbidder.domain.user.service.UserService;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
@@ -22,8 +24,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -36,13 +36,12 @@ public class LiveDealService {
     private final UserService userService;
     private final WalletService walletService;
     private final ApplicationEventPublisher eventPublisher;
+    private final DeliveryAddressRepository deliveryAddressRepository;
 
     public LiveDeal findByIdOrThrow(Long dealId) {
         return liveDealRepository.findById(dealId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEAL_NOT_FOUND));
     }
-
-    // TODO: 라이브 딜 생성 시 기본 배송지 자동 설정 (나중에 구현)
 
     @Transactional
     public void createDeal(Long liveItemId, Long buyerId, Long winningPrice, Long depositAmount) {
@@ -50,13 +49,27 @@ public class LiveDealService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
         User buyer = userService.findById(buyerId);
 
-        // DelayedDeal 생성
+        // 구매자의 기본 배송지 조회
+        DeliveryAddress defaultAddress = null;
+        if (buyer.getDefaultDeliveryAddressId() != null) {
+            defaultAddress = deliveryAddressRepository.findByUserAndId(buyer, buyer.getDefaultDeliveryAddressId())
+                    .orElse(null);
+        }
+        if (defaultAddress == null) {
+            defaultAddress = deliveryAddressRepository.findByUserAndIsDefaultTrue(buyer)
+                    .orElse(null);
+        }
+
+        // LiveDeal 생성
         LiveDeal deal = LiveDeal.builder()
                 .item(item)
                 .buyer(buyer)
                 .winningPrice(winningPrice)
                 .depositAmount(depositAmount)
                 .status(DealStatus.PENDING)
+                .deliveryAddress(defaultAddress != null ? defaultAddress.getAddress() : null)
+                .deliveryAddressDetail(defaultAddress != null ? defaultAddress.getAddressDetail() : null)
+                .deliveryPostalCode(defaultAddress != null ? defaultAddress.getPostalCode() : null)
                 .build();
 
         liveDealRepository.save(deal);
