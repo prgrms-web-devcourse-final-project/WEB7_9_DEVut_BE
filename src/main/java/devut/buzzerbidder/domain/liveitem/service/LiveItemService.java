@@ -11,13 +11,7 @@ import devut.buzzerbidder.domain.liveBid.service.LiveBidRedisService;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemCreateRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemModifyRequest;
 import devut.buzzerbidder.domain.liveitem.dto.request.LiveItemSearchRequest;
-import devut.buzzerbidder.domain.liveitem.dto.response.ItemDto;
-import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemCreateResponse;
-import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemDetailResponse;
-import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemListResponse;
-import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemModifyResponse;
-import devut.buzzerbidder.domain.liveitem.dto.response.LiveItemResponse;
-import devut.buzzerbidder.domain.liveitem.dto.response.RoomDto;
+import devut.buzzerbidder.domain.liveitem.dto.response.*;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItem.AuctionStatus;
 import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
@@ -30,11 +24,6 @@ import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
 import devut.buzzerbidder.global.image.ImageService;
 import io.micrometer.core.annotation.Timed;
-
-import java.time.*;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -50,10 +39,12 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -724,7 +715,7 @@ public class LiveItemService {
             }
         }
 
-        long nextStartAtMs = liveBidRedisService.getRedisNowMs() + 10_000L;
+        long nextStartAtMs = liveBidRedisService.getRedisNowMs() + 30_000L;
 
         // 커밋 성공한 경우에만 Redis 작업
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
