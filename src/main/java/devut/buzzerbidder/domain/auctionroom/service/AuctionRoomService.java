@@ -1,15 +1,6 @@
 package devut.buzzerbidder.domain.auctionroom.service;
 
-import static reactor.netty.http.HttpConnectionLiveness.log;
-
-import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionDaysDto;
-import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomDto;
-import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomItemDto;
-import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomListResponse;
-import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomResponse;
-import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionRoomSlotDto;
-import devut.buzzerbidder.domain.auctionroom.dto.response.AuctionScheduleResponse;
-import devut.buzzerbidder.domain.auctionroom.dto.response.LiveItemDto;
+import devut.buzzerbidder.domain.auctionroom.dto.response.*;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.AuctionStatus;
 import devut.buzzerbidder.domain.auctionroom.entity.AuctionRoom.RoomStatus;
@@ -23,20 +14,18 @@ import devut.buzzerbidder.domain.liveitem.entity.LiveItemImage;
 import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import static reactor.netty.http.HttpConnectionLiveness.log;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +36,7 @@ public class AuctionRoomService {
     private final ApplicationEventPublisher eventPublisher;
     private final LiveItemRepository liveItemRepository;
     private final LikeLiveRepository likeLiveRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
     public AuctionRoom assignRoom(LocalDateTime liveTime, long roomIndex) {
 
@@ -254,19 +244,19 @@ public class AuctionRoomService {
             remainingMs = liveBidRedisService.getCurrentItemRemainingMs(progressItem.getId());
         }
         if(remainingMs == null && nextItem != null) {
-            remainingMs = liveBidRedisService.getRemainingToStartMs(nextItem.getId());;
+            remainingMs = liveBidRedisService.getRemainingToStartMs(nextItem.getId());
         }
 
         List<AuctionRoomItemDto> response  = items.stream()
             .map(item -> new AuctionRoomItemDto(
-                item.getId(),
-                item.getName(),
-                item.getImages().stream()
-                    .map(LiveItemImage::getImageUrl)
-                    .toList(),
-                item.getInitPrice(),
-                item.getCurrentPrice(),
-                item.getAuctionStatus()
+                    item.getId(),
+                    item.getName(),
+                    item.getImages().stream()
+                            .map(LiveItemImage::getImageUrl)
+                            .toList(),
+                    item.getInitPrice(),
+                    Long.parseLong((String) redisTemplate.opsForHash().get("liveItem:" + item.getId(), "maxBidPrice")),
+                    item.getAuctionStatus()
             ))
             .toList();
 
