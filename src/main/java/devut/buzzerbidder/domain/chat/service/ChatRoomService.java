@@ -14,6 +14,8 @@ import devut.buzzerbidder.domain.chat.repository.ChatRoomEnteredRepository;impor
 import devut.buzzerbidder.domain.chat.repository.ChatMessageRepository;
 import devut.buzzerbidder.domain.delayeditem.entity.DelayedItem;
 import devut.buzzerbidder.domain.delayeditem.repository.DelayedItemRepository;
+import devut.buzzerbidder.domain.liveitem.entity.LiveItem;
+import devut.buzzerbidder.domain.liveitem.repository.LiveItemRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.service.UserService;
 import devut.buzzerbidder.domain.wallet.service.WalletRedisService;
@@ -46,6 +48,7 @@ public class ChatRoomService {
     private final AuctionRoomRepository auctionRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final DelayedItemRepository delayedItemRepository;
+    private final LiveItemRepository liveItemRepository;
     private final UserService userService;
     private final ChatRoomParticipantService chatRoomParticipantService;
 
@@ -69,19 +72,20 @@ public class ChatRoomService {
 
     }
 
-    // 지연경매용 1:1 채팅방 생성
-    public ChatRoom getOrCreateDmChatRoom(Long itemId, User buyer) {
+    // 통합 1:1 채팅방 생성 (지연경매/라이브경매 공용)
+    public ChatRoom getOrCreateDmChatRoom(Long itemId, User buyer, ChatRoom.ReferenceEntityType referenceType) {
 
-        Optional<ChatRoom> existingRoom = chatRoomRepository.findDmRoomByItemAndUser(itemId, buyer.getId());
+        // 타입에 따라 기존 채팅방 조회
+        Optional<ChatRoom> existingRoom = (referenceType == ChatRoom.ReferenceEntityType.LIVE_ITEM)
+                ? chatRoomRepository.findDmRoomByLiveItemAndUser(itemId, buyer.getId())
+                : chatRoomRepository.findDmRoomByItemAndUser(itemId, buyer.getId());
 
         if (existingRoom.isPresent()) {
             return existingRoom.get();
         }
 
-        DelayedItem item = delayedItemRepository.findById(itemId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
-
-        Long sellerId = item.getSellerUserId();
+        // 타입에 따라 판매자 ID 조회
+        Long sellerId = getSellerIdByItemType(itemId, referenceType);
 
         // 판매자가 자신의 물건에 채팅 시도 시 예외처리
         if (buyer.getId().equals(sellerId)) {
@@ -90,7 +94,7 @@ public class ChatRoomService {
 
         ChatRoom newRoom = ChatRoom.builder()
                 .roomType(ChatRoom.RoomType.DM)
-                .referenceType(ChatRoom.ReferenceEntityType.ITEM)
+                .referenceType(referenceType)
                 .referenceEntityId(itemId)
                 .isActive(true)
                 .build();
@@ -105,7 +109,24 @@ public class ChatRoomService {
         chatRoomEnteredRepository.save(sellerEntry);
 
         return newRoom;
+    }
 
+    // 지연경매용 1:1 채팅방 생성
+    public ChatRoom getOrCreateDmChatRoom(Long itemId, User buyer) {
+        return getOrCreateDmChatRoom(itemId, buyer, ChatRoom.ReferenceEntityType.ITEM);
+    }
+
+    // 아이템 타입에 따른 판매자 ID 조회
+    private Long getSellerIdByItemType(Long itemId, ChatRoom.ReferenceEntityType referenceType) {
+        if (referenceType == ChatRoom.ReferenceEntityType.LIVE_ITEM) {
+            return liveItemRepository.findById(itemId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA))
+                    .getSellerUserId();
+        } else {
+            return delayedItemRepository.findById(itemId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA))
+                    .getSellerUserId();
+        }
     }
 
     // 채팅방 참여 상태 관리
@@ -252,10 +273,23 @@ public class ChatRoomService {
             throw new BusinessException(ErrorCode.FORBIDDEN_ACCESS);
         }
 
-        // 상품 정보 조회 (ReferenceEntityType이 ITEM인 경우)
+        // 상품 정보 조회 (ReferenceEntityType에 따라 분기)
         ChatRoomDetailResponse.ItemInfo itemInfo = null;
         if (chatRoom.getReferenceType() == ChatRoom.ReferenceEntityType.ITEM) {
             DelayedItem item = delayedItemRepository.findDelayedItemWithImagesById(chatRoom.getReferenceEntityId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+
+            String firstImageUrl = item.getImages().isEmpty() ? null : item.getImages().getFirst().getImageUrl();
+
+            itemInfo = new ChatRoomDetailResponse.ItemInfo(
+                    item.getId(),
+                    item.getName(),
+                    item.getCurrentPrice(),
+                    firstImageUrl,
+                    item.getAuctionStatus().name()
+            );
+        } else if (chatRoom.getReferenceType() == ChatRoom.ReferenceEntityType.LIVE_ITEM) {
+            LiveItem item = liveItemRepository.findLiveItemWithImagesById(chatRoom.getReferenceEntityId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
 
             String firstImageUrl = item.getImages().isEmpty() ? null : item.getImages().getFirst().getImageUrl();
@@ -278,48 +312,25 @@ public class ChatRoomService {
                 });
 
         // 메시지 내역 조회
-        List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomOrderByCreateDateAsc(chatRoom);
-
-        List<DirectMessageDto> messageResponses = chatMessages.stream()
-                .map(m -> new DirectMessageDto(
-                        m.getId(),
-                        m.getSender().getId(),
-                        m.getSender().getProfileImageUrl(),
-                        m.getSender().getNickname(),
-                        m.getMessage(),
-                        m.getCreateDate()
-                )).toList();
+        List<DirectMessageDto> messageResponses = getMessageResponses(chatRoom);
 
         return new ChatRoomDetailResponse(itemInfo, messageResponses);
     }
 
     /**
-     * itemId로 DM 채팅방 조회
+     * DM 채팅방 조회
      * - 채팅방이 있으면: 상품 정보 + 메시지 목록 반환
      * - 채팅방이 없으면: 상품 정보만 반환
      */
     @Transactional
-    public DirectMessageEnterResponse getDmChatRoomByItemId(Long itemId, User user) {
-        DelayedItem item = delayedItemRepository.findDelayedItemWithImagesById(itemId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
-
-        // 판매자가 자신의 물건에 채팅 시도 시 예외처리
-        if (user.getId().equals(item.getSellerUserId())) {
-            throw new BusinessException(ErrorCode.SELF_CHAT_NOT_ALLOWED);
-        }
-
-        String firstImageUrl = item.getImages().isEmpty() ? null : item.getImages().getFirst().getImageUrl();
-
-        DirectMessageEnterResponse.ItemInfo itemInfo = new DirectMessageEnterResponse.ItemInfo(
-                item.getId(),
-                item.getName(),
-                item.getCurrentPrice(),
-                firstImageUrl,
-                item.getAuctionStatus().name()
-        );
+    public DirectMessageEnterResponse getDmChatRoomByItemId(Long itemId, User user, ChatRoom.ReferenceEntityType referenceType) {
+        // 상품 정보 조회
+        DirectMessageEnterResponse.ItemInfo itemInfo = getItemInfoByType(itemId, user, referenceType);
 
         // 기존 채팅방 조회
-        Optional<ChatRoom> existingRoom = chatRoomRepository.findDmRoomByItemAndUser(itemId, user.getId());
+        Optional<ChatRoom> existingRoom = (referenceType == ChatRoom.ReferenceEntityType.LIVE_ITEM)
+                ? chatRoomRepository.findDmRoomByLiveItemAndUser(itemId, user.getId())
+                : chatRoomRepository.findDmRoomByItemAndUser(itemId, user.getId());
 
         if (existingRoom.isEmpty()) {
             // 채팅방이 없으면 상품 정보만 반환
@@ -337,9 +348,69 @@ public class ChatRoomService {
                 });
 
         // 메시지 내역 조회
+        List<DirectMessageDto> messageResponses = getMessageResponses(chatRoom);
+
+        return DirectMessageEnterResponse.exists(chatRoom.getId(), itemInfo, messageResponses);
+    }
+
+    // 지연경매 DM 채팅방 조회
+    @Transactional
+    public DirectMessageEnterResponse getDmChatRoomByItemId(Long itemId, User user) {
+        return getDmChatRoomByItemId(itemId, user, ChatRoom.ReferenceEntityType.ITEM);
+    }
+
+    // 라이브 경매 DM 채팅방 조회
+    @Transactional
+    public DirectMessageEnterResponse getLiveItemDmChatRoomByItemId(Long liveItemId, User user) {
+        return getDmChatRoomByItemId(liveItemId, user, ChatRoom.ReferenceEntityType.LIVE_ITEM);
+    }
+
+    // 아이템 타입에 따른 상품 정보 조회
+    private DirectMessageEnterResponse.ItemInfo getItemInfoByType(Long itemId, User user, ChatRoom.ReferenceEntityType referenceType) {
+        if (referenceType == ChatRoom.ReferenceEntityType.LIVE_ITEM) {
+            LiveItem item = liveItemRepository.findLiveItemWithImagesById(itemId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+
+            // 판매자가 자신의 물건에 채팅 시도 시 예외처리
+            if (user.getId().equals(item.getSellerUserId())) {
+                throw new BusinessException(ErrorCode.SELF_CHAT_NOT_ALLOWED);
+            }
+
+            String firstImageUrl = item.getImages().isEmpty() ? null : item.getImages().getFirst().getImageUrl();
+
+            return new DirectMessageEnterResponse.ItemInfo(
+                    item.getId(),
+                    item.getName(),
+                    item.getCurrentPrice(),
+                    firstImageUrl,
+                    item.getAuctionStatus().name()
+            );
+        } else {
+            DelayedItem item = delayedItemRepository.findDelayedItemWithImagesById(itemId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_DATA));
+
+            // 판매자가 자신의 물건에 채팅 시도 시 예외처리
+            if (user.getId().equals(item.getSellerUserId())) {
+                throw new BusinessException(ErrorCode.SELF_CHAT_NOT_ALLOWED);
+            }
+
+            String firstImageUrl = item.getImages().isEmpty() ? null : item.getImages().getFirst().getImageUrl();
+
+            return new DirectMessageEnterResponse.ItemInfo(
+                    item.getId(),
+                    item.getName(),
+                    item.getCurrentPrice(),
+                    firstImageUrl,
+                    item.getAuctionStatus().name()
+            );
+        }
+    }
+
+    // 메시지 응답 목록 조회 헬퍼 메서드
+    private List<DirectMessageDto> getMessageResponses(ChatRoom chatRoom) {
         List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomOrderByCreateDateAsc(chatRoom);
 
-        List<DirectMessageDto> messageResponses = chatMessages.stream()
+        return chatMessages.stream()
                 .map(m -> new DirectMessageDto(
                         m.getId(),
                         m.getSender().getId(),
@@ -348,7 +419,10 @@ public class ChatRoomService {
                         m.getMessage(),
                         m.getCreateDate()
                 )).toList();
+    }
 
-        return DirectMessageEnterResponse.exists(chatRoom.getId(), itemInfo, messageResponses);
+    // 라이브 경매용 1:1 채팅방 생성 (하위 호환용)
+    public ChatRoom getOrCreateLiveItemDmChatRoom(Long liveItemId, User buyer) {
+        return getOrCreateDmChatRoom(liveItemId, buyer, ChatRoom.ReferenceEntityType.LIVE_ITEM);
     }
 }

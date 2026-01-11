@@ -91,4 +91,16 @@ public class ChatRoomController {
 
         return ApiResponse.ok("경매방 채팅 퇴장 처리 완료");
     }
+
+    @GetMapping("/dm/liveItem/{liveItemId}")
+    @Operation(summary = "라이브 경매 아이템 DM 채팅방 조회", description = "라이브 경매 상품 ID로 DM 채팅방을 조회합니다. 기존 채팅방이 있으면 메시지 내역을, 없으면 상품 정보만 반환합니다. (채팅방 생성은 첫 메시지 전송 시점)")
+    public ApiResponse<DirectMessageEnterResponse> getLiveItemDirectMessageChatRoom(
+            @PathVariable Long liveItemId
+    ) {
+        User user = requestContext.getCurrentUser();
+
+        DirectMessageEnterResponse response = chatRoomService.getLiveItemDmChatRoomByItemId(liveItemId, user);
+
+        return ApiResponse.ok("라이브 경매 아이템 DM 채팅방 조회 성공", response);
+    }
 }
