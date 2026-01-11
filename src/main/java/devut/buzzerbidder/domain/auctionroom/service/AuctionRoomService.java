@@ -247,18 +247,23 @@ public class AuctionRoomService {
             remainingMs = liveBidRedisService.getRemainingToStartMs(nextItem.getId());
         }
 
-        List<AuctionRoomItemDto> response  = items.stream()
-            .map(item -> new AuctionRoomItemDto(
-                    item.getId(),
-                    item.getName(),
-                    item.getImages().stream()
-                            .map(LiveItemImage::getImageUrl)
-                            .toList(),
-                    item.getInitPrice(),
-                    Long.parseLong((String) redisTemplate.opsForHash().get("liveItem:" + item.getId(), "maxBidPrice")),
-                    item.getAuctionStatus()
-            ))
-            .toList();
+        List<AuctionRoomItemDto> response = items.stream()
+                .map(item -> {
+                    Object v = redisTemplate.opsForHash().get("liveItem:" + item.getId(), "maxBidPrice");
+                    Long maxBidPrice = (v == null) ? null : Long.parseLong(v.toString());
+
+                    return new AuctionRoomItemDto(
+                            item.getId(),
+                            item.getName(),
+                            item.getImages().stream()
+                                    .map(LiveItemImage::getImageUrl)
+                                    .toList(),
+                            item.getInitPrice(),
+                            maxBidPrice,
+                            item.getAuctionStatus()
+                    );
+                })
+                .toList();
 
         return new AuctionRoomResponse(remainingMs, response);
 
