@@ -21,9 +21,9 @@ public class LiveBidWebSocketService {
      * @param newPrice      새로운 최고가
      * @param bidderId      새로운 최고 입찰자 ID
      */
-    public void broadcastNewBid(Long auctionRoomId, Long liveItemId, int newPrice, Long bidderId) {
+    public void broadcastNewBid(Long auctionRoomId, Long liveItemId, int newPrice, Long bidderId, String bidderNickname) {
         // 전송할 메시지 구조
-        BidUpdateMessage update = new BidUpdateMessage("LIVE_BID", liveItemId, newPrice, bidderId);
+        BidUpdateMessage update = new BidUpdateMessage("LIVE_BID", liveItemId, newPrice, bidderId, bidderNickname);
 
         String destination = AUCTION_PREFIX + auctionRoomId;
 

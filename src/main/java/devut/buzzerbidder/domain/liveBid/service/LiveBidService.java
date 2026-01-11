@@ -153,7 +153,7 @@ public class LiveBidService {
         // 웹소켓을 통해 클라이언트에게 최고가 갱신 브로드캐스트
         // destination: "/receive/auction/{auctionId}"
         liveBidWebSocketService.broadcastNewBid(
-                request.auctionId(), request.liveItemId(), request.bidPrice(), bidder.getId()
+                request.auctionId(), request.liveItemId(), request.bidPrice(), bidder.getId(), bidder.getNickname()
         );
 
 
