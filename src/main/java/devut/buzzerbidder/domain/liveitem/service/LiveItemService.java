@@ -715,7 +715,7 @@ public class LiveItemService {
             }
         }
 
-        long nextStartAtMs = liveBidRedisService.getRedisNowMs() + 30_000L;
+        long nextStartAtMs = liveBidRedisService.getRedisNowMs() + 10_000L;
 
         // 커밋 성공한 경우에만 Redis 작업
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

@@ -3,9 +3,6 @@ package devut.buzzerbidder.domain.liveBid.service;
 import devut.buzzerbidder.domain.liveBid.dto.BidAtomicResult;
 import devut.buzzerbidder.domain.liveBid.dto.LiveBidEvent;
 import io.micrometer.core.annotation.Timed;
-
-import java.util.*;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.stream.RecordId;
@@ -15,6 +12,8 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
+
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor()
@@ -287,8 +286,8 @@ public class LiveBidRedisService {
         redis.call('HSET', liveKey, 'maxBidPrice', tostring(newPrice))
         redis.call('HSET', liveKey, 'currentBidderId', newBidderId)
         
-        -- 10초 미만 입찰 시 10초로 초기화
-        local minEnd = nowMs + 10000
+        -- 30초 미만 입찰 시 30초로 초기화
+        local minEnd = nowMs + 30000
         if endTime < minEnd then
           endTime = minEnd
           redis.call('HSET', liveKey, 'endTime', tostring(endTime))
