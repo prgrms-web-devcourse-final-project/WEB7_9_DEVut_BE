@@ -250,7 +250,7 @@ public class AuctionRoomService {
         List<AuctionRoomItemDto> response = items.stream()
                 .map(item -> {
                     Object v = redisTemplate.opsForHash().get("liveItem:" + item.getId(), "maxBidPrice");
-                    Long maxBidPrice = (v == null) ? null : Long.parseLong(v.toString());
+                    Long maxBidPrice = (v == null) ? item.getCurrentPrice() : Long.parseLong(v.toString());
 
                     return new AuctionRoomItemDto(
                             item.getId(),
