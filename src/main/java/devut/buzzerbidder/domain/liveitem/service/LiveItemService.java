@@ -677,6 +677,7 @@ public class LiveItemService {
 
         boolean success = currentBidderIdStr != null && !currentBidderIdStr.isEmpty();
         Long winnerId = success ? Long.parseLong(currentBidderIdStr) : null;
+        String winnerNickname = success ? userService.findById(winnerId).getNickname() : null;
         Integer finalPrice = success ? Integer.parseInt(maxBidPriceStr) : liveItem.getInitPrice().intValue();
 
         eventPublisher.publishEvent(
@@ -686,7 +687,8 @@ public class LiveItemService {
                 liveItem.getSellerUserId(),
                 success,
                 winnerId,
-                finalPrice
+                finalPrice,
+                winnerNickname
             )
         );
 
@@ -696,7 +698,8 @@ public class LiveItemService {
             liveItem.getName(),
             success,
             winnerId,
-            finalPrice
+            finalPrice,
+            winnerNickname
         );
 
         Long nextItemId = liveItemRepository
