@@ -127,6 +127,8 @@ public class UserService {
         providerRepository.save(provider);
 
         walletService.createWallet(user);
+        // 회원가입 시 10만 bizz 지급 (임시)
+        walletService.grantBizz(user, 100000L);
 
         // 회원가입 완료 후 인증 완료 표시 삭제
         emailVerificationService.deleteVerifiedEmail(request.email());
