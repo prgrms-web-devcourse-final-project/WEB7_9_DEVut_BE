@@ -161,9 +161,6 @@ public class ChatRoomService {
     }
 
     public void exitAuctionChatRoom(Long auctionId, User user) {
-
-        walletRedisService.flushBalanceAndClearSession(user.getId(), null);
-
         ChatRoom chatRoom = chatRoomRepository.findByAuctionId(auctionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHATROOM_NOT_FOUND));
 

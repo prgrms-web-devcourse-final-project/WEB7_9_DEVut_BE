@@ -14,6 +14,7 @@ public class HeartbeatService {
 
     private final StringRedisTemplate redis;
 
+    private static final String SESSION_EXP_ZSET = "auction:sessions:exp";
     private static final Duration SESSION_TTL = Duration.ofSeconds(35);
     private static final Duration BALANCE_TTL = Duration.ofMinutes(10);
 
@@ -29,5 +30,7 @@ public class HeartbeatService {
 
         redis.expire(balKey, BALANCE_TTL);
         redis.expire(verKey, BALANCE_TTL);
+        long expireAtMs = System.currentTimeMillis() + SESSION_TTL.toMillis();
+        redis.opsForZSet().add(SESSION_EXP_ZSET, userId.toString(), expireAtMs);
     }
 }
