@@ -31,7 +31,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     // 메시지 브로커 설정
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/receive");  // 서버 -> 클라이언트
+        config.enableSimpleBroker("/receive")
+                .setHeartbeatValue(new long[]{10000, 10000});  // 서버 -> 클라이언트
         config.setApplicationDestinationPrefixes("/send"); // 클라이언트 -> 서버
     }
 
