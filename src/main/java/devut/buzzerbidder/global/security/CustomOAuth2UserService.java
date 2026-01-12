@@ -242,7 +242,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         
         // 지갑 생성
         walletService.createWallet(user);
-        log.info("신규 사용자 지갑 생성 완료: userId={}", user.getId());
+        // 회원가입 시 10만 bizz 지급 (임시)
+        walletService.grantBizz(user, 100000L);
+        log.info("신규 사용자 지갑 생성 및 10만 bizz 지급 완료: userId={}", user.getId());
         
         return user;
     }
