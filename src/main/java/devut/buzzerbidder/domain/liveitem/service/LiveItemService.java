@@ -749,8 +749,8 @@ public class LiveItemService {
 
         Map<String, String> initData = new HashMap<>();
 
-        // 종료 시간 설정 (경매 시작 시간 + 40초) luaScript에서 읽을 수 있도록 UNIX Timestamp로 변환
-        long endTime = liveBidRedisService.getRedisNowMs() + 40_000L;
+        // 종료 시간 설정, luaScript에서 읽을 수 있도록 UNIX Timestamp로 변환
+        long endTime = liveBidRedisService.getRedisNowMs() + 180_000L;
 
         // 초기화
         initData.put("maxBidPrice", String.valueOf(liveItem.getInitPrice()));
