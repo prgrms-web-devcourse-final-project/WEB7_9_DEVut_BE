@@ -112,11 +112,15 @@ public class WalletService {
 
     // 경매/즉시구매 거래 완료시 판매자 정산
     public void settleDealToSeller(User seller, Long amount) {
-        changeBizz(seller, amount, WalletTransactionType.DEAL_SETTLEMENT);
+        changeBizz(seller, amount, WalletTransactionType.RECEIVE_SETTLEMENT);
+    }
+
+    public void receiveDeposit(User user, Long amount) {
+        changeBizz(user, amount, WalletTransactionType.RECIEVE_DEPOSIT);
     }
 
     // A유저 -> B유저 송금
-    public void transferBizz(User fromUser, User toUser, Long amount) {
+    public void transferBizz(User fromUser, User toUser, Long amount, WalletTransactionType sendType) {
         if (fromUser == null || toUser == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
@@ -125,6 +129,12 @@ public class WalletService {
         if (fromUser.getId().equals(toUser.getId())) {
             throw new BusinessException(ErrorCode.INVALID_TRANSFER);
         }
+
+        WalletTransactionType receiveType = switch(sendType) {
+            case PAY_SETTLEMENT -> receiveType = WalletTransactionType.RECEIVE_SETTLEMENT;
+            case PAY_TO_USER ->  receiveType = WalletTransactionType.RECEIVE_FROM_USER;
+            default -> throw new BusinessException(ErrorCode.INVALID_WALLET_TRANSACTION_TYPE);
+        };
 
         Long fromId = fromUser.getId();
         Long toId = toUser.getId();
@@ -142,16 +152,16 @@ public class WalletService {
             // 지갑 히스토리 남기기
             Long fromBalanceBefore = r.fromBefore();
             Long frombalanceAfter = r.fromAfter();
-            walletHistoryService.recordWalletHistory(fromUser, amount, WalletTransactionType.PAY_TO_USER, fromBalanceBefore, frombalanceAfter);
+            walletHistoryService.recordWalletHistory(fromUser, amount, sendType, fromBalanceBefore, frombalanceAfter);
             Long toBalanceBefore = r.toBefore();
             Long tobalanceAfter = r.toAfter();
-            walletHistoryService.recordWalletHistory(toUser, amount, WalletTransactionType.RECEIVE_FROM_USER, toBalanceBefore, tobalanceAfter);
+            walletHistoryService.recordWalletHistory(toUser, amount, receiveType, toBalanceBefore, tobalanceAfter);
             return;
         }
 
         // 둘 다 DB => DB 처리
         if (!fromRedis && !toRedis) {
-            transferDbFallback(fromUser, toUser, amount);
+            transferDbFallback(fromUser, toUser, amount, sendType, receiveType);
             return;
         }
 
@@ -161,14 +171,14 @@ public class WalletService {
                     walletRedisService.changeBizzIfPresent(fromId, amount, false, "TransferBizz_OUT", null);
 
             if (!out.hit()) {
-                transferDbFallback(fromUser, toUser, amount);
+                transferDbFallback(fromUser, toUser, amount, sendType, receiveType);
                 return;
             }
 
             try {
                 // 1) DB 입금 시도
                 Wallet toWallet = findByUserIdWithLockOrThrow(toId);
-                updateBizzAndRecordHistory(toWallet, toUser, amount, WalletTransactionType.RECEIVE_FROM_USER);
+                updateBizzAndRecordHistory(toWallet, toUser, amount, receiveType);
 
                 // 2) "DB입금 성공 이후에만" 롤백 훅 등록
                 runAfterRollback(() -> {
@@ -192,7 +202,7 @@ public class WalletService {
             // 히스토리
             Long fromBalanceBefore = out.before();
             Long fromBalanceAfter = out.after();
-            walletHistoryService.recordWalletHistory(fromUser, amount, WalletTransactionType.PAY_TO_USER, fromBalanceBefore, fromBalanceAfter);
+            walletHistoryService.recordWalletHistory(fromUser, amount, sendType, fromBalanceBefore, fromBalanceAfter);
 
             return;
         }
@@ -201,7 +211,7 @@ public class WalletService {
         if (!fromRedis && toRedis) {
             // DB 차감
             Wallet fromWallet = findByUserIdWithLockOrThrow(fromId);
-            updateBizzAndRecordHistory(fromWallet, fromUser, amount, WalletTransactionType.PAY_TO_USER);
+            updateBizzAndRecordHistory(fromWallet, fromUser, amount, sendType);
 
             // to는 Redis가 진실이므로 Redis에 입금
             WalletRedisService.RedisBizzChangeResult in =
@@ -214,7 +224,7 @@ public class WalletService {
 
             Long toBalanceBefore = in.before();
             Long toBalanceAfter = in.after();
-            walletHistoryService.recordWalletHistory(toUser, amount, WalletTransactionType.RECEIVE_FROM_USER, toBalanceBefore, toBalanceAfter);
+            walletHistoryService.recordWalletHistory(toUser, amount, receiveType, toBalanceBefore, toBalanceAfter);
 
             // 롤백되면 Redis 입금 되돌리기
             runAfterRollback(() -> {
@@ -269,7 +279,7 @@ public class WalletService {
 
     /* ==================== 이 밑으로는 헬퍼 메서드 ==================== */
 
-    private void transferDbFallback(User fromUser, User toUser, Long amount) {
+    private void transferDbFallback(User fromUser, User toUser, Long amount, WalletTransactionType sendType, WalletTransactionType receiveType) {
         // ID 순서대로 락 획득하여 데드락 방지
         Long smallerId = Math.min(fromUser.getId(), toUser.getId());
         Long largerId = Math.max(fromUser.getId(), toUser.getId());
@@ -284,8 +294,8 @@ public class WalletService {
                 ? firstWallet : secondWallet;
 
         // 송금 실행
-        updateBizzAndRecordHistory(fromWallet, fromUser, amount, WalletTransactionType.PAY_TO_USER);
-        updateBizzAndRecordHistory(toWallet, toUser, amount, WalletTransactionType.RECEIVE_FROM_USER);
+        updateBizzAndRecordHistory(fromWallet, fromUser, amount, sendType);
+        updateBizzAndRecordHistory(toWallet, toUser, amount, receiveType);
     }
 
     /** 트랜잭션이 "롤백"으로 끝나면 실행할 보상 로직 */

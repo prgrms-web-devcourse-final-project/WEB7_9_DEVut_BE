@@ -115,13 +115,6 @@ public class LiveBidService {
                     balanceBefore,
                     balanceAfter
             );
-            walletHistoryService.recordWalletHistory(
-                    bidder,
-                    depositAmount,
-                    WalletTransactionType.BID,
-                    balanceBefore,
-                    balanceAfter
-            );
 
             liveItem.setCurrentPrice(Long.valueOf(request.bidPrice()));
             liveItemRepository.save(liveItem);
