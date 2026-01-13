@@ -17,6 +17,7 @@ import devut.buzzerbidder.domain.user.entity.DeliveryAddress;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.domain.user.repository.DeliveryAddressRepository;
 import devut.buzzerbidder.domain.user.service.UserService;
+import devut.buzzerbidder.domain.wallet.enums.WalletTransactionType;
 import devut.buzzerbidder.domain.wallet.service.WalletService;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
@@ -155,7 +156,7 @@ public class LiveDealService {
         User seller = userService.findById(deal.getItem().getSellerUserId());
 
         // Wallet에서 잔금 이체 (구매자 -> 판매자)
-        walletService.transferBizz(currentUser, seller, remainingAmount);
+        walletService.transferBizz(currentUser, seller, remainingAmount, WalletTransactionType.PAY_SETTLEMENT);
 
         // Deal 상태 변경
         deal.updateStatus(DealStatus.PAID);

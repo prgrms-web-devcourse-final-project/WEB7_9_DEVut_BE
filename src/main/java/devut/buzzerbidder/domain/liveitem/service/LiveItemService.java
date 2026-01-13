@@ -672,9 +672,8 @@ public class LiveItemService {
                 }
             }
 
-            User buyer = userService.findById(currentBidderId);
             User seller = userService.findById(liveItem.getSellerUserId());
-            walletService.transferBizz(buyer, seller, winnerDeposit);
+            walletService.receiveDeposit(seller, winnerDeposit);
 
             liveDealService.createDeal(itemId, currentBidderId, maxBidPrice, winnerDeposit);
         }
