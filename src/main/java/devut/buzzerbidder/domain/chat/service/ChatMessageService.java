@@ -12,6 +12,7 @@ import devut.buzzerbidder.domain.chat.repository.ChatRoomRepository;
 import devut.buzzerbidder.domain.user.entity.User;
 import devut.buzzerbidder.global.exeption.BusinessException;
 import devut.buzzerbidder.global.exeption.ErrorCode;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -42,8 +43,12 @@ public class ChatMessageService {
         return String.valueOf(System.currentTimeMillis());
     }
 
+    @Timed(
+            value = "buzzerbidder.message.handle",
+            extraTags = {"op", "send"},
+            histogram = true
+    )
     public void sendAuctionMessage(Long auctionId, User sender, ChatMessageRequest request) {
-
         ChatRoom chatRoom = chatRoomRepository.findByAuctionId(auctionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHATROOM_NOT_FOUND));
 
