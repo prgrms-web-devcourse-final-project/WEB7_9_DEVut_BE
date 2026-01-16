@@ -16,7 +16,7 @@
 <br/>
 
 <p align="center">
-  <img src="docs/images/demo.gif" alt="Live Auction Demo" width="700"/>
+  <img src="docs/images/demo.gif" alt="Live Auction Demo" width="600"/>
 </p>
 
 <br/>
